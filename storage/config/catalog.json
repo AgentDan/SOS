@@ -1,0 +1,162 @@
+{
+  "section": "catalog",
+  "draftVersion": 3,
+  "publishedVersion": 1,
+  "draft": {
+    "types": [
+      { "id": "desk_legs", "label": "Desk legs", "canBeHost": true, "canHostOn": [], "maxOnScene": 1 },
+      { "id": "desk_top", "label": "Desk top", "canBeHost": true, "canHostOn": ["desk_legs"], "maxOnScene": 1 },
+      { "id": "monitor", "label": "Monitor", "canBeHost": false, "canHostOn": ["desk_top"], "maxOnScene": 3 },
+      { "id": "chair", "label": "Chair", "canBeHost": false, "canHostOn": [], "maxOnScene": 2 }
+    ],
+    "products": [
+      {
+        "sku": "DESK-LEGS-1400",
+        "type": "desk_legs",
+        "name": "Desk legs 1400x700",
+        "dimensions": { "width": 1400, "depth": 700, "height": 1000 },
+        "priceEur": 79.0,
+        "alwaysPresent": true
+      },
+      {
+        "sku": "DESK-TOP-1400",
+        "type": "desk_top",
+        "name": "Desk top 1400x700",
+        "dimensions": { "width": 1400, "depth": 700, "height": 30 },
+        "priceEur": 189.0,
+        "media": { "model3d": "/models/desk.glb" },
+        "placement": { "hostSku": "DESK-LEGS-1400" }
+      },
+      {
+        "sku": "DESK-TOP-1800",
+        "type": "desk_top",
+        "name": "Desk top 1800x800",
+        "dimensions": { "width": 1800, "depth": 800, "height": 30 },
+        "priceEur": 259.0,
+        "media": { "model3d": "/models/desk.glb" },
+        "placement": { "hostSku": "DESK-LEGS-1400" }
+      },
+      {
+        "sku": "MON-613-366",
+        "type": "monitor",
+        "name": "Monitor 27-inch",
+        "dimensions": { "width": 613, "depth": 205, "height": 366 },
+        "priceEur": 249.0,
+        "placement": { "hostSku": "DESK-TOP-1400" }
+      },
+      {
+        "sku": "CHAIR-460",
+        "type": "chair",
+        "name": "Chair 460x520",
+        "dimensions": { "width": 460, "depth": 520, "height": 900 },
+        "priceEur": 129.0,
+        "placement": { "offset": { "x": 0, "z": 760 } }
+      }
+    ]
+  },
+  "history": [
+    {
+      "version": 1,
+      "publishedAt": "2026-09-27T12:00:00.000Z",
+      "publishedBy": "system",
+      "snapshot": {
+        "types": [
+          { "id": "desk_legs", "label": "Desk legs", "canBeHost": true, "canHostOn": [], "maxOnScene": 1 },
+          { "id": "desk_top", "label": "Desk top", "canBeHost": true, "canHostOn": ["desk_legs"], "maxOnScene": 1 },
+          { "id": "monitor", "label": "Monitor", "canBeHost": false, "canHostOn": ["desk_top"], "maxOnScene": 3 },
+          { "id": "chair", "label": "Chair", "canBeHost": false, "canHostOn": [], "maxOnScene": 2 }
+        ],
+        "products": [
+          {
+            "sku": "DESK-LEGS-1400",
+            "type": "desk_legs",
+            "name": "Desk legs 1400x700",
+            "dimensions": { "width": 1400, "depth": 700, "height": 1000 },
+            "priceEur": 79.0
+          },
+          {
+            "sku": "DESK-TOP-1400",
+            "type": "desk_top",
+            "name": "Desk top 1400x700",
+            "dimensions": { "width": 1400, "depth": 700, "height": 30 },
+            "priceEur": 189.0,
+            "media": { "model3d": "/models/desk.glb" },
+            "placement": { "hostSku": "DESK-LEGS-1400" }
+          },
+          {
+            "sku": "MON-613-366",
+            "type": "monitor",
+            "name": "Monitor 27-inch",
+            "dimensions": { "width": 613, "depth": 205, "height": 366 },
+            "priceEur": 249.0,
+            "placement": { "hostSku": "DESK-TOP-1400" }
+          },
+          {
+            "sku": "CHAIR-460",
+            "type": "chair",
+            "name": "Chair 460x520",
+            "dimensions": { "width": 460, "depth": 520, "height": 900 },
+            "priceEur": 129.0,
+            "placement": { "offset": { "x": 0, "z": 760 } }
+          }
+        ]
+      }
+    },
+    {
+      "version": 2,
+      "publishedAt": "2026-09-28T12:00:00.000Z",
+      "publishedBy": "system",
+      "snapshot": {
+        "types": [
+          { "id": "desk_legs", "label": "Desk legs", "canBeHost": true, "canHostOn": [], "maxOnScene": 1 },
+          { "id": "desk_top", "label": "Desk top", "canBeHost": true, "canHostOn": ["desk_legs"], "maxOnScene": 1 },
+          { "id": "monitor", "label": "Monitor", "canBeHost": false, "canHostOn": ["desk_top"], "maxOnScene": 3 },
+          { "id": "chair", "label": "Chair", "canBeHost": false, "canHostOn": [], "maxOnScene": 2 }
+        ],
+        "products": [
+          {
+            "sku": "DESK-LEGS-1400",
+            "type": "desk_legs",
+            "name": "Desk legs 1400x700",
+            "dimensions": { "width": 1400, "depth": 700, "height": 1000 },
+            "priceEur": 79.0
+          },
+          {
+            "sku": "DESK-TOP-1400",
+            "type": "desk_top",
+            "name": "Desk top 1400x700",
+            "dimensions": { "width": 1400, "depth": 700, "height": 30 },
+            "priceEur": 189.0,
+            "media": { "model3d": "/models/desk.glb" },
+            "placement": { "hostSku": "DESK-LEGS-1400" }
+          },
+          {
+            "sku": "DESK-TOP-1800",
+            "type": "desk_top",
+            "name": "Desk top 1800x800",
+            "dimensions": { "width": 1800, "depth": 800, "height": 30 },
+            "priceEur": 259.0,
+            "media": { "model3d": "/models/desk.glb" },
+            "placement": { "hostSku": "DESK-LEGS-1400" }
+          },
+          {
+            "sku": "MON-613-366",
+            "type": "monitor",
+            "name": "Monitor 27-inch",
+            "dimensions": { "width": 613, "depth": 205, "height": 366 },
+            "priceEur": 249.0,
+            "placement": { "hostSku": "DESK-TOP-1400" }
+          },
+          {
+            "sku": "CHAIR-460",
+            "type": "chair",
+            "name": "Chair 460x520",
+            "dimensions": { "width": 460, "depth": 520, "height": 900 },
+            "priceEur": 129.0,
+            "placement": { "offset": { "x": 0, "z": 760 } }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "deskos",
+  "version": "0.1.0",
+  "description": "deskOS - AI workspace configurator skeleton",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n server,client -c cyan,magenta \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "nodemon backend/server.js",
+    "dev:client": "vite --config client/vite.config.js",
+    "test": "node --test backend/dialog/validate-dialog-data.test.js backend/dialog/engine/question-engine.test.js backend/dialog/engine/inference-engine.test.js backend/dialog/engine/matching.test.js backend/dialog/engine/scene-plan.test.js backend/dialog/engine/confirmation-engine.test.js"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.14.0",
+    "concurrently": "^10.0.5",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4",
+    "vite": "^5.4.6"
+  }
+}

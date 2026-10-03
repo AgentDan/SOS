@@ -1,0 +1,87 @@
+{
+  "section": "questionnaire",
+  "draftVersion": 1,
+  "publishedVersion": 1,
+  "draft": {
+    "phases": [
+      { "id": "situation", "order": 1, "name": "Ситуация" },
+      { "id": "needs", "order": 2, "name": "Потребности" },
+      { "id": "confirmation", "order": 3, "name": "Подтверждение" }
+    ],
+    "scenarios": [
+      { "id": "home_office", "name": "Домашний офис" },
+      { "id": "gaming_setup", "name": "Игровая станция" }
+    ],
+    "questions": [
+      {
+        "id": "q_work_type",
+        "phase": "situation",
+        "priority": 10,
+        "textFallback": "Чем вы в основном занимаетесь за столом?",
+        "type": "single",
+        "options": [
+          { "id": "coding", "label": "Программирую" },
+          { "id": "design", "label": "Занимаюсь дизайном" },
+          { "id": "office", "label": "Офисная работа" },
+          { "id": "gaming", "label": "Играю" }
+        ],
+        "dependsOn": [],
+        "appliesToScenarios": ["home_office", "gaming_setup"]
+      },
+      {
+        "id": "q_desk_width",
+        "phase": "needs",
+        "priority": 5,
+        "textFallback": "Насколько широкий стол вам нужен?",
+        "type": "single",
+        "options": [
+          { "id": "narrow", "label": "До 120 см" },
+          { "id": "wide", "label": "От 160 см" }
+        ],
+        "dependsOn": [],
+        "appliesToScenarios": ["home_office", "gaming_setup"]
+      },
+      {
+        "id": "q_back_pain",
+        "phase": "needs",
+        "priority": 4,
+        "textFallback": "Спина не беспокоит от долгого сидения?",
+        "type": "single",
+        "options": [
+          { "id": "yes", "label": "Да, есть проблемы" },
+          { "id": "no", "label": "Нет, всё в порядке" }
+        ],
+        "dependsOn": [],
+        "appliesToScenarios": ["home_office", "gaming_setup"]
+      },
+      {
+        "id": "q_monitor_arm",
+        "phase": "needs",
+        "priority": 3,
+        "textFallback": "Хотите монитор на кронштейне вместо подставки?",
+        "type": "single",
+        "options": [
+          { "id": "yes", "label": "Да, на кронштейне" },
+          { "id": "no", "label": "Нет, обычная подставка" }
+        ],
+        "dependsOn": [{ "questionId": "q_desk_width", "optionId": "wide" }],
+        "appliesToScenarios": ["gaming_setup"]
+      }
+    ],
+    "inference": [
+      {
+        "id": "inf_wide_desk",
+        "when": { "questionId": "q_work_type", "optionId": "coding" },
+        "resultNeed": "desk_top_wide",
+        "confidence": "medium"
+      },
+      {
+        "id": "inf_chair",
+        "when": { "questionId": "q_back_pain", "optionId": "yes" },
+        "resultNeed": "ergonomic_chair",
+        "confidence": "high"
+      }
+    ]
+  },
+  "history": []
+}
