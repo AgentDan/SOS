@@ -7,6 +7,13 @@ function validateConsultant(consultant, errors) {
   const draft = consultant.draft;
   checkType("consultant", draft.name, "string", "name", errors);
   checkType("consultant", draft.formality, "string", "formality", errors);
+  if (
+    typeof draft.formality === "string" &&
+    draft.formality !== "вы" &&
+    draft.formality !== "ты"
+  ) {
+    errors.push('consultant: formality must be "вы" or "ты"');
+  }
   checkType("consultant", draft.humor, "number", "humor", errors);
   checkType("consultant", draft.greeting, "string", "greeting", errors);
   checkType("consultant", draft.commandsIntro, "string", "commandsIntro", errors);

@@ -129,6 +129,20 @@ test("inference resultNeed must exist in catalog needs", () => {
   );
 });
 
+test("consultant formality must be вы or ты", () => {
+  const formal = loadSkeleton();
+  formal.consultant.draft.formality = "ты";
+  assert.equal(validateDialogData(formal), true);
+
+  const data = loadSkeleton();
+  data.consultant.draft.formality = "hello";
+  assert.throws(
+    () => validateDialogData(data),
+    (err) =>
+      err instanceof Error && /consultant: formality must be "вы" or "ты"/.test(err.message)
+  );
+});
+
 test("ai-rules output.noContradict must be a boolean", () => {
   const data = loadSkeleton();
   data.aiRules.draft.output.noContradict = "yes";
