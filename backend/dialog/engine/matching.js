@@ -1,7 +1,11 @@
-import { NEED_CRITERIA } from "./need-criteria.js";
+function criteriaFor(catalog, needId) {
+  const needs = catalog?.draft?.needs ?? [];
+  const need = needs.find((item) => item && item.id === needId);
+  return need?.criteria ?? null;
+}
 
 function resolveNeed(catalog, needId) {
-  const criteria = NEED_CRITERIA[needId];
+  const criteria = criteriaFor(catalog, needId);
   if (!criteria) return null;
 
   const products = catalog?.draft?.products ?? [];

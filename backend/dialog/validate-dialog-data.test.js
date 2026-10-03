@@ -96,6 +96,39 @@ test("broken config envelope is rejected", () => {
   );
 });
 
+test("duplicate catalog need id is rejected", () => {
+  const data = validPair();
+  data.catalog.draft.needs[1].id = data.catalog.draft.needs[0].id;
+  assert.throws(
+    () => validateDialogData(data),
+    (err) => err instanceof Error && /catalog: duplicate need id "desk_top_wide"/.test(err.message)
+  );
+});
+
+test("need criteria type must exist in catalog types", () => {
+  const data = validPair();
+  data.catalog.draft.needs[0].criteria.type = "missing_type";
+  assert.throws(
+    () => validateDialogData(data),
+    (err) =>
+      err instanceof Error &&
+      /catalog: need "desk_top_wide" criteria\.type references unknown type "missing_type"/.test(err.message)
+  );
+});
+
+test("inference resultNeed must exist in catalog needs", () => {
+  const data = validPair();
+  data.questionnaire.draft.inference[0].resultNeed = "missing_need";
+  assert.throws(
+    () => validateDialogData(data),
+    (err) =>
+      err instanceof Error &&
+      /questionnaire: inference "inf_wide_desk" resultNeed "missing_need" does not exist in catalog\.draft\.needs/.test(
+        err.message
+      )
+  );
+});
+
 test("ai-rules output.noContradict must be a boolean", () => {
   const data = loadSkeleton();
   data.aiRules.draft.output.noContradict = "yes";

@@ -431,6 +431,56 @@ function validateCatalogDraft(catalog, errors) {
       }
     }
   }
+
+  const needs = Array.isArray(draft.needs) ? draft.needs : null;
+  if (!needs) {
+    errors.push("catalog: missing \"needs\" array");
+  } else {
+    const seenNeedIds = new Set();
+    for (const need of needs) {
+      const label = need && need.id ? need.id : "<unknown need>";
+
+      if (isMissing(need, "id")) {
+        errors.push(`catalog: need "${label}" is missing required field "id"`);
+      } else if (seenNeedIds.has(need.id)) {
+        errors.push(`catalog: duplicate need id "${need.id}"`);
+      } else {
+        seenNeedIds.add(need.id);
+      }
+
+      const criteria = need && need.criteria;
+      if (!criteria || typeof criteria !== "object" || Array.isArray(criteria)) {
+        errors.push(`catalog: need "${label}" is missing required field "criteria"`);
+      } else if (isMissing(criteria, "type")) {
+        errors.push(`catalog: need "${label}" criteria is missing required field "type"`);
+      } else if (typeIds.size > 0 && !typeIds.has(criteria.type)) {
+        errors.push(
+          `catalog: need "${label}" criteria.type references unknown type "${criteria.type}"`
+        );
+      }
+    }
+  }
+}
+
+function validateInferenceNeeds(questionnaire, catalog, errors) {
+  const inference = questionnaire?.draft?.inference;
+  if (!Array.isArray(inference)) return;
+
+  const needIds = new Set(
+    (catalog?.draft?.needs ?? [])
+      .filter((need) => need && !isBlank(need.id))
+      .map((need) => need.id)
+  );
+
+  for (const rule of inference) {
+    if (!rule || isBlank(rule.resultNeed)) continue;
+    if (needIds.has(rule.resultNeed)) continue;
+
+    const label = rule.id ? rule.id : "<unknown inference>";
+    errors.push(
+      `questionnaire: inference "${label}" resultNeed "${rule.resultNeed}" does not exist in catalog.draft.needs`
+    );
+  }
 }
 
 function validateSectionEnvelope(data, sectionName, errors) {
@@ -561,6 +611,7 @@ function validateDialogData({
 
   validateQuestionnaire(questionnaire, errors);
   validateCatalogDraft(catalog, errors);
+  validateInferenceNeeds(questionnaire, catalog, errors);
   validateConsultant(consultant, errors);
   validateDirector(director, errors);
   validateSales(sales, errors);

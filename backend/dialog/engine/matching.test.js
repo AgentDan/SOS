@@ -50,9 +50,17 @@ test("runMatching resolves each unresolved need independently", () => {
   assert.equal(needs[1].resolvedSku, null);
 });
 
+const DESK_TOP_WIDE = {
+  id: "desk_top_wide",
+  name: "Широкая столешница",
+  why: "",
+  criteria: { type: "desk_top", minWidth: 1600 }
+};
+
 test("resolveNeed returns null when no product meets minWidth", () => {
   const catalog = {
     draft: {
+      needs: [DESK_TOP_WIDE],
       products: [
         {
           sku: "DESK-TOP-1400",
@@ -73,6 +81,7 @@ test("resolveNeed returns null when no product meets minWidth", () => {
 test("resolveNeed picks the narrowest product that still meets minWidth", () => {
   const catalog = {
     draft: {
+      needs: [DESK_TOP_WIDE],
       products: [
         {
           sku: "DESK-TOP-2000",
