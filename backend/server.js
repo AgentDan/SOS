@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { validateDialogData } from "./dialog/validate-dialog-data.js";
+import { validateDialogData } from "./validation/index.js";
 import {
   readAiRules,
   readCatalog,
