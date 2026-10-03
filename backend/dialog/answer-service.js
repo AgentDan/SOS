@@ -2,6 +2,22 @@ import { getPendingConfirmations } from "./engine/confirmation-engine.js";
 import { computeNeeds } from "./engine/inference-engine.js";
 import { runMatching } from "./engine/matching.js";
 
+function screenStatedAnswer({ questionnaire, questionId, optionId }) {
+  if (typeof questionId === "string" && questionId.startsWith("confirm_")) return null;
+
+  const question = (questionnaire.draft.questions ?? []).find((item) => item.id === questionId);
+  if (!question) {
+    return { status: 404, body: { error: "unknown question" } };
+  }
+
+  const option = (question.options ?? []).find((item) => item.id === optionId);
+  if (!option) {
+    return { status: 400, body: { error: "unknown option" } };
+  }
+
+  return null;
+}
+
 function applyAnswer({ questionnaire, catalog, profile, questionId, optionId }) {
   if (typeof questionId === "string" && questionId.startsWith("confirm_")) {
     const needId = questionId.slice("confirm_".length);
@@ -22,15 +38,8 @@ function applyAnswer({ questionnaire, catalog, profile, questionId, optionId }) 
     return { status: 200, body: { ok: true }, profile };
   }
 
-  const question = (questionnaire.draft.questions ?? []).find((item) => item.id === questionId);
-  if (!question) {
-    return { status: 404, body: { error: "unknown question" }, profile };
-  }
-
-  const option = (question.options ?? []).find((item) => item.id === optionId);
-  if (!option) {
-    return { status: 400, body: { error: "unknown option" }, profile };
-  }
+  const rejected = screenStatedAnswer({ questionnaire, questionId, optionId });
+  if (rejected) return { ...rejected, profile };
 
   profile.fields[questionId] = {
     value: optionId,
@@ -42,4 +51,4 @@ function applyAnswer({ questionnaire, catalog, profile, questionId, optionId }) 
   return { status: 200, body: { ok: true }, profile };
 }
 
-export { applyAnswer };
+export { applyAnswer, screenStatedAnswer };

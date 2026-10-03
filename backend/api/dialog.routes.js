@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { readCatalog, readQuestionnaire } from "../config/load.js";
-import { applyAnswer } from "../dialog/answer-service.js";
+import { applyAnswer, screenStatedAnswer } from "../dialog/answer-service.js";
 import { computeScenePlan } from "../dialog/engine/scene-plan.js";
 import { getNextQuestion } from "../dialog/engine/question-engine.js";
 import { loadProfile, saveProfile } from "../dialog/profile-store.js";
@@ -20,6 +20,11 @@ router.get("/dialog/next", (req, res) => {
 router.post("/dialog/answer", (req, res) => {
   const { clientId, questionId, optionId } = req.body ?? {};
   const questionnaire = readQuestionnaire();
+  const rejected = screenStatedAnswer({ questionnaire, questionId, optionId });
+  if (rejected) {
+    return res.status(rejected.status).json(rejected.body);
+  }
+
   const catalog = readCatalog();
   const profile = loadProfile(clientId);
   const result = applyAnswer({ questionnaire, catalog, profile, questionId, optionId });
