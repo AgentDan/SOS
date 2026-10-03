@@ -1,0 +1,20 @@
+{
+  "section": "consultant",
+  "draftVersion": 1,
+  "publishedVersion": 0,
+  "draft": {
+    "name": "Алекс",
+    "formality": "вы",
+    "humor": 1,
+    "greeting": "",
+    "commandsIntro": "",
+    "faq": [],
+    "inserts": {
+      "reactions": [],
+      "bridges": {},
+      "tips": {},
+      "confirmBridge": ""
+    }
+  },
+  "history": []
+}

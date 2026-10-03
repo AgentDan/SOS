@@ -1,0 +1,20 @@
+{
+  "section": "director",
+  "draftVersion": 1,
+  "publishedVersion": 0,
+  "draft": {
+    "personas": [],
+    "gains": {
+      "reaction": 4,
+      "bridge": 2,
+      "tip": 5,
+      "pause": 8,
+      "story": 6,
+      "decline": -12,
+      "confirm": -3
+    },
+    "low": 35,
+    "declinesBeforeAssume": 2
+  },
+  "history": []
+}

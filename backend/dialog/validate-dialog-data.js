@@ -9,7 +9,43 @@ function isMissing(obj, field) {
   return !obj || isBlank(obj[field]);
 }
 
+function validateEnvelopeFields(data, sectionName, errors) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return;
+
+  if (data.section !== sectionName) {
+    errors.push(`${sectionName}: section must be "${sectionName}"`);
+  }
+  if (!Number.isInteger(data.draftVersion)) {
+    errors.push(`${sectionName}: draftVersion must be an integer`);
+  }
+  if (!Number.isInteger(data.publishedVersion)) {
+    errors.push(`${sectionName}: publishedVersion must be an integer`);
+  }
+  if (!Array.isArray(data.history)) {
+    errors.push(`${sectionName}: history must be an array`);
+  }
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function checkType(section, value, expected, label, errors) {
+  const ok =
+    expected === "array"
+      ? Array.isArray(value)
+      : expected === "object"
+        ? isPlainObject(value)
+        : typeof value === expected;
+  if (!ok) {
+    errors.push(`${section}: ${label} must be a ${expected}`);
+  }
+  return ok;
+}
+
 function validateQuestionnaire(questionnaire, errors) {
+  validateEnvelopeFields(questionnaire, "questionnaire", errors);
+
   if (!questionnaire || typeof questionnaire !== "object") {
     errors.push("questionnaire: missing questionnaire object");
     return;
@@ -251,6 +287,8 @@ function validateQuestionnaire(questionnaire, errors) {
 }
 
 function validateCatalogDraft(catalog, errors) {
+  validateEnvelopeFields(catalog, "catalog", errors);
+
   if (!catalog || typeof catalog !== "object") {
     errors.push("catalog: missing catalog object");
     return;
@@ -395,11 +433,139 @@ function validateCatalogDraft(catalog, errors) {
   }
 }
 
-function validateDialogData({ questionnaire, catalog }) {
+function validateSectionEnvelope(data, sectionName, errors) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    errors.push(`${sectionName}: missing config object`);
+    return false;
+  }
+
+  validateEnvelopeFields(data, sectionName, errors);
+
+  if (!isPlainObject(data.draft)) {
+    errors.push(`${sectionName}: draft must be an object`);
+    return false;
+  }
+
+  return true;
+}
+
+function validateConsultant(consultant, errors) {
+  if (consultant === undefined) return;
+  if (!validateSectionEnvelope(consultant, "consultant", errors)) return;
+
+  const draft = consultant.draft;
+  checkType("consultant", draft.name, "string", "name", errors);
+  checkType("consultant", draft.formality, "string", "formality", errors);
+  checkType("consultant", draft.humor, "number", "humor", errors);
+  checkType("consultant", draft.greeting, "string", "greeting", errors);
+  checkType("consultant", draft.commandsIntro, "string", "commandsIntro", errors);
+  checkType("consultant", draft.faq, "array", "faq", errors);
+
+  if (checkType("consultant", draft.inserts, "object", "inserts", errors)) {
+    checkType("consultant", draft.inserts.reactions, "array", "inserts.reactions", errors);
+    checkType("consultant", draft.inserts.bridges, "object", "inserts.bridges", errors);
+    checkType("consultant", draft.inserts.tips, "object", "inserts.tips", errors);
+    checkType("consultant", draft.inserts.confirmBridge, "string", "inserts.confirmBridge", errors);
+  }
+}
+
+function validateDirector(director, errors) {
+  if (director === undefined) return;
+  if (!validateSectionEnvelope(director, "director", errors)) return;
+
+  const draft = director.draft;
+  checkType("director", draft.personas, "array", "personas", errors);
+  checkType("director", draft.low, "number", "low", errors);
+  checkType("director", draft.declinesBeforeAssume, "number", "declinesBeforeAssume", errors);
+
+  if (checkType("director", draft.gains, "object", "gains", errors)) {
+    for (const key of ["reaction", "bridge", "tip", "pause", "story", "decline", "confirm"]) {
+      checkType("director", draft.gains[key], "number", `gains.${key}`, errors);
+    }
+  }
+}
+
+function validateSales(sales, errors) {
+  if (sales === undefined) return;
+  if (!validateSectionEnvelope(sales, "sales", errors)) return;
+
+  const draft = sales.draft;
+  checkType("sales", draft.stages, "array", "stages", errors);
+  checkType("sales", draft.objections, "array", "objections", errors);
+  checkType("sales", draft.signals, "array", "signals", errors);
+
+  if (checkType("sales", draft.closing, "object", "closing", errors)) {
+    checkType("sales", draft.closing.offerText, "string", "closing.offerText", errors);
+    checkType("sales", draft.closing.askName, "boolean", "closing.askName", errors);
+    checkType("sales", draft.closing.askContact, "boolean", "closing.askContact", errors);
+    checkType("sales", draft.closing.thanks, "string", "closing.thanks", errors);
+  }
+
+  if (checkType("sales", draft.loyalty, "object", "loyalty", errors)) {
+    checkType("sales", draft.loyalty.remember, "boolean", "loyalty.remember", errors);
+    checkType("sales", draft.loyalty.welcomeBack, "string", "loyalty.welcomeBack", errors);
+    checkType("sales", draft.loyalty.followUpDays, "number", "loyalty.followUpDays", errors);
+    checkType("sales", draft.loyalty.followUp, "string", "loyalty.followUp", errors);
+    checkType("sales", draft.loyalty.askReview, "boolean", "loyalty.askReview", errors);
+    checkType("sales", draft.loyalty.reviewText, "string", "loyalty.reviewText", errors);
+  }
+}
+
+function validateCommands(commands, errors) {
+  if (commands === undefined) return;
+  if (!validateSectionEnvelope(commands, "commands", errors)) return;
+
+  const draft = commands.draft;
+  checkType("commands", draft.commands, "array", "commands", errors);
+  checkType("commands", draft.directions, "array", "directions", errors);
+  checkType("commands", draft.amounts, "array", "amounts", errors);
+}
+
+function validateAiRules(aiRules, errors) {
+  if (aiRules === undefined) return;
+  if (!validateSectionEnvelope(aiRules, "ai-rules", errors)) return;
+
+  const draft = aiRules.draft;
+
+  if (checkType("ai-rules", draft.input, "object", "input", errors)) {
+    checkType("ai-rules", draft.input.strict, "boolean", "input.strict", errors);
+    checkType("ai-rules", draft.input.unclear, "string", "input.unclear", errors);
+    checkType("ai-rules", draft.input.detectMood, "boolean", "input.detectMood", errors);
+    checkType("ai-rules", draft.input.faq, "boolean", "input.faq", errors);
+    checkType("ai-rules", draft.input.tier, "string", "input.tier", errors);
+  }
+
+  if (checkType("ai-rules", draft.output, "object", "output", errors)) {
+    checkType("ai-rules", draft.output.maxWords, "number", "output.maxWords", errors);
+    checkType("ai-rules", draft.output.emoji, "boolean", "output.emoji", errors);
+    checkType("ai-rules", draft.output.keepOptions, "boolean", "output.keepOptions", errors);
+    checkType("ai-rules", draft.output.noPrices, "boolean", "output.noPrices", errors);
+    checkType("ai-rules", draft.output.noPromises, "boolean", "output.noPromises", errors);
+    checkType("ai-rules", draft.output.noContradict, "boolean", "output.noContradict", errors);
+    checkType("ai-rules", draft.output.offerCheaper, "boolean", "output.offerCheaper", errors);
+    checkType("ai-rules", draft.output.noPressure, "boolean", "output.noPressure", errors);
+    checkType("ai-rules", draft.output.tier, "string", "output.tier", errors);
+  }
+}
+
+function validateDialogData({
+  questionnaire,
+  catalog,
+  consultant,
+  director,
+  sales,
+  commands,
+  aiRules
+}) {
   const errors = [];
 
   validateQuestionnaire(questionnaire, errors);
   validateCatalogDraft(catalog, errors);
+  validateConsultant(consultant, errors);
+  validateDirector(director, errors);
+  validateSales(sales, errors);
+  validateCommands(commands, errors);
+  validateAiRules(aiRules, errors);
 
   if (errors.length > 0) {
     throw new Error(`Dialog data validation failed:\n  - ${errors.join("\n  - ")}`);

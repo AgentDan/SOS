@@ -1,0 +1,26 @@
+{
+  "section": "ai-rules",
+  "draftVersion": 1,
+  "publishedVersion": 0,
+  "draft": {
+    "input": {
+      "strict": true,
+      "unclear": "ask",
+      "detectMood": true,
+      "faq": true,
+      "tier": "quick"
+    },
+    "output": {
+      "maxWords": 35,
+      "emoji": true,
+      "keepOptions": true,
+      "noPrices": false,
+      "noPromises": true,
+      "noContradict": true,
+      "offerCheaper": true,
+      "noPressure": true,
+      "tier": "quick"
+    }
+  },
+  "history": []
+}

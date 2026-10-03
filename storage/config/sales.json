@@ -1,0 +1,25 @@
+{
+  "section": "sales",
+  "draftVersion": 1,
+  "publishedVersion": 0,
+  "draft": {
+    "stages": [],
+    "objections": [],
+    "signals": [],
+    "closing": {
+      "offerText": "",
+      "askName": true,
+      "askContact": true,
+      "thanks": ""
+    },
+    "loyalty": {
+      "remember": true,
+      "welcomeBack": "",
+      "followUpDays": 7,
+      "followUp": "",
+      "askReview": true,
+      "reviewText": ""
+    }
+  },
+  "history": []
+}

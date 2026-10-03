@@ -65,3 +65,44 @@ test("invalid inference confidence is rejected", () => {
   data.questionnaire.draft.inference[0].confidence = "maybe";
   expectFail(() => validateDialogData(data));
 });
+
+function loadSkeleton() {
+  return {
+    ...validPair(),
+    consultant: structuredClone(loadJson("consultant.json")),
+    director: structuredClone(loadJson("director.json")),
+    sales: structuredClone(loadJson("sales.json")),
+    commands: structuredClone(loadJson("commands.json")),
+    aiRules: structuredClone(loadJson("ai-rules.json"))
+  };
+}
+
+test("skeleton config sections pass validation", () => {
+  assert.equal(validateDialogData(loadSkeleton()), true);
+});
+
+test("broken config envelope is rejected", () => {
+  const data = loadSkeleton();
+  data.consultant.section = "other";
+  data.consultant.draftVersion = 1.5;
+  data.consultant.history = {};
+  assert.throws(
+    () => validateDialogData(data),
+    (err) =>
+      err instanceof Error &&
+      /consultant: section must be "consultant"/.test(err.message) &&
+      /consultant: draftVersion must be an integer/.test(err.message) &&
+      /consultant: history must be an array/.test(err.message)
+  );
+});
+
+test("ai-rules output.noContradict must be a boolean", () => {
+  const data = loadSkeleton();
+  data.aiRules.draft.output.noContradict = "yes";
+  assert.throws(
+    () => validateDialogData(data),
+    (err) =>
+      err instanceof Error &&
+      /ai-rules: output\.noContradict must be a boolean/.test(err.message)
+  );
+});
