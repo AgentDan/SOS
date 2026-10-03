@@ -4,6 +4,9 @@
   "description": "deskOS - AI workspace configurator skeleton",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "concurrently -n server,client -c cyan,magenta \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "nodemon --watch backend --ext js,mjs,cjs backend/server.js",
