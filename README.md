@@ -7,6 +7,7 @@
 ```bash
 npm install
 npm test
+npm run validate
 npm run dev
 ```
 

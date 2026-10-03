@@ -7,38 +7,37 @@
 ## Дерево
 
 ```
-deskOS/
-├── README.md
-├── docs/
-│   └── ARCHITECTURE.md
-├── mockups/                               макеты, код их не читает
-├── backend/
-│   ├── server.js                          старт: валидация конфигов, /api
-│   ├── api/
-│   │   ├── routes.js                      сборщик роутеров
-│   │   ├── catalog.routes.js              GET /catalog
-│   │   ├── dialog.routes.js               /dialog/next, answer, scene, profile
-│   │   └── middleware/client-id.js
-│   ├── config/load.js                     чтение storage/config с диска, без кэша
-│   ├── validation/                        конверт и разделы конфигов
-│   ├── dialog/                            детерминированный диалог (этапы 1–6)
-│   │   ├── engine/
-│   │   ├── answer-service.js
-│   │   └── profile-store.js
-│   ├── sales/                             этап 11, не в рантайме
-│   ├── ai/                                этапы 7–8, не в рантайме
-│   ├── scene/                             этап 8, команды сцены, не в рантайме
-│   ├── orders/                            этап 9, не в рантайме
-│   ├── sessions/                          этап 10, не в рантайме
-│   └── analytics/                         воронка, не в рантайме
-├── client/                                браузер, только через /api
-│   └── admin/                             этап 12, не в рантайме
-└── storage/
-    ├── config/                            данные, которые правит админ
-    ├── clients/                           профили, в .gitignore
-    ├── orders/                            в .gitignore
-    └── sessions/                          в .gitignore
+.cursor/rules/architecture.mdc
+backend/
+  ai/README.md                             этапы 7–8, не в рантайме
+  analytics/README.md                      воронка, не в рантайме
+  api/routes.js                            сборщик
+  api/catalog.routes.js                    GET /catalog
+  api/dialog.routes.js                     /dialog/next, answer, scene, profile
+  api/middleware/client-id.js
+  config/load.js                           чтение storage/config с диска, без кэша
+  dialog/engine/                           этапы 1–6
+  dialog/answer-service.js
+  dialog/profile-store.js
+  orders/README.md                         этап 9, не в рантайме
+  sales/README.md                          этап 11, не в рантайме
+  scene/README.md                          этап 8, не в рантайме
+  sessions/README.md                       этап 10, не в рантайме
+  validation/                              конверт и разделы конфигов
+  architecture.test.js
+  server.js
+client/
+  admin/README.md                          этап 12, не в рантайме
+  dialog-ui/  interaction/  physics/  renderer/  public/models/
+  index.html  main.js  vite.config.js
+docs/ARCHITECTURE.md
+mockups/README.md                          макеты, код их не читает
+storage/config/                            данные, которые правит админ
+storage/clients/                           профили, в .gitignore
+README.md  package.json  .gitignore  .env.example
 ```
+
+`storage/orders/` и `storage/sessions/` записаны в `.gitignore`. Каталогов нет, пока этапы 9 и 10 ничего не пишут.
 
 Конфиги лежат в конверте `{section, draftVersion, publishedVersion, draft, history}`. Рантайм читает `.draft`. Ветки `published` нет.
 
