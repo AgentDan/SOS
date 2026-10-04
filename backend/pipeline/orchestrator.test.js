@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readCatalog, readQuestionnaire } from "../config/load.js";
-import { applyAnswer } from "./answer-service.js";
+import { applyTurn } from "./orchestrator.js";
 
 const questionnaire = readQuestionnaire();
 const catalog = readCatalog();
@@ -30,7 +30,7 @@ function pendingWideProfile() {
 
 test("a stated answer updates fields and needs", () => {
   const profile = freshProfile();
-  const result = applyAnswer({
+  const result = applyTurn({
     questionnaire,
     catalog,
     profile,
@@ -52,7 +52,7 @@ test("a stated answer updates fields and needs", () => {
 
 test("keep confirms a pending need", () => {
   const profile = pendingWideProfile();
-  const result = applyAnswer({
+  const result = applyTurn({
     questionnaire,
     catalog,
     profile,
@@ -70,7 +70,7 @@ test("keep confirms a pending need", () => {
 
 test("reject drops the pending need", () => {
   const profile = pendingWideProfile();
-  const result = applyAnswer({
+  const result = applyTurn({
     questionnaire,
     catalog,
     profile,
@@ -85,7 +85,7 @@ test("reject drops the pending need", () => {
 });
 
 test("unknown question is rejected", () => {
-  const result = applyAnswer({
+  const result = applyTurn({
     questionnaire,
     catalog,
     profile: freshProfile(),
@@ -98,7 +98,7 @@ test("unknown question is rejected", () => {
 });
 
 test("unknown option is rejected", () => {
-  const result = applyAnswer({
+  const result = applyTurn({
     questionnaire,
     catalog,
     profile: freshProfile(),

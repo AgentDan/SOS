@@ -1,9 +1,6 @@
 import { Router } from "express";
-import { readCatalog, readQuestionnaire } from "../config/load.js";
-import { applyAnswer, screenStatedAnswer } from "../dialog/answer-service.js";
-import { getNextQuestion } from "../director/question-engine.js";
-import { loadProfile, saveProfile } from "../profile/profile-store.js";
-import { computeScenePlan } from "../scene/scene-plan.js";
+import { runTurn } from "../pipeline/orchestrator.js";
+import { getNext, getProfile, getScene } from "../pipeline/reads.js";
 import { requireClientId } from "./middleware/client-id.js";
 
 const router = Router();
@@ -11,34 +8,21 @@ const router = Router();
 router.use("/dialog", requireClientId);
 
 router.get("/dialog/next", (req, res) => {
-  const questionnaire = readQuestionnaire();
-  const profile = loadProfile(req.query.clientId);
-  const next = getNextQuestion(questionnaire, profile, readCatalog());
-  res.json({ question: next ? next.question : null });
+  res.json(getNext(req.query.clientId));
 });
 
 router.post("/dialog/answer", (req, res) => {
   const { clientId, questionId, optionId } = req.body ?? {};
-  const questionnaire = readQuestionnaire();
-  const rejected = screenStatedAnswer({ questionnaire, questionId, optionId });
-  if (rejected) {
-    return res.status(rejected.status).json(rejected.body);
-  }
-
-  const catalog = readCatalog();
-  const profile = loadProfile(clientId);
-  const result = applyAnswer({ questionnaire, catalog, profile, questionId, optionId });
-  if (result.status === 200) saveProfile(result.profile);
+  const result = runTurn({ clientId, questionId, optionId });
   res.status(result.status).json(result.body);
 });
 
 router.get("/dialog/scene", (req, res) => {
-  const profile = loadProfile(req.query.clientId);
-  res.json({ skus: computeScenePlan(readCatalog(), profile) });
+  res.json(getScene(req.query.clientId));
 });
 
 router.get("/dialog/profile", (req, res) => {
-  res.json(loadProfile(req.query.clientId));
+  res.json(getProfile(req.query.clientId));
 });
 
 export default router;
