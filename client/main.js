@@ -7,7 +7,7 @@ import { createSceneSync } from "./scene/sync-scene.js";
 import { fetchCatalog } from "./api/catalog-api.js";
 import { fetchScene } from "./api/dialog-api.js";
 import { getClientId } from "./session/client-id.js";
-import { mountQuestionPanel } from "./dialog-ui/question-buttons.js";
+import { mountQuestionPanel } from "./chat/question-buttons.js";
 
 async function main() {
   const catalog = await fetchCatalog();
