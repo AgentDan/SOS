@@ -1,0 +1,14 @@
+{
+  "name": "жалоба на спину → эргономичное кресло",
+  "steps": [
+    { "questionId": "q_back_pain", "optionId": "yes" }
+  ],
+  "expect": {
+    "needs": [
+      { "id": "ergonomic_chair", "confidence": "high" }
+    ],
+    "pendingConfirmations": [],
+    "skus": ["CHAIR-460"],
+    "status": "in_progress"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "клиент отказался от предложенного широкого стола",
+  "steps": [
+    { "questionId": "q_work_type", "optionId": "coding" },
+    { "questionId": "q_desk_width", "optionId": "wide" },
+    { "questionId": "confirm_desk_top_wide", "optionId": "reject" }
+  ],
+  "expect": {
+    "needs": [],
+    "pendingConfirmations": [],
+    "skus": [],
+    "rejectedNeeds": ["desk_top_wide"],
+    "status": "in_progress"
+  }
+}

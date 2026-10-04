@@ -1,0 +1,15 @@
+{
+  "name": "программист → широкий стол на подтверждение",
+  "steps": [
+    { "questionId": "q_work_type", "optionId": "coding" },
+    { "questionId": "q_desk_width", "optionId": "wide" }
+  ],
+  "expect": {
+    "needs": [
+      { "id": "desk_top_wide", "confidence": "medium" }
+    ],
+    "pendingConfirmations": ["desk_top_wide"],
+    "skus": ["DESK-TOP-1800"],
+    "status": "in_progress"
+  }
+}
