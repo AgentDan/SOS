@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { validateDialogData } from "./index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_DIR = path.join(__dirname, "..", "..", "storage", "config");
+const CONFIG_DIR = path.join(__dirname, "..", "..", "data");
 
 function loadJson(name) {
   return JSON.parse(readFileSync(path.join(CONFIG_DIR, name), "utf-8"));

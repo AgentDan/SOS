@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_DIR = path.join(__dirname, "..", "..", "storage", "config");
+const CONFIG_DIR = path.join(__dirname, "..", "..", "data");
 
 function readConfig(name) {
   return JSON.parse(readFileSync(path.join(CONFIG_DIR, `${name}.json`), "utf-8"));

@@ -1,6 +1,4 @@
 node_modules/
 .env
 dist/
-storage/clients/
-storage/orders/
-storage/sessions/
+runtime/

@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLIENTS_DIR = path.join(__dirname, "..", "..", "storage", "clients");
+const CLIENTS_DIR = path.join(__dirname, "..", "..", "runtime", "clients");
 
 function profileDir(clientId) {
   return path.join(CLIENTS_DIR, clientId);

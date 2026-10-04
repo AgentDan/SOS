@@ -8,7 +8,7 @@ import dialogRoutes from "./dialog.routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientId = "unknown-question-no-profile";
-const profileFile = path.join(__dirname, "..", "..", "storage", "clients", clientId, "profile.json");
+const profileFile = path.join(__dirname, "..", "..", "runtime", "clients", clientId, "profile.json");
 
 function listen(app) {
   return new Promise((resolve) => {

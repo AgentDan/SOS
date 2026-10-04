@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { computeScenePlan } from "./scene-plan.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CATALOG_PATH = path.join(__dirname, "..", "..", "..", "storage", "config", "catalog.json");
+const CATALOG_PATH = path.join(__dirname, "..", "..", "..", "data", "catalog.json");
 
 function loadCatalog() {
   return JSON.parse(readFileSync(CATALOG_PATH, "utf-8"));
