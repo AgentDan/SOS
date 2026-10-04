@@ -6,8 +6,8 @@ import {
   readDirector,
   readQuestionnaire,
   readSales
-} from "../config/load.js";
-import { validateDialogData } from "./index.js";
+} from "../backend/config/load.js";
+import { validateDialogData } from "../backend/validation/index.js";
 
 try {
   validateDialogData({

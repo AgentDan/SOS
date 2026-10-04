@@ -12,7 +12,7 @@
     "dev:server": "nodemon --watch backend --ext js,mjs,cjs backend/server.js",
     "dev:client": "vite --config client/vite.config.js",
     "test": "node --test \"backend/**/*.test.js\"",
-    "validate": "node backend/validation/cli.js"
+    "validate": "node scripts/validate.js"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.14.0",
