@@ -5,25 +5,30 @@ alwaysApply: true
 
 # deskOS
 
-Главная цель: провести продажу и сделать клиента лояльным. Анкета, админка, 3D-сцена и AI — инструменты этой цели.
+Главная цель: провести продажу и сделать клиента лояльным. Анкета, сцена, голос и админка — инструменты этой цели.
 
 ## Зависимости
 
 ```
-storage/config → backend/dialog, backend/sales → backend/api → client
+data/ → backend/config → backend/pipeline → backend/api → client/api → client
                               ↑
-                        backend/ai (только через словарь и проверку)
+        understanding, profile, scene, needs, sales, director, voice
+                              ↑
+                    backend/ai (только understanding и voice)
 ```
 
-- `backend/dialog/**` и `backend/sales/**` не импортируют `backend/ai/**`.
-- `backend/ai/**` не импортирует `backend/api/**` и `client/**`.
-- `client/**` не импортирует `backend/**`. Общение только через `/api`.
-- Роуты разбирают запрос и отвечают. Бизнес-логика живёт в `backend/dialog/` и `backend/sales/`.
-- Ссылка на несуществующий `id` в данных — ошибка валидатора.
+- `backend/api/**` импортирует только `backend/pipeline`, `backend/orders`, `backend/sessions`, `backend/admin-api`, `backend/config` и свои файлы.
+- Блоки `understanding`, `profile`, `scene`, `needs`, `sales`, `director`, `voice` не импортируют друг друга, а также `api`, `pipeline`, `config`, `orders`, `sessions`, `analytics`, `admin-api`. Только свои файлы, `node:*` и сторонние пакеты. К `ai` обращаются только `understanding` и `voice`.
+- `backend/ai/**` не импортирует `api`, `pipeline`, блоки, `client`, `admin`.
+- `backend/pipeline/**` может импортировать блоки и `config`, но не `api`.
+- `client/**` не импортирует `backend/**` и `admin/**`. `admin/**` не импортирует `backend/**` и `client/**`.
+- Части клиента `chat`, `summary`, `order`, `scene` не импортируют друг друга. Общее разрешено только из `client/api/` и `client/session/`.
+- `fetch(` в клиенте встречается только внутри `client/api/`.
+- Тестовые файлы подчиняются тем же правилам. Исключение: тест может читать файлы из `data/` через `node:fs`.
 
 ## Ограничения
 
-- Не менять URL и форму ответов API без явной задачи.
-- Данные, которые правит админ, лежат в `storage/config`, не в `.js`.
+- Не менять URL и формы ответов API без явной задачи.
+- Данные, которые правит админ, лежат в `data/`, не в коде.
 - Новых зависимостей не добавлять.
 - Конфиги читать с диска на каждый запрос, без кэша.
