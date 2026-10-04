@@ -6,6 +6,9 @@ import { register, get, all, unregister } from "./physics/registry.js";
 import { syncMeshes } from "./physics/sync.js";
 import { initDragControls } from "./interaction/drag-controls.js";
 import { loadCatalogModel } from "./renderer/load-model.js";
+import { fetchCatalog } from "./api/catalog-api.js";
+import { fetchScene } from "./api/dialog-api.js";
+import { getClientId } from "./session/client-id.js";
 import { mountQuestionPanel } from "./dialog-ui/question-buttons.js";
 
 const TYPE_COLORS = {
@@ -117,7 +120,7 @@ function placeProducts(scene, products) {
 }
 
 async function main() {
-  const catalog = await fetch("/api/catalog").then((res) => res.json());
+  const catalog = await fetchCatalog();
   const products = catalog.products ?? [];
 
   function syncScene(scene, skus) {
@@ -153,17 +156,14 @@ async function main() {
 
   createFloor(world);
 
-  // TODO: заменить на настоящий clientId, когда появятся сессии — Этап 10
-  const clientId = "local-test-client";
-  const initialSkus = await fetch(`/api/dialog/scene?clientId=${clientId}`)
-    .then((res) => res.json())
-    .then((data) => data.skus);
+  const clientId = getClientId();
+  const { skus: initialSkus } = await fetchScene(clientId);
   await syncScene(scene, initialSkus);
 
   initDragControls({ camera, canvas, controls });
 
   mountQuestionPanel(document.getElementById("question-panel"), clientId, async () => {
-    const { skus } = await fetch(`/api/dialog/scene?clientId=${clientId}`).then((res) => res.json());
+    const { skus } = await fetchScene(clientId);
     await syncScene(scene, skus);
   });
 }

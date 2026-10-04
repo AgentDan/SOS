@@ -1,3 +1,5 @@
+import { fetchNext, postAnswer } from "../api/dialog-api.js";
+
 function optionButton(option) {
   const button = document.createElement("button");
   button.type = "button";
@@ -23,23 +25,6 @@ function renderQuestion(containerEl, question, onPick) {
     button.addEventListener("click", () => onPick(option.id));
     containerEl.append(button);
   }
-}
-
-async function fetchNext(clientId) {
-  const res = await fetch(`/api/dialog/next?clientId=${encodeURIComponent(clientId)}`);
-  if (!res.ok) throw new Error(`GET /api/dialog/next failed: ${res.status}`);
-  return res.json();
-}
-
-async function postAnswer(clientId, questionId, optionId) {
-  
-  const res = await fetch("/api/dialog/answer", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ clientId, questionId, optionId })
-  });
-  if (!res.ok) throw new Error(`POST /api/dialog/answer failed: ${res.status}`);
-  return res.json();
 }
 
 function mountQuestionPanel(containerEl, clientId, onAnswered) {
