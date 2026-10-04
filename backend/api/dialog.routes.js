@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { readCatalog, readQuestionnaire } from "../config/load.js";
 import { applyAnswer, screenStatedAnswer } from "../dialog/answer-service.js";
-import { computeScenePlan } from "../dialog/engine/scene-plan.js";
-import { getNextQuestion } from "../dialog/engine/question-engine.js";
-import { loadProfile, saveProfile } from "../dialog/profile-store.js";
+import { getNextQuestion } from "../director/question-engine.js";
+import { loadProfile, saveProfile } from "../profile/profile-store.js";
+import { computeScenePlan } from "../scene/scene-plan.js";
 import { requireClientId } from "./middleware/client-id.js";
 
 const router = Router();

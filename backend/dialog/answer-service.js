@@ -1,6 +1,6 @@
-import { getPendingConfirmations } from "./engine/confirmation-engine.js";
-import { computeNeeds } from "./engine/inference-engine.js";
-import { runMatching } from "./engine/matching.js";
+import { getPendingConfirmations } from "../director/confirmation-engine.js";
+import { computeNeeds } from "../needs/inference-engine.js";
+import { runMatching } from "../needs/matching.js";
 
 function screenStatedAnswer({ questionnaire, questionId, optionId }) {
   if (typeof questionId === "string" && questionId.startsWith("confirm_")) return null;
