@@ -9,7 +9,13 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/api": "http://localhost:3000"
+      "/api": {
+        target: "http://localhost:3000",
+        bypass(req) {
+          const pathname = (req.url ?? "").split("?")[0];
+          if (pathname.startsWith("/api/") && pathname.endsWith(".js")) return req.url;
+        }
+      }
     }
   }
 });
