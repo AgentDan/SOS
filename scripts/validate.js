@@ -1,23 +1,15 @@
-import {
-  readAiRules,
-  readCatalog,
-  readCommands,
-  readConsultant,
-  readDirector,
-  readQuestionnaire,
-  readSales
-} from "../backend/config/load.js";
+import { readEnvelope } from "../backend/config/load.js";
 import { validateDialogData } from "../backend/validation/index.js";
 
 try {
   validateDialogData({
-    questionnaire: readQuestionnaire(),
-    catalog: readCatalog(),
-    consultant: readConsultant(),
-    director: readDirector(),
-    sales: readSales(),
-    commands: readCommands(),
-    aiRules: readAiRules()
+    questionnaire: readEnvelope("questionnaire"),
+    catalog: readEnvelope("catalog"),
+    consultant: readEnvelope("consultant"),
+    director: readEnvelope("director"),
+    sales: readEnvelope("sales"),
+    commands: readEnvelope("commands"),
+    aiRules: readEnvelope("ai-rules")
   });
   console.log("OK");
 } catch (err) {

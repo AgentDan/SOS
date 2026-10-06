@@ -46,7 +46,7 @@ client/
   index.html  main.js  vite.config.js
 ```
 
-Данные, которые правит админ, лежат в `data/` в конверте `{section, draftVersion, publishedVersion, draft, history}`. Рантайм читает `.draft` с диска на каждый запрос, без кэша. Профили пишет код в `runtime/clients/` (каталог в `.gitignore`, вручную не создаётся).
+Данные, которые правит админ, лежат в `data/` в конверте `{section, draftVersion, publishedVersion, draft, published, history}`. Рантайм читает опубликованный слой (`published`, а если его ещё нет — `draft`) с диска на каждый запрос, без кэша. Профили пишет код в `runtime/clients/` (каталог в `.gitignore`, вручную не создаётся).
 
 Было → стало: `storage/config/` → `data/`, `storage/clients/` → `runtime/clients/`.
 

@@ -11,7 +11,7 @@ function computeNeeds(questionnaire, profile) {
 
   const byNeed = new Map();
 
-  for (const rule of questionnaire?.draft?.inference ?? []) {
+  for (const rule of questionnaire?.inference ?? questionnaire?.draft?.inference ?? []) {
     if (fields[rule.when?.questionId]?.value !== rule.when?.optionId) continue;
 
     const existing = byNeed.get(rule.resultNeed);

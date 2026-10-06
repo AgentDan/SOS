@@ -1,11 +1,22 @@
 {
   "section": "commands",
   "draftVersion": 1,
-  "publishedVersion": 0,
+  "publishedVersion": 1,
   "draft": {
     "commands": [],
     "directions": [],
     "amounts": []
   },
-  "history": []
+  "history": [
+    {
+      "version": 1,
+      "date": "2026-10-06T18:35:48.523Z",
+      "description": "initial publish"
+    }
+  ],
+  "published": {
+    "commands": [],
+    "directions": [],
+    "amounts": []
+  }
 }

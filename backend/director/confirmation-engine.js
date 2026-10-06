@@ -14,7 +14,7 @@ function getPendingConfirmations(profile) {
 }
 
 function buildConfirmationQuestion(need, catalog) {
-  const products = catalog?.draft?.products ?? [];
+  const products = catalog?.products ?? catalog?.draft?.products ?? [];
   const product = products.find((item) => item.sku === need.resolvedSku);
   const productName = product?.name ?? need.resolvedSku;
 

@@ -1,7 +1,7 @@
 import { buildConfirmationQuestion, getPendingConfirmations } from "./confirmation-engine.js";
 
 function getEligibleQuestions(questionnaire, profile, phaseId) {
-  const questions = questionnaire?.draft?.questions ?? [];
+  const questions = questionnaire?.questions ?? questionnaire?.draft?.questions ?? [];
   const fields = profile?.fields ?? {};
   const scenario = profile?.scenario ?? null;
 
@@ -25,7 +25,9 @@ function getEligibleQuestions(questionnaire, profile, phaseId) {
 }
 
 function getNextQuestion(questionnaire, profile, catalog) {
-  const phases = [...(questionnaire?.draft?.phases ?? [])].sort((a, b) => a.order - b.order);
+  const phases = [...(questionnaire?.phases ?? questionnaire?.draft?.phases ?? [])].sort(
+    (a, b) => a.order - b.order
+  );
 
   for (const phase of phases) {
     if (phase.id === "confirmation") {

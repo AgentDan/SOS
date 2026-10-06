@@ -2,26 +2,18 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { validateDialogData } from "./validation/index.js";
-import {
-  readAiRules,
-  readCatalog,
-  readCommands,
-  readConsultant,
-  readDirector,
-  readQuestionnaire,
-  readSales
-} from "./config/load.js";
+import { readEnvelope } from "./config/load.js";
 import apiRoutes from "./api/routes.js";
 
 try {
   validateDialogData({
-    questionnaire: readQuestionnaire(),
-    catalog: readCatalog(),
-    consultant: readConsultant(),
-    director: readDirector(),
-    sales: readSales(),
-    commands: readCommands(),
-    aiRules: readAiRules()
+    questionnaire: readEnvelope("questionnaire"),
+    catalog: readEnvelope("catalog"),
+    consultant: readEnvelope("consultant"),
+    director: readEnvelope("director"),
+    sales: readEnvelope("sales"),
+    commands: readEnvelope("commands"),
+    aiRules: readEnvelope("ai-rules")
   });
   console.log("Dialog data is valid.");
 } catch (err) {

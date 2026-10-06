@@ -1,5 +1,7 @@
 function checkAnswer({ questionnaire, questionId, optionId }) {
-  const question = (questionnaire?.draft?.questions ?? []).find((item) => item.id === questionId);
+  const question = (questionnaire?.questions ?? questionnaire?.draft?.questions ?? []).find(
+    (item) => item.id === questionId
+  );
   if (!question) {
     return { ok: false, status: 404, body: { error: "unknown question" } };
   }

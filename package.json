@@ -13,6 +13,7 @@
     "dev:client": "vite --config client/vite.config.js",
     "test": "node --test \"backend/**/*.test.js\"",
     "validate": "node scripts/validate.js",
+    "publish-config": "node scripts/publish.js",
     "scenario": "node scripts/scenario-runner.js",
     "check": "node --test \"backend/**/*.test.js\" && node scripts/validate.js && node scripts/scenario-runner.js"
   },

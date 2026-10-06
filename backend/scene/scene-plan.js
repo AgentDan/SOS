@@ -1,5 +1,5 @@
 function computeScenePlan(catalog, profile) {
-  const products = catalog?.draft?.products ?? [];
+  const products = catalog?.products ?? catalog?.draft?.products ?? [];
   const anchored = products
     .filter((product) => product?.alwaysPresent === true)
     .map((product) => product.sku);

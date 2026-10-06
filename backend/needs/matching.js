@@ -1,5 +1,5 @@
 function criteriaFor(catalog, needId) {
-  const needs = catalog?.draft?.needs ?? [];
+  const needs = catalog?.needs ?? catalog?.draft?.needs ?? [];
   const need = needs.find((item) => item && item.id === needId);
   return need?.criteria ?? null;
 }
@@ -8,7 +8,7 @@ function resolveNeed(catalog, needId) {
   const criteria = criteriaFor(catalog, needId);
   if (!criteria) return null;
 
-  const products = catalog?.draft?.products ?? [];
+  const products = catalog?.products ?? catalog?.draft?.products ?? [];
   let matches = products.filter((product) => product.type === criteria.type);
 
   if (criteria.minWidth != null) {

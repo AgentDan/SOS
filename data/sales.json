@@ -1,7 +1,7 @@
 {
   "section": "sales",
   "draftVersion": 1,
-  "publishedVersion": 0,
+  "publishedVersion": 1,
   "draft": {
     "stages": [],
     "objections": [],
@@ -21,5 +21,30 @@
       "reviewText": ""
     }
   },
-  "history": []
+  "history": [
+    {
+      "version": 1,
+      "date": "2026-10-06T18:35:48.406Z",
+      "description": "initial publish"
+    }
+  ],
+  "published": {
+    "stages": [],
+    "objections": [],
+    "signals": [],
+    "closing": {
+      "offerText": "",
+      "askName": true,
+      "askContact": true,
+      "thanks": ""
+    },
+    "loyalty": {
+      "remember": true,
+      "welcomeBack": "",
+      "followUpDays": 7,
+      "followUp": "",
+      "askReview": true,
+      "reviewText": ""
+    }
+  }
 }
