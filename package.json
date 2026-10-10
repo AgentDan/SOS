@@ -11,11 +11,12 @@
     "dev": "concurrently -n server,client -c cyan,magenta \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "nodemon --watch backend --ext js,mjs,cjs backend/server.js",
     "dev:client": "vite --config client/vite.config.js",
-    "test": "node --test \"backend/**/*.test.js\"",
+    "admin": "vite --config admin/vite.config.js",
+    "test": "node --test \"backend/**/*.test.js\" \"admin/**/*.test.js\"",
     "validate": "node scripts/validate.js",
     "publish-config": "node scripts/publish.js",
     "scenario": "node scripts/scenario-runner.js",
-    "check": "node --test \"backend/**/*.test.js\" && node scripts/validate.js && node scripts/scenario-runner.js"
+    "check": "npm test && node scripts/validate.js && node scripts/scenario-runner.js && vite build --config admin/vite.config.js"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.14.0",

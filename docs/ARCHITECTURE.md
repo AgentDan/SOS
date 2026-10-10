@@ -11,7 +11,8 @@ backend/          api/  pipeline/  understanding/  profile/  scene/  needs/
                   server.js  architecture.test.js
 client/           api/  session/  chat/  summary/  order/  scene/  styles/  public/
                   index.html  main.js  vite.config.js
-admin/            README.md
+admin/            api/  session/  screens/  lib/  styles/
+                  index.html  main.js  ui.js  vite.config.js  README.md
 data/             questionnaire.json  catalog/  consultant.json
                   director.json  sales.json  commands.json  ai-rules.json
                   knobs.json
@@ -48,6 +49,14 @@ client/
   styles/         app.css
   public/         models/
   index.html  main.js  vite.config.js
+admin/
+  api/            admin-api.js
+  session/        token.js
+  screens/        login.js  overview.js  sections.js  section-editor.js
+                  knobs.js  journal.js
+  lib/            чистые функции экранов и их тесты
+  styles/         admin.css
+  index.html  main.js  ui.js  vite.config.js  README.md
 ```
 
 Данные, которые правит админ, лежат в `data/`. Раздел — файл `<name>.json` с конвертом `{section, draftVersion, publishedVersion, draft, published, history}` или папка: `_envelope.json` без `draft`, а черновик — файлы папки. Каталог — папка `data/catalog/` (`types.json`, `needs.json`, `sku/<артикул>.json`), одна версия на весь раздел. Рантайм читает опубликованный слой (`published`, а если его ещё нет — `draft`) с диска на каждый запрос, без кэша. Публикация копирует черновик в `published`, увеличивает `publishedVersion` и пишет в `history` снимок черновика (последние 20 записей). Откат берёт снимок версии, возвращает его в `draft` и `published` и снова увеличивает версию. Черновик пишет `writeDraft`: файл раздела или файлы папки, `draftVersion` увеличивается на 1, `published` не меняется. `GET /api/data-version` отдаёт `{dataVersion}` — сумму `publishedVersion` всех разделов. Профили пишет код в `runtime/clients/`. Журнал правок админки — `runtime/admin/journal.jsonl` (каталог в `.gitignore`, вручную не создаётся). Каталог рантайма переопределяется `DESKOS_RUNTIME_DIR`, каталог данных — `DESKOS_DATA_DIR`.
@@ -68,6 +77,14 @@ client/
 
 `GET /api/admin/health` всегда отвечает телом `{draft, published, knobs, dataVersion}`: ошибка в данных ставит `ok: false` и список строк, сам маршрут не падает.
 
+## Экраны админки
+
+Папка `admin/` — отдельная страница на Vite (`admin/vite.config.js`), не часть `client/`. Сервер её не импортирует. `npm run admin` поднимает dev-сервер на порту 5174 и проксирует `/api` на `PORT` бэкенда (по умолчанию 3000).
+
+Токен вводится на экране входа и лежит в `sessionStorage` вкладки. Ко всем запросам его добавляет только `admin/api/admin-api.js`. В адрес, на экран и в консоль токен не попадает. `localStorage` не используется. Кнопка «Выйти» и ответ `401` стирают токен и возвращают на вход. `503` означает, что на сервере не задан `ADMIN_TOKEN`.
+
+Экраны: обзор (разделы и `GET /health`), список и правка раздела (черновик, публикация, откат), ручки (`GET`/`PUT /knobs`), журнал (`GET /journal`). `fetch(` разрешён только в `admin/api/`.
+
 ## Правила зависимостей
 
 1. `backend/api/**` импортирует только `pipeline`, `orders`, `sessions`, `admin-api`, `config` и свои файлы.
@@ -76,20 +93,20 @@ client/
 4. `backend/pipeline/**` может импортировать блоки и `config`, но не `api`.
 5. `client/**` не импортирует `backend/**` и `admin/**`. `admin/**` не импортирует `backend/**` и `client/**`.
 6. Части клиента `chat`, `summary`, `order`, `scene` не импортируют друг друга. Общее разрешено только из `client/api/` и `client/session/`.
-7. `fetch(` в клиенте только внутри `client/api/`.
+7. `fetch(` в клиенте только внутри `client/api/`. В админке только внутри `admin/api/`.
 8. Тесты подчиняются тем же правилам. Исключение: тест может читать `data/` через `node:fs`.
 
 Новых зависимостей не добавлять. Проверка этих правил — `backend/architecture.test.js`.
 
 ## Шаг roadmap → папки
 
-Подробное дерево с метками «Позже» владелец кладёт в `docs/sos-file-tree.html`. Пока этого файла нет, таблица собрана из шагов, названных в задаче на структуру. Папки ниже содержат README и не подключены к рантайму, кроме уже существующих файлов `scene/scene-plan.js` и админ-API шага 4.
+Подробное дерево с метками «Позже» владелец кладёт в `docs/sos-file-tree.html`. Пока этого файла нет, таблица собрана из шагов, названных в задаче на структуру. Поздние папки содержат README и не подключены к рантайму, кроме уже существующих файлов `scene/scene-plan.js`, админ-API шага 4 и экранов админки шага 5. Экраны — отдельное Vite-приложение: сервер их не импортирует.
 
 | Шаг | Папки |
 | --- | --- |
 | 2 | `tests/scenarios/` |
 | 4 | `backend/admin-api/` |
-| 5 | `admin/` — каркас |
+| 5 | `admin/` — экраны каркаса |
 | 6, 14 | `client/summary/` |
 | 7 | `client/order/` |
 | 10 | `admin/` — анкета |

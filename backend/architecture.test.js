@@ -20,6 +20,7 @@ const BLOCK_DIRS = BLOCK_NAMES.map((name) => path.join(BACKEND, name));
 const CLIENT_PARTS = ["chat", "summary", "order", "scene"].map((name) => path.join(CLIENT, name));
 const CLIENT_API = path.join(CLIENT, "api");
 const CLIENT_SESSION = path.join(CLIENT, "session");
+const ADMIN_API = path.join(ADMIN, "api");
 
 function isInside(file, dir) {
   const rel = path.relative(dir, file);
@@ -82,6 +83,9 @@ function violations() {
   for (const file of files) {
     const source = readFileSync(file, "utf8");
     if (isInside(file, CLIENT) && !isInside(file, CLIENT_API) && /\bfetch\s*\(/.test(source)) {
+      found.push(`${file} calls fetch(`);
+    }
+    if (isInside(file, ADMIN) && !isInside(file, ADMIN_API) && /\bfetch\s*\(/.test(source)) {
       found.push(`${file} calls fetch(`);
     }
 
