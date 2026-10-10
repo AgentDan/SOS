@@ -14,6 +14,7 @@ client/           api/  session/  chat/  summary/  order/  scene/  styles/  publ
 admin/            README.md
 data/             questionnaire.json  catalog/  consultant.json
                   director.json  sales.json  commands.json  ai-rules.json
+                  knobs.json
 tests/scenarios/  README.md
 scripts/          validate.js  publish.js  migrate-catalog.js
 docs/  mockups/  .cursor/rules/architecture.mdc
@@ -25,16 +26,17 @@ README.md  package.json  package-lock.json  .env.example  .gitignore
 ```
 backend/
   api/            routes.js  catalog.routes.js  data-version.routes.js
-                  dialog.routes.js  middleware/
+                  dialog.routes.js  admin.routes.js  middleware/
   pipeline/       orchestrator.js  context.js  persist.js  reads.js
   understanding/  check-answer.js
   profile/        profile-store.js  apply-facts.js  apply-confirmation.js
   scene/          scene-plan.js  README.md
   needs/          inference-engine.js  matching.js  derive-needs.js
-  sales/  director/  voice/  ai/  orders/  sessions/  analytics/  admin-api/
+  sales/  director/  voice/  ai/  orders/  sessions/  analytics/
+  admin-api/      auth.js  sections.js  journal.js  knobs.js  health.js
   config/         load.js  publish.js  folder-sections.js
   production/     README.md
-  validation/     index.js и проверки разделов
+  validation/     index.js  knobs.js и проверки разделов
   server.js  architecture.test.js
 client/
   api/            dialog-api.js  catalog-api.js
@@ -48,11 +50,23 @@ client/
   index.html  main.js  vite.config.js
 ```
 
-Данные, которые правит админ, лежат в `data/`. Раздел — файл `<name>.json` с конвертом `{section, draftVersion, publishedVersion, draft, published, history}` или папка: `_envelope.json` без `draft`, а черновик — файлы папки. Каталог — папка `data/catalog/` (`types.json`, `needs.json`, `sku/<артикул>.json`), одна версия на весь раздел. Рантайм читает опубликованный слой (`published`, а если его ещё нет — `draft`) с диска на каждый запрос, без кэша. Публикация копирует черновик в `published`, увеличивает `publishedVersion` и пишет в `history` снимок черновика (последние 20 записей). Откат берёт снимок версии, возвращает его в `draft` и `published` и снова увеличивает версию. `GET /api/data-version` отдаёт `{dataVersion}` — сумму `publishedVersion` всех разделов. Профили пишет код в `runtime/clients/` (каталог в `.gitignore`, вручную не создаётся).
+Данные, которые правит админ, лежат в `data/`. Раздел — файл `<name>.json` с конвертом `{section, draftVersion, publishedVersion, draft, published, history}` или папка: `_envelope.json` без `draft`, а черновик — файлы папки. Каталог — папка `data/catalog/` (`types.json`, `needs.json`, `sku/<артикул>.json`), одна версия на весь раздел. Рантайм читает опубликованный слой (`published`, а если его ещё нет — `draft`) с диска на каждый запрос, без кэша. Публикация копирует черновик в `published`, увеличивает `publishedVersion` и пишет в `history` снимок черновика (последние 20 записей). Откат берёт снимок версии, возвращает его в `draft` и `published` и снова увеличивает версию. Черновик пишет `writeDraft`: файл раздела или файлы папки, `draftVersion` увеличивается на 1, `published` не меняется. `GET /api/data-version` отдаёт `{dataVersion}` — сумму `publishedVersion` всех разделов. Профили пишет код в `runtime/clients/`. Журнал правок админки — `runtime/admin/journal.jsonl` (каталог в `.gitignore`, вручную не создаётся). Каталог рантайма переопределяется `DESKOS_RUNTIME_DIR`, каталог данных — `DESKOS_DATA_DIR`.
 
 Было → стало: `storage/config/` → `data/`, `storage/clients/` → `runtime/clients/`.
 
-Публичный API: `GET /api/catalog`, `GET /api/data-version`, `GET /api/dialog/next`, `POST /api/dialog/answer`, `GET /api/dialog/scene`, `GET /api/dialog/profile`.
+Публичный API: `GET /api/catalog`, `GET /api/data-version`, `GET /api/dialog/next`, `POST /api/dialog/answer`, `GET /api/dialog/scene`, `GET /api/dialog/profile`. Формы этих ответов админка не меняет: клиент по-прежнему читает только `published`.
+
+## Админ-API
+
+Маршруты `/api/admin/*` собраны в `backend/api/admin.routes.js`, логика — в `backend/admin-api/`. Доступ один: заголовок `Authorization: Bearer <токен>`. Токен читается из `ADMIN_TOKEN` в окружении. Сравнение через `crypto.timingSafeEqual` (сначала SHA-256, чтобы длины не расходились). Нет заголовка или токен не совпал — `401 {error}`. Пустой или незаданный `ADMIN_TOKEN` закрывает админ-маршруты целиком: `503` с текстом, что токен не задан. Ролей нет, проверка в одном месте — `requireAdmin` в `backend/admin-api/auth.js`.
+
+Перед записью черновика все разделы проходят `validateDialogData`. Ошибки — `422 {errors}`, на диск ничего не пишется. Если в теле передан `baseDraftVersion` и он не равен текущему `draftVersion`, ответ `409`. Неизвестный раздел — `404`. Тело не JSON или в нём нет `draft` — `400`.
+
+Журнал пишется строкой JSON только после успешного действия: `{ts, action, section, detail}`. `action` — `draft`, `publish`, `rollback` или `knob`. Неудачные `401` и `422` в журнал не попадают. Токен в журнал не пишется.
+
+Реестр ручек — обычный файл `data/knobs.json` (`{knobs: [...]}`), не конверт раздела. Ручка указывает слой, раздел и путь в черновике (`*` — все элементы массива). Значение остаётся в файле раздела. Проверка реестра — `validateKnobs` в `backend/validation/knobs.js`: уникальные id, существующий раздел, путь находит значение нужного типа внутри границ. Она вызывается из `scripts/validate.js`, при старте `server.js` и в `GET /api/admin/health`. `validateDialogData` реестр не проверяет. Новая ручка — одна запись в `data/knobs.json`.
+
+`GET /api/admin/health` всегда отвечает телом `{draft, published, knobs, dataVersion}`: ошибка в данных ставит `ok: false` и список строк, сам маршрут не падает.
 
 ## Правила зависимостей
 
@@ -69,7 +83,7 @@ client/
 
 ## Шаг roadmap → папки
 
-Подробное дерево с метками «Позже» владелец кладёт в `docs/sos-file-tree.html`. Пока этого файла нет, таблица собрана из шагов, названных в задаче на структуру. Папки ниже содержат README и не подключены к рантайму, кроме уже существующих файлов `scene/scene-plan.js`.
+Подробное дерево с метками «Позже» владелец кладёт в `docs/sos-file-tree.html`. Пока этого файла нет, таблица собрана из шагов, названных в задаче на структуру. Папки ниже содержат README и не подключены к рантайму, кроме уже существующих файлов `scene/scene-plan.js` и админ-API шага 4.
 
 | Шаг | Папки |
 | --- | --- |

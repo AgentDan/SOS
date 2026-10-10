@@ -1,16 +1,12 @@
-import { readEnvelope } from "../backend/config/load.js";
+import { readKnobs } from "../backend/config/load.js";
+import { loadSections, toDialogData } from "../backend/admin-api/sections.js";
 import { validateDialogData } from "../backend/validation/index.js";
+import { validateKnobs } from "../backend/validation/knobs.js";
 
 try {
-  validateDialogData({
-    questionnaire: readEnvelope("questionnaire"),
-    catalog: readEnvelope("catalog"),
-    consultant: readEnvelope("consultant"),
-    director: readEnvelope("director"),
-    sales: readEnvelope("sales"),
-    commands: readEnvelope("commands"),
-    aiRules: readEnvelope("ai-rules")
-  });
+  const sections = loadSections();
+  validateDialogData(toDialogData(sections));
+  validateKnobs(readKnobs(), sections);
   console.log("OK");
 } catch (err) {
   console.error(err.message);

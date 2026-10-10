@@ -1,0 +1,111 @@
+{
+  "knobs": [
+    {
+      "id": "director-low",
+      "layer": "dialog",
+      "section": "director",
+      "path": "low",
+      "label": "Нижний порог терпения",
+      "type": "number",
+      "min": 0,
+      "max": 100,
+      "description": "Ниже этого числа режиссёр считает, что терпение клиента на исходе."
+    },
+    {
+      "id": "director-declines",
+      "layer": "dialog",
+      "section": "director",
+      "path": "declinesBeforeAssume",
+      "label": "Отказов до предположения",
+      "type": "number",
+      "min": 1,
+      "max": 5,
+      "description": "Сколько отказов подряд, после которых режиссёр перестаёт предлагать потребность."
+    },
+    {
+      "id": "director-patience-pause",
+      "layer": "dialog",
+      "section": "director",
+      "path": "gains.pause",
+      "label": "Терпение за паузу",
+      "type": "number",
+      "min": 0,
+      "max": 20,
+      "description": "Сколько терпения добавляет пауза в разговоре."
+    },
+    {
+      "id": "director-patience-decline",
+      "layer": "dialog",
+      "section": "director",
+      "path": "gains.decline",
+      "label": "Штраф терпения за отказ",
+      "type": "number",
+      "min": -30,
+      "max": 0,
+      "description": "На сколько падает терпение, когда клиент отказывается."
+    },
+    {
+      "id": "consultant-formality",
+      "layer": "dialog",
+      "section": "consultant",
+      "path": "formality",
+      "label": "Обращение на вы или ты",
+      "type": "enum",
+      "options": ["вы", "ты"],
+      "description": "Как консультант обращается к клиенту."
+    },
+    {
+      "id": "consultant-humor",
+      "layer": "dialog",
+      "section": "consultant",
+      "path": "humor",
+      "label": "Уровень юмора",
+      "type": "number",
+      "min": 0,
+      "max": 3,
+      "description": "Тон консультанта: 0 — без шуток, 3 — шутит свободно."
+    },
+    {
+      "id": "product-price",
+      "layer": "product",
+      "section": "catalog",
+      "path": "products.*.priceEur",
+      "label": "Цена товара",
+      "type": "number",
+      "min": 0,
+      "max": 5000,
+      "description": "Цена позиции в евро. Один вызов меняет товар по конкретному пути."
+    },
+    {
+      "id": "type-max-on-scene",
+      "layer": "product",
+      "section": "catalog",
+      "path": "types.*.maxOnScene",
+      "label": "Максимум на сцене",
+      "type": "number",
+      "min": 1,
+      "max": 6,
+      "description": "Сколько предметов этого типа можно поставить на сцену."
+    },
+    {
+      "id": "reply-max-words",
+      "layer": "dialog",
+      "section": "ai-rules",
+      "path": "output.maxWords",
+      "label": "Лимит слов в ответе",
+      "type": "number",
+      "min": 10,
+      "max": 80,
+      "description": "Сколько слов консультант может сказать за один ответ."
+    },
+    {
+      "id": "reply-emoji",
+      "layer": "dialog",
+      "section": "ai-rules",
+      "path": "output.emoji",
+      "label": "Эмодзи в ответе",
+      "type": "boolean",
+      "description": "Можно ли ставить эмодзи в ответе консультанта."
+    }
+  ]
+}

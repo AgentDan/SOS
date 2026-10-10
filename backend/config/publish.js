@@ -52,6 +52,15 @@ function snapshotFor(history, version) {
   return null;
 }
 
+function writeDraft(name, draft) {
+  if (!SECTION_KEY[name]) throw new Error(`Unknown config "${name}"`);
+  const envelope = readEnvelope(name);
+  envelope.draft = structuredClone(draft);
+  envelope.draftVersion += 1;
+  writeSection(name, envelope, true);
+  return { draftVersion: envelope.draftVersion };
+}
+
 function publish(name, description) {
   const key = SECTION_KEY[name];
   if (!key) throw new Error(`Unknown config "${name}"`);
@@ -117,4 +126,4 @@ function rollback(name, version) {
   return { publishedVersion: envelope.publishedVersion, date };
 }
 
-export { publish, rollback };
+export { writeDraft, publish, rollback };

@@ -81,13 +81,19 @@ function readAiRules() {
   return readConfig("ai-rules");
 }
 
+function readKnobs() {
+  return JSON.parse(readFileSync(path.join(dataDir(), "knobs.json"), "utf-8"));
+}
+
 export {
+  SECTION_NAMES,
   configPath,
   sectionDir,
   readEnvelope,
   readDataVersion,
   readConfig,
   readDraft,
+  readKnobs,
   readQuestionnaire,
   readCatalog,
   readConsultant,
