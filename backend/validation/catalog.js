@@ -174,6 +174,17 @@ function validateCatalogDraft(catalog, errors) {
       }
     }
   }
+
+  const fileNames = catalog.skuFileNames;
+  if (Array.isArray(fileNames) && products) {
+    for (let index = 0; index < products.length; index += 1) {
+      const sku = products[index] && products[index].sku;
+      if (isBlank(sku)) continue;
+      if (fileNames[index] !== `${sku}.json`) {
+        errors.push(`catalog: file name must be "${sku}.json"`);
+      }
+    }
+  }
 }
 
 function validateInferenceNeeds(questionnaire, catalog, errors) {

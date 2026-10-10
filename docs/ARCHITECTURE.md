@@ -7,15 +7,15 @@
 ```
 backend/          api/  pipeline/  understanding/  profile/  scene/  needs/
                   sales/  director/  voice/  ai/  orders/  sessions/
-                  analytics/  admin-api/  config/  validation/
+                  analytics/  admin-api/  config/  validation/  production/
                   server.js  architecture.test.js
 client/           api/  session/  chat/  summary/  order/  scene/  styles/  public/
                   index.html  main.js  vite.config.js
 admin/            README.md
-data/             questionnaire.json  catalog.json  consultant.json
+data/             questionnaire.json  catalog/  consultant.json
                   director.json  sales.json  commands.json  ai-rules.json
 tests/scenarios/  README.md
-scripts/          validate.js
+scripts/          validate.js  publish.js  migrate-catalog.js
 docs/  mockups/  .cursor/rules/architecture.mdc
 README.md  package.json  package-lock.json  .env.example  .gitignore
 ```
@@ -24,14 +24,16 @@ README.md  package.json  package-lock.json  .env.example  .gitignore
 
 ```
 backend/
-  api/            routes.js  catalog.routes.js  dialog.routes.js  middleware/
+  api/            routes.js  catalog.routes.js  data-version.routes.js
+                  dialog.routes.js  middleware/
   pipeline/       orchestrator.js  context.js  persist.js  reads.js
   understanding/  check-answer.js
   profile/        profile-store.js  apply-facts.js  apply-confirmation.js
   scene/          scene-plan.js  README.md
   needs/          inference-engine.js  matching.js  derive-needs.js
   sales/  director/  voice/  ai/  orders/  sessions/  analytics/  admin-api/
-  config/         load.js
+  config/         load.js  publish.js  folder-sections.js
+  production/     README.md
   validation/     index.js и проверки разделов
   server.js  architecture.test.js
 client/
@@ -46,11 +48,11 @@ client/
   index.html  main.js  vite.config.js
 ```
 
-Данные, которые правит админ, лежат в `data/` в конверте `{section, draftVersion, publishedVersion, draft, published, history}`. Рантайм читает опубликованный слой (`published`, а если его ещё нет — `draft`) с диска на каждый запрос, без кэша. Профили пишет код в `runtime/clients/` (каталог в `.gitignore`, вручную не создаётся).
+Данные, которые правит админ, лежат в `data/`. Раздел — файл `<name>.json` с конвертом `{section, draftVersion, publishedVersion, draft, published, history}` или папка: `_envelope.json` без `draft`, а черновик — файлы папки. Каталог — папка `data/catalog/` (`types.json`, `needs.json`, `sku/<артикул>.json`), одна версия на весь раздел. Рантайм читает опубликованный слой (`published`, а если его ещё нет — `draft`) с диска на каждый запрос, без кэша. Публикация копирует черновик в `published`, увеличивает `publishedVersion` и пишет в `history` снимок черновика (последние 20 записей). Откат берёт снимок версии, возвращает его в `draft` и `published` и снова увеличивает версию. `GET /api/data-version` отдаёт `{dataVersion}` — сумму `publishedVersion` всех разделов. Профили пишет код в `runtime/clients/` (каталог в `.gitignore`, вручную не создаётся).
 
 Было → стало: `storage/config/` → `data/`, `storage/clients/` → `runtime/clients/`.
 
-Публичный API не меняется: `GET /api/catalog`, `GET /api/dialog/next`, `POST /api/dialog/answer`, `GET /api/dialog/scene`, `GET /api/dialog/profile`.
+Публичный API: `GET /api/catalog`, `GET /api/data-version`, `GET /api/dialog/next`, `POST /api/dialog/answer`, `GET /api/dialog/scene`, `GET /api/dialog/profile`.
 
 ## Правила зависимостей
 

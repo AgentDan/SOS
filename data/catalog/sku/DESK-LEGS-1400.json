@@ -1,0 +1,12 @@
+{
+  "sku": "DESK-LEGS-1400",
+  "type": "desk_legs",
+  "name": "Desk legs 1400x700",
+  "dimensions": {
+    "width": 1400,
+    "depth": 700,
+    "height": 1000
+  },
+  "priceEur": 79,
+  "alwaysPresent": true
+}

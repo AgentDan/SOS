@@ -1,0 +1,17 @@
+{
+  "sku": "DESK-TOP-1800",
+  "type": "desk_top",
+  "name": "Desk top 1800x800",
+  "dimensions": {
+    "width": 1800,
+    "depth": 800,
+    "height": 30
+  },
+  "priceEur": 259,
+  "media": {
+    "model3d": "/models/desk.glb"
+  },
+  "placement": {
+    "hostSku": "DESK-LEGS-1400"
+  }
+}

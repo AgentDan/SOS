@@ -1,0 +1,17 @@
+{
+  "sku": "CHAIR-460",
+  "type": "chair",
+  "name": "Chair 460x520",
+  "dimensions": {
+    "width": 460,
+    "depth": 520,
+    "height": 900
+  },
+  "priceEur": 129,
+  "placement": {
+    "offset": {
+      "x": 0,
+      "z": 760
+    }
+  }
+}

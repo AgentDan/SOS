@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readEnvelope } from "../config/load.js";
 import { validateDialogData } from "./index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -15,7 +16,7 @@ function loadJson(name) {
 function validPair() {
   return {
     questionnaire: structuredClone(loadJson("questionnaire.json")),
-    catalog: structuredClone(loadJson("catalog.json"))
+    catalog: structuredClone(readEnvelope("catalog"))
   };
 }
 

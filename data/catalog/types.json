@@ -1,0 +1,34 @@
+[
+  {
+    "id": "desk_legs",
+    "label": "Desk legs",
+    "canBeHost": true,
+    "canHostOn": [],
+    "maxOnScene": 1
+  },
+  {
+    "id": "desk_top",
+    "label": "Desk top",
+    "canBeHost": true,
+    "canHostOn": [
+      "desk_legs"
+    ],
+    "maxOnScene": 1
+  },
+  {
+    "id": "monitor",
+    "label": "Monitor",
+    "canBeHost": false,
+    "canHostOn": [
+      "desk_top"
+    ],
+    "maxOnScene": 3
+  },
+  {
+    "id": "chair",
+    "label": "Chair",
+    "canBeHost": false,
+    "canHostOn": [],
+    "maxOnScene": 2
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "sku": "MON-613-366",
+  "type": "monitor",
+  "name": "Monitor 27-inch",
+  "dimensions": {
+    "width": 613,
+    "depth": 205,
+    "height": 366
+  },
+  "priceEur": 249,
+  "placement": {
+    "hostSku": "DESK-TOP-1400"
+  }
+}

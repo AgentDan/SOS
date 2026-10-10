@@ -1,0 +1,19 @@
+[
+  {
+    "id": "desk_top_wide",
+    "name": "Широкая столешница",
+    "why": "",
+    "criteria": {
+      "type": "desk_top",
+      "minWidth": 1600
+    }
+  },
+  {
+    "id": "ergonomic_chair",
+    "name": "Эргономичное кресло",
+    "why": "",
+    "criteria": {
+      "type": "chair"
+    }
+  }
+]

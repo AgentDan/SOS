@@ -1,6 +1,6 @@
 # Сценарии
 
-Файл `tests/scenarios/<name>.json` — ответы клиента и ожидание после прогона через движок. Id берутся из `data/questionnaire.json` и `data/catalog.json`.
+Файл `tests/scenarios/<name>.json` — ответы клиента и ожидание после прогона через движок. Id берутся из `data/questionnaire.json` и `data/catalog/`.
 
 ## Формат
 

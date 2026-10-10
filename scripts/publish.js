@@ -1,4 +1,4 @@
-import { publish } from "../backend/config/publish.js";
+import { publish, rollback } from "../backend/config/publish.js";
 
 const SECTIONS = [
   "questionnaire",
@@ -10,18 +10,35 @@ const SECTIONS = [
   "ai-rules"
 ];
 
-const name = process.argv[2];
-const description = process.argv[3];
+const args = process.argv.slice(2);
 
-if (!SECTIONS.includes(name)) {
-  console.error(`Usage: node scripts/publish.js <name> "<description>"`);
-  console.error(`name must be one of: ${SECTIONS.join(", ")}`);
+function fail(message) {
+  console.error(message);
   process.exit(1);
 }
 
 try {
-  const result = publish(name, description);
-  console.log(`Published ${name} v${result.publishedVersion} (${result.date})`);
+  if (args[0] === "--rollback") {
+    const name = args[1];
+    const version = Number(args[2]);
+    if (!SECTIONS.includes(name) || !Number.isInteger(version)) {
+      fail(
+        `Usage: npm run publish-config -- --rollback <name> <version>\nname must be one of: ${SECTIONS.join(", ")}`
+      );
+    }
+    const result = rollback(name, version);
+    console.log(`Rolled back ${name} to v${version} as v${result.publishedVersion} (${result.date})`);
+  } else {
+    const name = args[0];
+    const description = args[1];
+    if (!SECTIONS.includes(name)) {
+      fail(
+        `Usage: npm run publish-config -- <name> "<description>"\n       npm run publish-config -- --rollback <name> <version>\nname must be one of: ${SECTIONS.join(", ")}`
+      );
+    }
+    const result = publish(name, description);
+    console.log(`Published ${name} v${result.publishedVersion} (${result.date})`);
+  }
 } catch (err) {
   console.error(err.message);
   process.exit(1);

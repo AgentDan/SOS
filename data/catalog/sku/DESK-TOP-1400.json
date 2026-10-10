@@ -1,0 +1,17 @@
+{
+  "sku": "DESK-TOP-1400",
+  "type": "desk_top",
+  "name": "Desk top 1400x700",
+  "dimensions": {
+    "width": 1400,
+    "depth": 700,
+    "height": 30
+  },
+  "priceEur": 189,
+  "media": {
+    "model3d": "/models/desk.glb"
+  },
+  "placement": {
+    "hostSku": "DESK-LEGS-1400"
+  }
+}
