@@ -10,9 +10,9 @@ backend/          api/  pipeline/  understanding/  profile/  scene/  needs/
                   analytics/  admin-api/  config/  validation/  production/
                   server.js  architecture.test.js
 client/           api/  session/  chat/  summary/  order/  scene/  styles/  public/
-                  index.html  main.js  vite.config.js
-admin/            api/  session/  screens/  lib/  styles/
-                  index.html  main.js  ui.js  vite.config.js  README.md
+                  index.html  main.jsx  App.jsx  vite.config.js
+admin/            api/  session/  screens/  components/  lib/  styles/
+                  index.html  main.jsx  App.jsx  vite.config.js  README.md
 data/             questionnaire.json  catalog/  consultant.json
                   director.json  sales.json  commands.json  ai-rules.json
                   knobs.json
@@ -42,21 +42,22 @@ backend/
 client/
   api/            dialog-api.js  catalog-api.js
   session/        client-id.js
-  chat/           question-buttons.js
+  chat/           QuestionPanel.jsx
   summary/  order/
-  scene/          renderer/  physics/  interaction/
+  scene/          SceneView.jsx  renderer/  physics/  interaction/
                   meshes.js  floor.js  place-products.js  sync-scene.js
   styles/         app.css
   public/         models/
-  index.html  main.js  vite.config.js
+  index.html  main.jsx  App.jsx  vite.config.js
 admin/
   api/            admin-api.js
   session/        token.js
-  screens/        login.js  overview.js  sections.js  section-editor.js
-                  knobs.js  journal.js
+  screens/        Login.jsx  Overview.jsx  Sections.jsx  SectionEditor.jsx
+                  Knobs.jsx  Journal.jsx
+  components/     общие куски экранов: ошибка, кнопки, подтверждение, таблицы
   lib/            чистые функции экранов и их тесты
   styles/         admin.css
-  index.html  main.js  ui.js  vite.config.js  README.md
+  index.html  main.jsx  App.jsx  vite.config.js  README.md
 ```
 
 Данные, которые правит админ, лежат в `data/`. Раздел — файл `<name>.json` с конвертом `{section, draftVersion, publishedVersion, draft, published, history}` или папка: `_envelope.json` без `draft`, а черновик — файлы папки. Каталог — папка `data/catalog/` (`types.json`, `needs.json`, `sku/<артикул>.json`), одна версия на весь раздел. Рантайм читает опубликованный слой (`published`, а если его ещё нет — `draft`) с диска на каждый запрос, без кэша. Публикация копирует черновик в `published`, увеличивает `publishedVersion` и пишет в `history` снимок черновика (последние 20 записей). Откат берёт снимок версии, возвращает его в `draft` и `published` и снова увеличивает версию. Черновик пишет `writeDraft`: файл раздела или файлы папки, `draftVersion` увеличивается на 1, `published` не меняется. `GET /api/data-version` отдаёт `{dataVersion}` — сумму `publishedVersion` всех разделов. Профили пишет код в `runtime/clients/`. Журнал правок админки — `runtime/admin/journal.jsonl` (каталог в `.gitignore`, вручную не создаётся). Каталог рантайма переопределяется `DESKOS_RUNTIME_DIR`, каталог данных — `DESKOS_DATA_DIR`.
@@ -85,6 +86,16 @@ admin/
 
 Экраны: обзор (разделы и `GET /health`), список и правка раздела (черновик, публикация, откат), ручки (`GET`/`PUT /knobs`), журнал (`GET /journal`). `fetch(` разрешён только в `admin/api/`.
 
+## Интерфейс на React
+
+Клиент и админка — два отдельных приложения Vite на React. Язык — JavaScript с JSX, файлы `.jsx`. Компоненты функциональные, состояние — хуки `useState`, `useEffect`, `useRef` и `useCallback`. Отдельного менеджера состояния и UI-библиотеки нет. `react` и `react-dom` стоят в зависимостях, `@vitejs/plugin-react` — в dev-зависимостях. Других пакетов ради интерфейса нет.
+
+Клиент монтируется из `client/main.jsx` в `#root`. Панель вопросов — `client/chat/QuestionPanel.jsx`. Список артикулов живёт в `client/App.jsx` и уходит вниз пропсами: `chat` и `scene` друг друга не импортируют. Сцена Three.js и физика Rapier остаются императивным кодом в `client/scene/**` (renderer, physics, interaction, floor, meshes, place-products, sync-scene). React держит только `client/scene/SceneView.jsx`: canvas в `useRef`, запуск и очистка в `useEffect`. Очистка останавливает кадр, снимает обработчики, освобождает renderer и физический мир. Повторный запуск эффекта в режиме разработки не оставляет второй canvas и второй набор предметов.
+
+Админка монтируется из `admin/main.jsx`. Экраны — `admin/screens/*.jsx`, повторяющиеся куски — `admin/components/*.jsx`. `admin/lib/` и `admin/api/admin-api.js` остаются обычным JavaScript: компоненты их только вызывают. Экран выбирается по `location.hash` (`#/overview`, `#/sections`, `#/sections/<имя>`, `#/knobs`, `#/journal`). Отдельный пакет маршрутов не подключён: экранов мало, а адрес и раньше был хэшем.
+
+Запуск клиента: `npm run dev:server` и `npm run dev:client` (порт 5173). Админка: `npm run admin` (порт 5174). Сборка: `npm run build:client` и `npm run build:admin`. `npm run check` гоняет тесты, проверку данных, сценарии и обе сборки.
+
 ## Правила зависимостей
 
 1. `backend/api/**` импортирует только `pipeline`, `orders`, `sessions`, `admin-api`, `config` и свои файлы.
@@ -96,7 +107,7 @@ admin/
 7. `fetch(` в клиенте только внутри `client/api/`. В админке только внутри `admin/api/`.
 8. Тесты подчиняются тем же правилам. Исключение: тест может читать `data/` через `node:fs`.
 
-Новых зависимостей не добавлять. Проверка этих правил — `backend/architecture.test.js`.
+Новых зависимостей не добавлять, кроме React и его плагина для Vite (решение владельца 11.10). Проверка этих правил — `backend/architecture.test.js`: он читает и `.js`, и `.jsx`.
 
 ## Шаг roadmap → папки
 

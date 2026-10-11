@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -10,6 +11,7 @@ export default defineConfig(({ mode }) => {
   const apiPort = Number(process.env.PORT || fileEnv.PORT) || 3000;
 
   return {
+    plugins: [react()],
     root: __dirname,
     server: {
       port: 5174,

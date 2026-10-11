@@ -1,4 +1,5 @@
-html, body { margin: 0; height: 100%; overflow: hidden; background: #1a1a1a; }
+html, body, #root { margin: 0; height: 100%; overflow: hidden; background: #1a1a1a; }
+#root { position: relative; }
 canvas { display: block; }
 #question-panel {
   position: absolute;

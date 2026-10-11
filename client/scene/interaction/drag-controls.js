@@ -143,6 +143,20 @@ function initDragControls({ camera, canvas, controls }) {
   canvas.addEventListener("pointermove", onPointerMove);
   canvas.addEventListener("pointerup", endDrag);
   canvas.addEventListener("pointercancel", endDrag);
+
+  let disposed = false;
+  return function disposeDrag() {
+    if (disposed) return;
+    disposed = true;
+    canvas.removeEventListener("pointerdown", onPointerDown);
+    canvas.removeEventListener("pointermove", onPointerMove);
+    canvas.removeEventListener("pointerup", endDrag);
+    canvas.removeEventListener("pointercancel", endDrag);
+    draggedId = null;
+    carriedIds = [];
+    if (controls) controls.enabled = true;
+    canvas.style.cursor = "auto";
+  };
 }
 
 export { initDragControls };

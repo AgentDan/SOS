@@ -32,7 +32,7 @@ function walkJs(dir, acc = []) {
     if (entry.name === "node_modules" || entry.name === "dist") continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walkJs(full, acc);
-    else if (entry.name.endsWith(".js")) acc.push(full);
+    else if (entry.name.endsWith(".js") || entry.name.endsWith(".jsx")) acc.push(full);
   }
   return acc;
 }

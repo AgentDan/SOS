@@ -31,21 +31,47 @@ function initScene(canvas, { onFrame } = {}) {
   const grid = new THREE.GridHelper(4, 40, 0x444444, 0x2a2a2a);
   scene.add(grid);
 
-  window.addEventListener("resize", () => {
+  const onResize = () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-  });
+  };
+  window.addEventListener("resize", onResize);
 
+  let running = true;
+  let frameId = 0;
   function tick() {
-    requestAnimationFrame(tick);
+    if (!running) return;
+    frameId = requestAnimationFrame(tick);
     controls.update(); //для orbit controls
     if (onFrame) onFrame();
     renderer.render(scene, camera);
   }
-  requestAnimationFrame(tick);
+  frameId = requestAnimationFrame(tick);
 
-  return { scene, camera, controls };
+  let disposed = false;
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    running = false;
+    cancelAnimationFrame(frameId);
+    window.removeEventListener("resize", onResize);
+    controls.dispose();
+    const materials = new Set();
+    scene.traverse((obj) => {
+      if (obj.geometry) obj.geometry.dispose();
+      const list = Array.isArray(obj.material) ? obj.material : obj.material ? [obj.material] : [];
+      for (const item of list) {
+        if (!item || materials.has(item)) continue;
+        materials.add(item);
+        item.dispose();
+      }
+    });
+    renderer.dispose();
+    renderer.forceContextLoss();
+  }
+
+  return { scene, camera, controls, dispose };
 }
 
 export { initScene };

@@ -16,7 +16,9 @@
     "validate": "node scripts/validate.js",
     "publish-config": "node scripts/publish.js",
     "scenario": "node scripts/scenario-runner.js",
-    "check": "npm test && node scripts/validate.js && node scripts/scenario-runner.js && vite build --config admin/vite.config.js"
+    "build:client": "vite build --config client/vite.config.js",
+    "build:admin": "vite build --config admin/vite.config.js",
+    "check": "npm test && node scripts/validate.js && node scripts/scenario-runner.js && vite build --config client/vite.config.js && vite build --config admin/vite.config.js"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.14.0",
@@ -24,9 +26,12 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "three": "^0.169.0"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
     "nodemon": "^3.1.4",
     "vite": "^5.4.6"
   }

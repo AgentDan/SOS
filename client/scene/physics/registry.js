@@ -20,4 +20,8 @@ function unregister(id) {
   return entry ?? null;
 }
 
-export { register, get, all, unregister };
+function clear() {
+  registry.clear();
+}
+
+export { register, get, all, unregister, clear };

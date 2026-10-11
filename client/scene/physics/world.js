@@ -19,4 +19,10 @@ function step() {
   getWorld().step();
 }
 
-export { RAPIER, initWorld, getWorld, step };
+function disposeWorld() {
+  if (!world) return;
+  world.free();
+  world = null;
+}
+
+export { RAPIER, initWorld, getWorld, step, disposeWorld };
