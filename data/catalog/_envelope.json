@@ -1,7 +1,7 @@
 {
   "section": "catalog",
-  "draftVersion": 3,
-  "publishedVersion": 2,
+  "draftVersion": 5,
+  "publishedVersion": 4,
   "history": [
     {
       "version": 1,
@@ -228,6 +228,284 @@
       "version": 2,
       "date": "2026-10-06T18:35:47.988Z",
       "description": "initial publish"
+    },
+    {
+      "version": 3,
+      "date": "2026-10-10T18:55:50.685Z",
+      "description": "цена",
+      "snapshot": {
+        "types": [
+          {
+            "id": "desk_legs",
+            "label": "Desk legs",
+            "canBeHost": true,
+            "canHostOn": [],
+            "maxOnScene": 1
+          },
+          {
+            "id": "desk_top",
+            "label": "Desk top",
+            "canBeHost": true,
+            "canHostOn": [
+              "desk_legs"
+            ],
+            "maxOnScene": 1
+          },
+          {
+            "id": "monitor",
+            "label": "Monitor",
+            "canBeHost": false,
+            "canHostOn": [
+              "desk_top"
+            ],
+            "maxOnScene": 3
+          },
+          {
+            "id": "chair",
+            "label": "Chair",
+            "canBeHost": false,
+            "canHostOn": [],
+            "maxOnScene": 2
+          }
+        ],
+        "needs": [
+          {
+            "id": "desk_top_wide",
+            "name": "Широкая столешница",
+            "why": "",
+            "criteria": {
+              "type": "desk_top",
+              "minWidth": 1600
+            }
+          },
+          {
+            "id": "ergonomic_chair",
+            "name": "Эргономичное кресло",
+            "why": "",
+            "criteria": {
+              "type": "chair"
+            }
+          }
+        ],
+        "products": [
+          {
+            "sku": "DESK-LEGS-1400",
+            "type": "desk_legs",
+            "name": "Desk legs 1400x700",
+            "dimensions": {
+              "width": 1400,
+              "depth": 700,
+              "height": 1000
+            },
+            "priceEur": 79,
+            "alwaysPresent": true
+          },
+          {
+            "sku": "DESK-TOP-1400",
+            "type": "desk_top",
+            "name": "Desk top 1400x700",
+            "dimensions": {
+              "width": 1400,
+              "depth": 700,
+              "height": 30
+            },
+            "priceEur": 189,
+            "media": {
+              "model3d": "/models/desk.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-LEGS-1400"
+            }
+          },
+          {
+            "sku": "DESK-TOP-1800",
+            "type": "desk_top",
+            "name": "Desk top 1800x800",
+            "dimensions": {
+              "width": 1800,
+              "depth": 800,
+              "height": 30
+            },
+            "priceEur": 259,
+            "media": {
+              "model3d": "/models/desk.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-LEGS-1400"
+            }
+          },
+          {
+            "sku": "MON-613-366",
+            "type": "monitor",
+            "name": "Monitor 27-inch",
+            "dimensions": {
+              "width": 613,
+              "depth": 205,
+              "height": 366
+            },
+            "priceEur": 249,
+            "placement": {
+              "hostSku": "DESK-TOP-1400"
+            }
+          },
+          {
+            "sku": "CHAIR-460",
+            "type": "chair",
+            "name": "Chair 460x520",
+            "dimensions": {
+              "width": 460,
+              "depth": 520,
+              "height": 900
+            },
+            "priceEur": 129000,
+            "placement": {
+              "offset": {
+                "x": 0,
+                "z": 760
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "version": 4,
+      "date": "2026-10-10T18:56:28.820Z",
+      "description": "eur",
+      "snapshot": {
+        "types": [
+          {
+            "id": "desk_legs",
+            "label": "Desk legs",
+            "canBeHost": true,
+            "canHostOn": [],
+            "maxOnScene": 1
+          },
+          {
+            "id": "desk_top",
+            "label": "Desk top",
+            "canBeHost": true,
+            "canHostOn": [
+              "desk_legs"
+            ],
+            "maxOnScene": 1
+          },
+          {
+            "id": "monitor",
+            "label": "Monitor",
+            "canBeHost": false,
+            "canHostOn": [
+              "desk_top"
+            ],
+            "maxOnScene": 3
+          },
+          {
+            "id": "chair",
+            "label": "Chair",
+            "canBeHost": false,
+            "canHostOn": [],
+            "maxOnScene": 2
+          }
+        ],
+        "needs": [
+          {
+            "id": "desk_top_wide",
+            "name": "Широкая столешница",
+            "why": "",
+            "criteria": {
+              "type": "desk_top",
+              "minWidth": 1600
+            }
+          },
+          {
+            "id": "ergonomic_chair",
+            "name": "Эргономичное кресло",
+            "why": "",
+            "criteria": {
+              "type": "chair"
+            }
+          }
+        ],
+        "products": [
+          {
+            "sku": "DESK-LEGS-1400",
+            "type": "desk_legs",
+            "name": "Desk legs 1400x700",
+            "dimensions": {
+              "width": 1400,
+              "depth": 700,
+              "height": 1000
+            },
+            "priceEur": 79,
+            "alwaysPresent": true
+          },
+          {
+            "sku": "DESK-TOP-1400",
+            "type": "desk_top",
+            "name": "Desk top 1400x700",
+            "dimensions": {
+              "width": 1400,
+              "depth": 700,
+              "height": 30
+            },
+            "priceEur": 189,
+            "media": {
+              "model3d": "/models/desk.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-LEGS-1400"
+            }
+          },
+          {
+            "sku": "DESK-TOP-1800",
+            "type": "desk_top",
+            "name": "Desk top 1800x800",
+            "dimensions": {
+              "width": 1800,
+              "depth": 800,
+              "height": 30
+            },
+            "priceEur": 259,
+            "media": {
+              "model3d": "/models/desk.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-LEGS-1400"
+            }
+          },
+          {
+            "sku": "MON-613-366",
+            "type": "monitor",
+            "name": "Monitor 27-inch",
+            "dimensions": {
+              "width": 613,
+              "depth": 205,
+              "height": 366
+            },
+            "priceEur": 249,
+            "placement": {
+              "hostSku": "DESK-TOP-1400"
+            }
+          },
+          {
+            "sku": "CHAIR-460",
+            "type": "chair",
+            "name": "Chair 460x520",
+            "dimensions": {
+              "width": 460,
+              "depth": 520,
+              "height": 900
+            },
+            "priceEur": 12,
+            "placement": {
+              "offset": {
+                "x": 0,
+                "z": 760
+              }
+            }
+          }
+        ]
+      }
     }
   ],
   "published": {
@@ -263,6 +541,25 @@
         "canBeHost": false,
         "canHostOn": [],
         "maxOnScene": 2
+      }
+    ],
+    "needs": [
+      {
+        "id": "desk_top_wide",
+        "name": "Широкая столешница",
+        "why": "",
+        "criteria": {
+          "type": "desk_top",
+          "minWidth": 1600
+        }
+      },
+      {
+        "id": "ergonomic_chair",
+        "name": "Эргономичное кресло",
+        "why": "",
+        "criteria": {
+          "type": "chair"
+        }
       }
     ],
     "products": [
@@ -335,31 +632,12 @@
           "depth": 520,
           "height": 900
         },
-        "priceEur": 129,
+        "priceEur": 12,
         "placement": {
           "offset": {
             "x": 0,
             "z": 760
           }
-        }
-      }
-    ],
-    "needs": [
-      {
-        "id": "desk_top_wide",
-        "name": "Широкая столешница",
-        "why": "",
-        "criteria": {
-          "type": "desk_top",
-          "minWidth": 1600
-        }
-      },
-      {
-        "id": "ergonomic_chair",
-        "name": "Эргономичное кресло",
-        "why": "",
-        "criteria": {
-          "type": "chair"
         }
       }
     ]
