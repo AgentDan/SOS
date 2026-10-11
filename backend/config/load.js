@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_DIR = path.join(__dirname, "..", "..", "data");
 
 function dataDir() {
-  return process.env.DESKOS_DATA_DIR ? path.resolve(process.env.DESKOS_DATA_DIR) : CONFIG_DIR;
+  return process.env.SOS_DATA_DIR ? path.resolve(process.env.SOS_DATA_DIR) : CONFIG_DIR;
 }
 
 const SECTION_NAMES = [

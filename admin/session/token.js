@@ -1,4 +1,4 @@
-const STORAGE_KEY = "deskos.admin.token";
+const STORAGE_KEY = "sos.admin.token";
 
 function getToken() {
   try {

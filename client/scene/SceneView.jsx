@@ -75,7 +75,7 @@ function SceneView({ skus, onReady }) {
         sceneRef.current = view.scene;
         setBooted(true);
       } catch (err) {
-        console.error("deskOS failed to start:", err);
+        console.error("SOS failed to start:", err);
         dispose();
       }
     });
@@ -99,7 +99,7 @@ function SceneView({ skus, onReady }) {
       try {
         await syncScene(scene, list);
       } catch (err) {
-        if (!cancelled) console.error("deskOS failed to start:", err);
+        if (!cancelled) console.error("SOS failed to start:", err);
         return;
       }
       if (cancelled || !syncRef.current) return;

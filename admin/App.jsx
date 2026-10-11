@@ -137,7 +137,7 @@ function App() {
 
   useEffect(() => {
     if (mode === "login") {
-      document.title = "Админка deskOS";
+      document.title = "Админка SOS";
       return;
     }
     if (mode !== "app") return;
@@ -213,7 +213,7 @@ function App() {
     <div className="app app-shell">
       <div className="layout">
         <aside className="sidebar">
-          <p className="brand">deskOS</p>
+          <p className="brand">SOS</p>
           <p className="brand-note">админка</p>
           <nav>
             {NAV.map(([screenName, text]) => {

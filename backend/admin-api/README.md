@@ -4,7 +4,7 @@
 
 Доступ: `Authorization: Bearer <ADMIN_TOKEN>`. Токен задаётся в окружении. Если `ADMIN_TOKEN` пустой или не задан, все маршруты ниже отвечают `503`. Нет заголовка или токен не совпал — `401 {error:"unauthorized"}`. Сравнение constant-time (`crypto.timingSafeEqual`). Ролей нет: одна проверка в `auth.js`.
 
-Перед записью черновика вызывается `validateDialogData` по всем разделам. Ошибка валидатора — `422 {errors:[...]}`, файлы не меняются. Журнал (`runtime/admin/journal.jsonl`, каталог `DESKOS_RUNTIME_DIR` или `runtime/`) получает строку только после успешного действия.
+Перед записью черновика вызывается `validateDialogData` по всем разделам. Ошибка валидатора — `422 {errors:[...]}`, файлы не меняются. Журнал (`runtime/admin/journal.jsonl`, каталог `SOS_RUNTIME_DIR` или `runtime/`) получает строку только после успешного действия.
 
 ## Маршруты
 

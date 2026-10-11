@@ -9,12 +9,12 @@ import { readConfig, readDataVersion, readDraft, readEnvelope } from "./load.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sourceData = path.join(__dirname, "..", "..", "data");
-const tempData = mkdtempSync(path.join(tmpdir(), "deskos-publish-"));
+const tempData = mkdtempSync(path.join(tmpdir(), "sos-publish-"));
 cpSync(sourceData, tempData, { recursive: true });
-process.env.DESKOS_DATA_DIR = tempData;
+process.env.SOS_DATA_DIR = tempData;
 
 after(() => {
-  delete process.env.DESKOS_DATA_DIR;
+  delete process.env.SOS_DATA_DIR;
   rmSync(tempData, { recursive: true, force: true });
 });
 

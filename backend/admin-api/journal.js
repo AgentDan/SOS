@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function runtimeDir() {
-  if (process.env.DESKOS_RUNTIME_DIR) return path.resolve(process.env.DESKOS_RUNTIME_DIR);
+  if (process.env.SOS_RUNTIME_DIR) return path.resolve(process.env.SOS_RUNTIME_DIR);
   return path.join(__dirname, "..", "..", "runtime");
 }
 

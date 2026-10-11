@@ -17,7 +17,7 @@ function App() {
         setSkus(Array.isArray(data?.skus) ? data.skus : []);
       })
       .catch((err) => {
-        console.error("deskOS failed to start:", err);
+        console.error("SOS failed to start:", err);
       });
     return () => {
       alive = false;

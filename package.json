@@ -1,7 +1,7 @@
 {
-  "name": "deskos",
+  "name": "sos",
   "version": "0.1.0",
-  "description": "deskOS - AI workspace configurator skeleton",
+  "description": "SOS - AI workspace configurator skeleton",
   "private": true,
   "type": "module",
   "engines": {

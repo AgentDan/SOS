@@ -44,7 +44,7 @@ function Login({ message, onSuccess }) {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={onSubmit}>
-        <h1>Админка deskOS</h1>
+        <h1>Админка SOS</h1>
         <p className="muted">Токен остаётся только в этом окне браузера.</p>
         <label className="field">
           <span>Токен администратора</span>

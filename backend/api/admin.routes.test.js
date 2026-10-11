@@ -12,13 +12,13 @@ import { invalidJsonHandler } from "./admin.routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sourceData = path.join(__dirname, "..", "..", "data");
-const tempData = mkdtempSync(path.join(tmpdir(), "deskos-admin-data-"));
-const tempRuntime = mkdtempSync(path.join(tmpdir(), "deskos-admin-runtime-"));
+const tempData = mkdtempSync(path.join(tmpdir(), "sos-admin-data-"));
+const tempRuntime = mkdtempSync(path.join(tmpdir(), "sos-admin-runtime-"));
 cpSync(sourceData, tempData, { recursive: true });
 
 const TOKEN = "desk-admin-test-token";
-process.env.DESKOS_DATA_DIR = tempData;
-process.env.DESKOS_RUNTIME_DIR = tempRuntime;
+process.env.SOS_DATA_DIR = tempData;
+process.env.SOS_RUNTIME_DIR = tempRuntime;
 process.env.ADMIN_TOKEN = TOKEN;
 
 let server;
@@ -99,8 +99,8 @@ describe("admin API", { concurrency: 1 }, () => {
 
   after(async () => {
     if (server) await close(server);
-    delete process.env.DESKOS_DATA_DIR;
-    delete process.env.DESKOS_RUNTIME_DIR;
+    delete process.env.SOS_DATA_DIR;
+    delete process.env.SOS_RUNTIME_DIR;
     delete process.env.ADMIN_TOKEN;
     rmSync(tempData, { recursive: true, force: true });
     rmSync(tempRuntime, { recursive: true, force: true });
