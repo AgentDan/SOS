@@ -1,8 +1,10 @@
+import { banner, bannerTone, bannerWord, errorLines } from "../styles/classes.js";
+
 function ErrorBlock({ lines }) {
   return (
-    <div className="banner banner-error" role="alert">
-      <span className="banner-word">Ошибка</span>
-      <ul className="error-lines">
+    <div className={`${banner} ${bannerTone.error}`} role="alert">
+      <span className={bannerWord}>Ошибка</span>
+      <ul className={errorLines}>
         {lines.map((line, index) => (
           <li key={`${index}:${line}`}>{line}</li>
         ))}

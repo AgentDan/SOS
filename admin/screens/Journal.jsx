@@ -9,7 +9,7 @@ import { Loading } from "../components/Loading.jsx";
 const LIMITS = [50, 100, 200];
 
 function JournalTable({ entries }) {
-  if (entries.length === 0) return <p className="muted">Записей пока нет</p>;
+  if (entries.length === 0) return <p className="text-muted">Записей пока нет</p>;
   return (
     <DataTable
       columns={[
@@ -68,10 +68,15 @@ function Journal() {
   return (
     <>
       <h1>Журнал правок</h1>
-      <div className="toolbar">
-        <label className="field inline">
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <label className="flex flex-row items-center gap-2">
           <span>Сколько записей</span>
-          <select value={String(limit)} disabled={working} onChange={(event) => setLimit(Number(event.target.value))}>
+          <select
+            className="w-auto"
+            value={String(limit)}
+            disabled={working}
+            onChange={(event) => setLimit(Number(event.target.value))}
+          >
             {LIMITS.map((value) => (
               <option key={value} value={String(value)}>
                 {value}
@@ -83,8 +88,8 @@ function Journal() {
           Обновить
         </button>
       </div>
-      <div className="status">{error ? <ErrorBlock lines={error} /> : null}</div>
-      <div className="table-wrap">
+      <div className="empty:hidden">{error ? <ErrorBlock lines={error} /> : null}</div>
+      <div className="mb-4 overflow-x-auto">
         {error ? null : rows == null ? <Loading /> : <JournalTable entries={rows} />}
       </div>
     </>

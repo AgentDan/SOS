@@ -6,6 +6,7 @@ import { Banner } from "../components/Banner.jsx";
 import { ErrorBlock } from "../components/ErrorBlock.jsx";
 import { Loading } from "../components/Loading.jsx";
 import { SectionTile } from "../components/SectionTile.jsx";
+import { errorLines, tiles } from "../styles/classes.js";
 
 const HEALTH_TITLES = [
   ["draft", "черновик"],
@@ -16,12 +17,17 @@ const HEALTH_TITLES = [
 function HealthView({ title, report }) {
   const line = healthLine(title, report);
   if (line.ok || line.errors.length === 0) {
-    return <p className={line.ok ? "health health-ok" : "health health-bad"}>{line.text}</p>;
+    return (
+      <p className={line.ok ? "text-ok before:font-bold before:content-['Ок._']" : "text-err"}>{line.text}</p>
+    );
   }
   return (
-    <details className="health health-bad" open>
+    <details
+      className="mb-2 text-err [&_summary]:cursor-pointer [&_summary]:before:font-bold [&_summary]:before:content-['Ошибка._']"
+      open
+    >
       <summary>{line.text}</summary>
-      <ul className="error-lines">
+      <ul className={errorLines}>
         {line.errors.map((item, index) => (
           <li key={`${index}:${item}`}>{item}</li>
         ))}
@@ -95,20 +101,22 @@ function Overview({ openSection }) {
   return (
     <>
       <h1>Обзор</h1>
-      <p className="goal">Провести продажу и сделать клиента лояльным</p>
+      <p className="mb-[22px] rounded-xl border border-line bg-surface px-3.5 py-3 shadow-(--card-shadow)">
+        Провести продажу и сделать клиента лояльным
+      </p>
       {view.kind === "sections-error" ? <ErrorBlock lines={view.lines} /> : null}
       {view.kind === "ready" ? (
         <>
           <section>
             <h2>Карта системы</h2>
             {tiles.length > 0 ? (
-              <div className="tiles">
+              <div className={tiles}>
                 {tiles.map((item) => (
                   <SectionTile key={item.name} item={item} onOpen={openSection} />
                 ))}
               </div>
             ) : (
-              <p className="muted">Разделов пока нет</p>
+              <p className="text-muted">Разделов пока нет</p>
             )}
           </section>
           <section>

@@ -110,7 +110,7 @@ function SceneView({ skus, onReady }) {
     };
   }, [booted, skus]);
 
-  return <canvas id="scene-canvas" ref={canvasRef} />;
+  return <canvas id="scene-canvas" ref={canvasRef} className="block" />;
 }
 
 export { SceneView };

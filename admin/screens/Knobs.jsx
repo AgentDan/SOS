@@ -29,7 +29,7 @@ function readControl(knob, control) {
 function BooleanField({ value, inputRef }) {
   const [checked, setChecked] = useState(value === true);
   return (
-    <label className="switch">
+    <label className="flex items-center gap-2">
       <input
         ref={inputRef}
         type="checkbox"
@@ -88,26 +88,31 @@ function KnobRow({ knob, row, hideKey, working, onApply }) {
 
   if (!row.applicable) {
     return (
-      <div className="knob-row">
-        {hideKey ? null : <span className="knob-key">{row.label}</span>}
+      <div className="grid grid-cols-[minmax(90px,160px)_minmax(0,1fr)_auto] items-center gap-2">
+        {hideKey ? null : <span className="font-strong [overflow-wrap:anywhere]">{row.label}</span>}
         <Banner kind="warn" text="В данных нет места, куда записать значение" />
       </div>
     );
   }
 
   return (
-    <div className={hideKey ? "knob-row knob-row-single" : "knob-row"}>
-      {hideKey ? null : <span className="knob-key">{row.label}</span>}
+    <div
+      className={
+        hideKey
+          ? "grid grid-cols-[minmax(0,280px)_auto] items-center gap-2"
+          : "grid grid-cols-[minmax(90px,160px)_minmax(0,1fr)_auto] items-center gap-2"
+      }
+    >
+      {hideKey ? null : <span className="font-strong [overflow-wrap:anywhere]">{row.label}</span>}
       <KnobControl knob={knob} value={row.value} inputRef={inputRef} />
       <button
         type="button"
-        className="apply"
         disabled={working}
         onClick={() => onApply(knob, row, readControl(knob, inputRef.current), setSlot)}
       >
         Применить
       </button>
-      <div className="status">{slot}</div>
+      <div className="col-span-full empty:hidden">{slot}</div>
     </div>
   );
 }
@@ -120,7 +125,7 @@ function KnobCard({ knob, working, onApply }) {
     body = <Banner kind="warn" text="В данных нет значения для этой ручки" />;
   } else if (described.multiple) {
     body = (
-      <div className="knob-table">
+      <div className="flex flex-col gap-2">
         {described.rows.map((row) => (
           <KnobRow
             key={row.at || row.label}
@@ -137,11 +142,11 @@ function KnobCard({ knob, working, onApply }) {
   }
 
   return (
-    <article className="knob">
+    <article className="mb-3 rounded-xl border border-line bg-surface px-4 py-3.5">
       <h3>{knobTitle(knob)}</h3>
       {knob && knob.description ? <p>{String(knob.description)}</p> : null}
-      {bounds ? <p className="muted">{`Границы: ${bounds}`}</p> : null}
-      <p className="muted">{`Раздел: ${sectionLabel(knob && knob.section)}`}</p>
+      {bounds ? <p className="text-muted">{`Границы: ${bounds}`}</p> : null}
+      <p className="text-muted">{`Раздел: ${sectionLabel(knob && knob.section)}`}</p>
       {body}
     </article>
   );
@@ -189,7 +194,11 @@ function Knobs({ openSection }) {
       setSlot(
         <>
           <Banner kind="ok" text="Записано в черновик, клиент увидит после публикации раздела" />
-          <button type="button" className="linkish" onClick={() => openSection(knob.section)}>
+          <button
+            type="button"
+            className="border-0 bg-transparent p-0 text-accent underline"
+            onClick={() => openSection(knob.section)}
+          >
             Опубликовать раздел
           </button>
         </>
@@ -218,7 +227,7 @@ function Knobs({ openSection }) {
   return (
     <>
       <h1>Ручки</h1>
-      <p className="muted">Значение попадает в черновик раздела. Клиент увидит его только после публикации.</p>
+      <p className="text-muted">Значение попадает в черновик раздела. Клиент увидит его только после публикации.</p>
       {view.groups.length > 0 ? (
         view.groups.map((group) => (
           <section key={group.layer || group.title}>
@@ -229,7 +238,7 @@ function Knobs({ openSection }) {
           </section>
         ))
       ) : (
-        <p className="muted">Ручек пока нет</p>
+        <p className="text-muted">Ручек пока нет</p>
       )}
     </>
   );

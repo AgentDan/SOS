@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchNext, postAnswer } from "../api/dialog-api.js";
 
+const panelClass =
+  "pointer-events-auto absolute top-4 left-4 z-10 max-w-[280px] rounded-lg bg-[#121212]/90 px-[14px] py-3 font-[system-ui,_sans-serif] text-[14px] leading-[1.4] text-[#eee] [&_button]:mt-1.5 [&_button]:block [&_button]:w-full [&_button]:cursor-pointer [&_button]:px-2.5 [&_button]:py-2 [&_p]:mx-0 [&_p]:mt-0 [&_p]:mb-2";
+
 function QuestionPanel({ clientId, onAnswered }) {
   const [view, setView] = useState(null);
   const onAnsweredRef = useRef(onAnswered);
@@ -42,17 +45,17 @@ function QuestionPanel({ clientId, onAnswered }) {
     }
   }
 
-  if (!view) return <div id="question-panel" />;
+  if (!view) return <div id="question-panel" className={panelClass} />;
   if (view.done) {
     return (
-      <div id="question-panel">
+      <div id="question-panel" className={panelClass}>
         <p>Анкета пройдена</p>
       </div>
     );
   }
 
   return (
-    <div id="question-panel">
+    <div id="question-panel" className={panelClass}>
       <p>{view.question.textFallback}</p>
       {(view.question.options ?? []).map((option) => (
         <button key={option.id} type="button" onClick={() => pick(option.id)}>
@@ -63,4 +66,4 @@ function QuestionPanel({ clientId, onAnswered }) {
   );
 }
 
-export { QuestionPanel };
+export { panelClass, QuestionPanel };

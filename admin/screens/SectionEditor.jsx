@@ -15,6 +15,7 @@ import { ConfirmButton, confirmAction } from "../components/confirm.jsx";
 import { DataTable } from "../components/DataTable.jsx";
 import { ErrorBlock } from "../components/ErrorBlock.jsx";
 import { Loading } from "../components/Loading.jsx";
+import { banner, bannerTone, bannerWord, flag, primary } from "../styles/classes.js";
 
 function pretty(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
@@ -24,10 +25,10 @@ function Notice({ notice, working, onLoadLatest }) {
   if (!notice) return null;
   if (notice.kind === "conflict") {
     return (
-      <div className="banner banner-warn" role="status">
-        <span className="banner-word">Внимание</span>
-        <span className="banner-text">Раздел уже изменили в другом месте</span>
-        <button type="button" disabled={working} onClick={onLoadLatest}>
+      <div className={`${banner} ${bannerTone.warn}`} role="status">
+        <span className={bannerWord}>Внимание</span>
+        <span>Раздел уже изменили в другом месте</span>
+        <button type="button" className="col-span-full w-full" disabled={working} onClick={onLoadLatest}>
           Загрузить актуальную версию
         </button>
       </div>
@@ -39,7 +40,7 @@ function Notice({ notice, working, onLoadLatest }) {
 
 function HistoryTable({ history, working, rollbackMessage, onRollback }) {
   const rows = [...history].reverse();
-  if (rows.length === 0) return <p className="muted">Истории пока нет</p>;
+  if (rows.length === 0) return <p className="text-muted">Истории пока нет</p>;
   return (
     <DataTable
       columns={[
@@ -309,11 +310,11 @@ function SectionEditor({ name, onDirty }) {
   return (
     <>
       <h1>{label}</h1>
-      <div className="editor-grid">
-        <div className="editor-main">
+      <div className="mb-7 grid grid-cols-[minmax(0,1fr)_280px] items-start gap-4 max-[900px]:grid-cols-1">
+        <div>
           <h2>Черновик</h2>
           <textarea
-            className="json-editor"
+            className="min-h-[60vh] w-full resize-y overflow-auto border border-line bg-surface p-3 font-editor text-[13px] leading-[1.45] whitespace-pre"
             wrap="off"
             spellCheck={false}
             autoCapitalize="off"
@@ -326,17 +327,17 @@ function SectionEditor({ name, onDirty }) {
             }}
           />
         </div>
-        <div className="editor-side">
+        <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-3.5">
           <h2>Версии</h2>
           <p>{`Черновик: версия ${draftVersion}`}</p>
           <p>{`Опубликовано: версия ${publishedVersion}`}</p>
-          <p className={differs ? "flag flag-warn" : "muted"}>
+          <p className={differs ? flag : "text-muted"}>
             {differs ? "Черновик отличается от опубликованного" : "Черновик совпадает с опубликованным"}
           </p>
-          <button type="button" className="primary" disabled={working} onClick={save}>
+          <button type="button" className={`w-full ${primary}`} disabled={working} onClick={save}>
             Сохранить черновик
           </button>
-          <label className="field">
+          <label className="my-1 flex flex-col gap-1">
             <span>Что изменено</span>
             <input
               ref={descriptionInputRef}
@@ -350,19 +351,19 @@ function SectionEditor({ name, onDirty }) {
               }}
             />
           </label>
-          <button type="button" className="primary" disabled={working} onClick={publish}>
+          <button type="button" className={`w-full ${primary}`} disabled={working} onClick={publish}>
             Опубликовать
           </button>
-          <button type="button" disabled={working} onClick={reset}>
+          <button type="button" className="w-full" disabled={working} onClick={reset}>
             Сбросить правки
           </button>
-          <div className="status">
+          <div className="empty:hidden">
             <Notice notice={notice} working={working} onLoadLatest={loadLatest} />
           </div>
         </div>
       </div>
       <h2>История версий</h2>
-      <div className="table-wrap">
+      <div className="mb-4 overflow-x-auto">
         <HistoryTable
           history={history}
           working={working}

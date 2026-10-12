@@ -1,5 +1,5 @@
 function Loading({ text = "Загрузка…" }) {
-  return <p className="loading">{text}</p>;
+  return <p className="text-muted">{text}</p>;
 }
 
 export { Loading };
