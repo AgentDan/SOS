@@ -9,7 +9,7 @@ import { Loading } from "../components/Loading.jsx";
 const LIMITS = [50, 100, 200];
 
 function JournalTable({ entries }) {
-  if (entries.length === 0) return <p className="mb-2 text-muted">Записей пока нет</p>;
+  if (entries.length === 0) return <p className="mt-0 mb-2 text-[#5e584e] dark:text-[#b7b0a4]">Записей пока нет</p>;
   return (
     <DataTable
       columns={[
@@ -67,12 +67,12 @@ function Journal() {
 
   return (
     <>
-      <h1 className="mb-3 font-strong leading-tight text-[1.6rem]">Журнал правок</h1>
+      <h1 className="mt-0 mb-3 font-[650] leading-tight text-[1.6rem]">Журнал правок</h1>
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <label className="flex flex-row items-center gap-2">
           <span>Сколько записей</span>
           <select
-            className="w-auto rounded-lg border border-line bg-surface px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="w-auto rounded-lg border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
             value={String(limit)}
             disabled={working}
             onChange={(event) => setLimit(Number(event.target.value))}
@@ -86,7 +86,7 @@ function Journal() {
         </label>
         <button
           type="button"
-          className="cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="cursor-pointer rounded-lg border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
           disabled={working}
           onClick={() => setRefresh((value) => value + 1)}
         >

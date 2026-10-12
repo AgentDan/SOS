@@ -1,8 +1,8 @@
 const WORDS = { ok: "Готово", warn: "Внимание", error: "Ошибка" };
 const TONE = {
-  ok: "border-l-ok bg-ok-bg text-ok",
-  warn: "border-l-warn bg-warn-bg text-warn",
-  error: "border-l-err bg-err-bg text-err"
+  ok: "border-l-[#0f6b3c] dark:border-l-[#b7ebc9] bg-[#e5f6ec] dark:bg-[#163226] text-[#0f6b3c] dark:text-[#b7ebc9]",
+  warn: "border-l-[#7a4e00] dark:border-l-[#ffe0a3] bg-[#fff4d6] dark:bg-[#3a2e12] text-[#7a4e00] dark:text-[#ffe0a3]",
+  error: "border-l-[#8e1d1d] dark:border-l-[#ffb4b4] bg-[#fde8e8] dark:bg-[#3a1c1c] text-[#8e1d1d] dark:text-[#ffb4b4]"
 };
 
 function Banner({ kind, text }) {

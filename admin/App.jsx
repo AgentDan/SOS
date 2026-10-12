@@ -181,7 +181,7 @@ function App() {
 
   if (mode === "boot") {
     return (
-      <div className="min-h-screen bg-bg text-[16px] leading-[1.45] text-ink [font-family:var(--default-font-family)]">
+      <div className="box-border min-h-screen bg-[#f3f0e8] [color-scheme:light] text-[16px] leading-[1.45] text-[#1e1b16] font-[system-ui,sans-serif] dark:bg-[#14171c] dark:text-[#f3efe6] dark:[color-scheme:dark] [&_*]:box-border">
         <Loading text="Проверяем вход…" />
       </div>
     );
@@ -189,7 +189,7 @@ function App() {
 
   if (mode === "login") {
     return (
-      <div className="min-h-screen bg-bg text-[16px] leading-[1.45] text-ink [font-family:var(--default-font-family)]">
+      <div className="box-border min-h-screen bg-[#f3f0e8] [color-scheme:light] text-[16px] leading-[1.45] text-[#1e1b16] font-[system-ui,sans-serif] dark:bg-[#14171c] dark:text-[#f3efe6] dark:[color-scheme:dark] [&_*]:box-border">
         <Login
           message={loginMessage}
           onSuccess={() => {
@@ -210,11 +210,11 @@ function App() {
   else if (route.screen === "journal") screen = <Journal key={screenKey} />;
 
   return (
-    <div className="min-h-screen bg-bg text-[16px] leading-[1.45] text-ink [font-family:var(--default-font-family)]">
+    <div className="box-border min-h-screen bg-[#f3f0e8] [color-scheme:light] text-[16px] leading-[1.45] text-[#1e1b16] font-[system-ui,sans-serif] dark:bg-[#14171c] dark:text-[#f3efe6] dark:[color-scheme:dark] [&_*]:box-border">
       <div className="grid min-h-screen grid-cols-[220px_minmax(0,1fr)] max-[800px]:grid-cols-1">
-        <aside className="sticky top-0 z-[2] flex min-h-screen flex-col gap-2 self-start border-r border-line bg-sidebar px-4 py-5 max-[800px]:min-h-0 max-[800px]:flex-row max-[800px]:flex-wrap max-[800px]:items-center max-[800px]:border-r-0 max-[800px]:border-b">
-          <p className="mb-0 text-xl font-bold">deskOS</p>
-          <p className="mb-3 text-muted max-[800px]:hidden">админка</p>
+        <aside className="sticky top-0 z-[2] flex min-h-screen flex-col gap-2 self-start border-r border-[#ddd4c6] dark:border-[#343b46] bg-[#e7e1d6] dark:bg-[#191d24] px-4 py-5 max-[800px]:min-h-0 max-[800px]:flex-row max-[800px]:flex-wrap max-[800px]:items-center max-[800px]:border-r-0 max-[800px]:border-b">
+          <p className="mt-0 mb-0 text-xl font-bold">deskOS</p>
+          <p className="mt-0 mb-3 text-[#5e584e] dark:text-[#b7b0a4] max-[800px]:hidden">админка</p>
           <nav className="flex flex-col gap-1 max-[800px]:flex-row max-[800px]:flex-wrap">
             {NAV.map(([screenName, text]) => {
               const on = screenName === active;
@@ -225,8 +225,8 @@ function App() {
                   data-screen={screenName}
                   className={
                     on
-                      ? "cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 text-left font-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                      : "cursor-pointer rounded-lg border border-transparent bg-transparent px-3 py-2 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      ? "cursor-pointer rounded-lg border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] px-3 py-2 text-left font-[650] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
+                      : "cursor-pointer rounded-lg border border-transparent bg-transparent px-3 py-2 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
                   }
                   aria-current={on ? "page" : undefined}
                   onClick={() => requestGo({ screen: screenName })}
@@ -238,7 +238,7 @@ function App() {
           </nav>
           <button
             type="button"
-            className="mt-auto cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-[800px]:mt-0 max-[800px]:ml-auto"
+            className="mt-auto cursor-pointer rounded-lg border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e] max-[800px]:mt-0 max-[800px]:ml-auto"
             onClick={logout}
           >
             Выйти
