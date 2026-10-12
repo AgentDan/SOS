@@ -6,7 +6,6 @@ import { Banner } from "../components/Banner.jsx";
 import { ErrorBlock } from "../components/ErrorBlock.jsx";
 import { Loading } from "../components/Loading.jsx";
 import { SectionTile } from "../components/SectionTile.jsx";
-import { errorLines, tiles } from "../styles/classes.js";
 
 const HEALTH_TITLES = [
   ["draft", "черновик"],
@@ -18,7 +17,7 @@ function HealthView({ title, report }) {
   const line = healthLine(title, report);
   if (line.ok || line.errors.length === 0) {
     return (
-      <p className={line.ok ? "text-ok before:font-bold before:content-['Ок._']" : "text-err"}>{line.text}</p>
+      <p className={line.ok ? "mb-2 text-ok before:font-bold before:content-['Ок._']" : "mb-2 text-err"}>{line.text}</p>
     );
   }
   return (
@@ -27,7 +26,7 @@ function HealthView({ title, report }) {
       open
     >
       <summary>{line.text}</summary>
-      <ul className={errorLines}>
+      <ul className="m-0 list-disc pl-[1.1rem] [&_li]:my-0.5 [&_li]:[overflow-wrap:anywhere]">
         {line.errors.map((item, index) => (
           <li key={`${index}:${item}`}>{item}</li>
         ))}
@@ -91,7 +90,7 @@ function Overview({ openSection }) {
   if (view.kind === "crash") {
     return (
       <>
-        <h1>Обзор</h1>
+        <h1 className="mb-3 font-strong leading-tight text-[1.6rem]">Обзор</h1>
         <Banner kind="error" text="Не получилось открыть обзор" />
       </>
     );
@@ -100,7 +99,7 @@ function Overview({ openSection }) {
   const tiles = view.kind === "ready" ? view.sections : [];
   return (
     <>
-      <h1>Обзор</h1>
+      <h1 className="mb-3 font-strong leading-tight text-[1.6rem]">Обзор</h1>
       <p className="mb-[22px] rounded-xl border border-line bg-surface px-3.5 py-3 shadow-(--card-shadow)">
         Провести продажу и сделать клиента лояльным
       </p>
@@ -108,23 +107,23 @@ function Overview({ openSection }) {
       {view.kind === "ready" ? (
         <>
           <section>
-            <h2>Карта системы</h2>
+            <h2 className="mb-2.5 font-strong leading-tight text-[1.15rem]">Карта системы</h2>
             {tiles.length > 0 ? (
-              <div className={tiles}>
+              <div className="mb-7 grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
                 {tiles.map((item) => (
                   <SectionTile key={item.name} item={item} onOpen={openSection} />
                 ))}
               </div>
             ) : (
-              <p className="text-muted">Разделов пока нет</p>
+              <p className="mb-2 text-muted">Разделов пока нет</p>
             )}
           </section>
           <section>
-            <h2>Здоровье данных</h2>
+            <h2 className="mb-2.5 font-strong leading-tight text-[1.15rem]">Здоровье данных</h2>
             {view.health.kind === "error" ? <ErrorBlock lines={view.health.lines} /> : null}
             {view.health.kind === "report" ? (
               <>
-                <p>{dataVersionText(view.health.report.dataVersion)}</p>
+                <p className="mb-2">{dataVersionText(view.health.report.dataVersion)}</p>
                 {HEALTH_TITLES.map(([key, title]) => (
                   <HealthView key={key} title={title} report={view.health.report[key]} />
                 ))}

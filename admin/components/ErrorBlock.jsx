@@ -1,10 +1,11 @@
-import { banner, bannerTone, bannerWord, errorLines } from "../styles/classes.js";
-
 function ErrorBlock({ lines }) {
   return (
-    <div className={`${banner} ${bannerTone.error}`} role="alert">
-      <span className={bannerWord}>Ошибка</span>
-      <ul className={errorLines}>
+    <div
+      className="mb-3 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2 rounded-[10px] border-l-4 border-l-err bg-err-bg px-3 py-2.5 text-err"
+      role="alert"
+    >
+      <span className="font-bold">Ошибка</span>
+      <ul className="m-0 list-disc pl-[1.1rem] [&_li]:my-0.5 [&_li]:[overflow-wrap:anywhere]">
         {lines.map((line, index) => (
           <li key={`${index}:${line}`}>{line}</li>
         ))}

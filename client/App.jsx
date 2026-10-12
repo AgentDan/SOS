@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchScene } from "./api/dialog-api.js";
-import { panelClass, QuestionPanel } from "./chat/QuestionPanel.jsx";
+import { QuestionPanel } from "./chat/QuestionPanel.jsx";
 import { SceneView } from "./scene/SceneView.jsx";
 import { getClientId } from "./session/client-id.js";
 
@@ -32,7 +32,14 @@ function App() {
   return (
     <>
       <SceneView skus={skus} onReady={() => setPanel(true)} />
-      {panel ? <QuestionPanel clientId={clientId} onAnswered={refreshScene} /> : <div id="question-panel" className={panelClass} />}
+      {panel ? (
+        <QuestionPanel clientId={clientId} onAnswered={refreshScene} />
+      ) : (
+        <div
+          id="question-panel"
+          className="pointer-events-auto absolute top-4 left-4 z-10 max-w-[280px] rounded-lg bg-[#121212]/90 px-[14px] py-3 font-[system-ui,_sans-serif] text-[14px] leading-[1.4] text-[#eee]"
+        />
+      )}
     </>
   );
 }

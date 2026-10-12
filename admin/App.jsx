@@ -181,7 +181,7 @@ function App() {
 
   if (mode === "boot") {
     return (
-      <div>
+      <div className="min-h-screen bg-bg text-[16px] leading-[1.45] text-ink [font-family:var(--default-font-family)]">
         <Loading text="Проверяем вход…" />
       </div>
     );
@@ -189,7 +189,7 @@ function App() {
 
   if (mode === "login") {
     return (
-      <div>
+      <div className="min-h-screen bg-bg text-[16px] leading-[1.45] text-ink [font-family:var(--default-font-family)]">
         <Login
           message={loginMessage}
           onSuccess={() => {
@@ -210,7 +210,7 @@ function App() {
   else if (route.screen === "journal") screen = <Journal key={screenKey} />;
 
   return (
-    <div>
+    <div className="min-h-screen bg-bg text-[16px] leading-[1.45] text-ink [font-family:var(--default-font-family)]">
       <div className="grid min-h-screen grid-cols-[220px_minmax(0,1fr)] max-[800px]:grid-cols-1">
         <aside className="sticky top-0 z-[2] flex min-h-screen flex-col gap-2 self-start border-r border-line bg-sidebar px-4 py-5 max-[800px]:min-h-0 max-[800px]:flex-row max-[800px]:flex-wrap max-[800px]:items-center max-[800px]:border-r-0 max-[800px]:border-b">
           <p className="mb-0 text-xl font-bold">deskOS</p>
@@ -225,8 +225,8 @@ function App() {
                   data-screen={screenName}
                   className={
                     on
-                      ? "border-line bg-surface text-left font-strong"
-                      : "border-transparent bg-transparent text-left"
+                      ? "cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 text-left font-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      : "cursor-pointer rounded-lg border border-transparent bg-transparent px-3 py-2 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   }
                   aria-current={on ? "page" : undefined}
                   onClick={() => requestGo({ screen: screenName })}
@@ -236,7 +236,11 @@ function App() {
               );
             })}
           </nav>
-          <button type="button" className="mt-auto max-[800px]:mt-0 max-[800px]:ml-auto" onClick={logout}>
+          <button
+            type="button"
+            className="mt-auto cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-[800px]:mt-0 max-[800px]:ml-auto"
+            onClick={logout}
+          >
             Выйти
           </button>
         </aside>

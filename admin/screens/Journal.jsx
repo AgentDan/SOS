@@ -9,7 +9,7 @@ import { Loading } from "../components/Loading.jsx";
 const LIMITS = [50, 100, 200];
 
 function JournalTable({ entries }) {
-  if (entries.length === 0) return <p className="text-muted">Записей пока нет</p>;
+  if (entries.length === 0) return <p className="mb-2 text-muted">Записей пока нет</p>;
   return (
     <DataTable
       columns={[
@@ -67,12 +67,12 @@ function Journal() {
 
   return (
     <>
-      <h1>Журнал правок</h1>
+      <h1 className="mb-3 font-strong leading-tight text-[1.6rem]">Журнал правок</h1>
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <label className="flex flex-row items-center gap-2">
           <span>Сколько записей</span>
           <select
-            className="w-auto"
+            className="w-auto rounded-lg border border-line bg-surface px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             value={String(limit)}
             disabled={working}
             onChange={(event) => setLimit(Number(event.target.value))}
@@ -84,7 +84,12 @@ function Journal() {
             ))}
           </select>
         </label>
-        <button type="button" disabled={working} onClick={() => setRefresh((value) => value + 1)}>
+        <button
+          type="button"
+          className="cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          disabled={working}
+          onClick={() => setRefresh((value) => value + 1)}
+        >
           Обновить
         </button>
       </div>

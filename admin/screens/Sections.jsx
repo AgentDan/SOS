@@ -5,7 +5,6 @@ import { labelSections } from "../lib/sections.js";
 import { ErrorBlock } from "../components/ErrorBlock.jsx";
 import { Loading } from "../components/Loading.jsx";
 import { SectionTile } from "../components/SectionTile.jsx";
-import { tiles } from "../styles/classes.js";
 
 function Sections({ openSection }) {
   const [view, setView] = useState({ kind: "loading" });
@@ -31,19 +30,19 @@ function Sections({ openSection }) {
   if (view.kind === "loading") return <Loading />;
   return (
     <>
-      <h1>Разделы</h1>
+      <h1 className="mb-3 font-strong leading-tight text-[1.6rem]">Разделы</h1>
       {view.kind === "error" ? <ErrorBlock lines={view.lines} /> : null}
       {view.kind === "ready" ? (
         <>
-          <p className="text-muted">Откройте раздел, чтобы править черновик, публиковать и откатывать.</p>
+          <p className="mb-2 text-muted">Откройте раздел, чтобы править черновик, публиковать и откатывать.</p>
           {view.sections.length > 0 ? (
-            <div className={tiles}>
+            <div className="mb-7 grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
               {view.sections.map((item) => (
                 <SectionTile key={item.name} item={item} onOpen={openSection} />
               ))}
             </div>
           ) : (
-            <p className="text-muted">Разделов пока нет</p>
+            <p className="mb-2 text-muted">Разделов пока нет</p>
           )}
         </>
       ) : null}

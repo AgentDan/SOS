@@ -15,7 +15,6 @@ import { ConfirmButton, confirmAction } from "../components/confirm.jsx";
 import { DataTable } from "../components/DataTable.jsx";
 import { ErrorBlock } from "../components/ErrorBlock.jsx";
 import { Loading } from "../components/Loading.jsx";
-import { banner, bannerTone, bannerWord, flag, primary } from "../styles/classes.js";
 
 function pretty(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
@@ -25,10 +24,18 @@ function Notice({ notice, working, onLoadLatest }) {
   if (!notice) return null;
   if (notice.kind === "conflict") {
     return (
-      <div className={`${banner} ${bannerTone.warn}`} role="status">
-        <span className={bannerWord}>Внимание</span>
+      <div
+        className="mb-3 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2 rounded-[10px] border-l-4 border-l-warn bg-warn-bg px-3 py-2.5 text-warn"
+        role="status"
+      >
+        <span className="font-bold">Внимание</span>
         <span>Раздел уже изменили в другом месте</span>
-        <button type="button" className="col-span-full w-full" disabled={working} onClick={onLoadLatest}>
+        <button
+          type="button"
+          className="col-span-full w-full cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          disabled={working}
+          onClick={onLoadLatest}
+        >
           Загрузить актуальную версию
         </button>
       </div>
@@ -40,7 +47,7 @@ function Notice({ notice, working, onLoadLatest }) {
 
 function HistoryTable({ history, working, rollbackMessage, onRollback }) {
   const rows = [...history].reverse();
-  if (rows.length === 0) return <p className="text-muted">Истории пока нет</p>;
+  if (rows.length === 0) return <p className="mb-2 text-muted">Истории пока нет</p>;
   return (
     <DataTable
       columns={[
@@ -299,7 +306,7 @@ function SectionEditor({ name, onDirty }) {
   if (phase === "error") {
     return (
       <>
-        <h1>{label}</h1>
+        <h1 className="mb-3 font-strong leading-tight text-[1.6rem]">{label}</h1>
         <ErrorBlock lines={problemLines(loadError && loadError.status, loadError && loadError.body)} />
       </>
     );
@@ -309,12 +316,12 @@ function SectionEditor({ name, onDirty }) {
 
   return (
     <>
-      <h1>{label}</h1>
+      <h1 className="mb-3 font-strong leading-tight text-[1.6rem]">{label}</h1>
       <div className="mb-7 grid grid-cols-[minmax(0,1fr)_280px] items-start gap-4 max-[900px]:grid-cols-1">
         <div>
-          <h2>Черновик</h2>
+          <h2 className="mb-2.5 font-strong leading-tight text-[1.15rem]">Черновик</h2>
           <textarea
-            className="min-h-[60vh] w-full resize-y overflow-auto border border-line bg-surface p-3 font-editor text-[13px] leading-[1.45] whitespace-pre"
+            className="min-h-[60vh] w-full resize-y overflow-auto rounded-lg border border-line bg-surface p-3 text-[13px] leading-[1.45] whitespace-pre [font-family:var(--default-mono-font-family)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             wrap="off"
             spellCheck={false}
             autoCapitalize="off"
@@ -328,19 +335,31 @@ function SectionEditor({ name, onDirty }) {
           />
         </div>
         <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-3.5">
-          <h2>Версии</h2>
-          <p>{`Черновик: версия ${draftVersion}`}</p>
-          <p>{`Опубликовано: версия ${publishedVersion}`}</p>
-          <p className={differs ? flag : "text-muted"}>
+          <h2 className="mb-2.5 font-strong leading-tight text-[1.15rem]">Версии</h2>
+          <p className="mb-2">{`Черновик: версия ${draftVersion}`}</p>
+          <p className="mb-2">{`Опубликовано: версия ${publishedVersion}`}</p>
+          <p
+            className={
+              differs
+                ? "mt-1.5 mb-2 inline-block rounded-[999px] bg-warn-bg px-2 py-0.5 text-[0.86rem] text-warn before:font-bold before:content-['!_']"
+                : "mb-2 text-muted"
+            }
+          >
             {differs ? "Черновик отличается от опубликованного" : "Черновик совпадает с опубликованным"}
           </p>
-          <button type="button" className={`w-full ${primary}`} disabled={working} onClick={save}>
+          <button
+            type="button"
+            className="w-full cursor-pointer rounded-lg border border-accent bg-accent px-3 py-2 text-accent-ink disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            disabled={working}
+            onClick={save}
+          >
             Сохранить черновик
           </button>
           <label className="my-1 flex flex-col gap-1">
             <span>Что изменено</span>
             <input
               ref={descriptionInputRef}
+              className="w-full rounded-lg border border-line bg-surface px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               type="text"
               autoComplete="off"
               value={description}
@@ -351,10 +370,20 @@ function SectionEditor({ name, onDirty }) {
               }}
             />
           </label>
-          <button type="button" className={`w-full ${primary}`} disabled={working} onClick={publish}>
+          <button
+            type="button"
+            className="w-full cursor-pointer rounded-lg border border-accent bg-accent px-3 py-2 text-accent-ink disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            disabled={working}
+            onClick={publish}
+          >
             Опубликовать
           </button>
-          <button type="button" className="w-full" disabled={working} onClick={reset}>
+          <button
+            type="button"
+            className="w-full cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            disabled={working}
+            onClick={reset}
+          >
             Сбросить правки
           </button>
           <div className="empty:hidden">
@@ -362,7 +391,7 @@ function SectionEditor({ name, onDirty }) {
           </div>
         </div>
       </div>
-      <h2>История версий</h2>
+      <h2 className="mb-2.5 font-strong leading-tight text-[1.15rem]">История версий</h2>
       <div className="mb-4 overflow-x-auto">
         <HistoryTable
           history={history}

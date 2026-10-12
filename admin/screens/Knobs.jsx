@@ -32,6 +32,7 @@ function BooleanField({ value, inputRef }) {
     <label className="flex items-center gap-2">
       <input
         ref={inputRef}
+        className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         type="checkbox"
         defaultChecked={value === true}
         onChange={(event) => setChecked(event.target.checked)}
@@ -46,7 +47,11 @@ function EnumField({ knob, value, inputRef }) {
   const extra =
     value != null && !options.some((option) => option === value || String(option) === String(value));
   return (
-    <select ref={inputRef} defaultValue={value == null ? undefined : String(value)}>
+    <select
+      ref={inputRef}
+      className="w-full rounded-lg border border-line bg-surface px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      defaultValue={value == null ? undefined : String(value)}
+    >
       {extra ? <option value={String(value)}>{String(value)}</option> : null}
       {options.map((option) => (
         <option key={String(option)} value={String(option)}>
@@ -64,6 +69,7 @@ function KnobControl({ knob, value, inputRef }) {
     return (
       <input
         ref={inputRef}
+        className="w-full rounded-lg border border-line bg-surface px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         type="number"
         step="any"
         min={typeof knob.min === "number" ? String(knob.min) : undefined}
@@ -75,6 +81,7 @@ function KnobControl({ knob, value, inputRef }) {
   return (
     <input
       ref={inputRef}
+      className="w-full rounded-lg border border-line bg-surface px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       type="text"
       autoComplete="off"
       defaultValue={typeof value === "string" ? value : undefined}
@@ -107,6 +114,7 @@ function KnobRow({ knob, row, hideKey, working, onApply }) {
       <KnobControl knob={knob} value={row.value} inputRef={inputRef} />
       <button
         type="button"
+        className="cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         disabled={working}
         onClick={() => onApply(knob, row, readControl(knob, inputRef.current), setSlot)}
       >
@@ -143,10 +151,10 @@ function KnobCard({ knob, working, onApply }) {
 
   return (
     <article className="mb-3 rounded-xl border border-line bg-surface px-4 py-3.5">
-      <h3>{knobTitle(knob)}</h3>
-      {knob && knob.description ? <p>{String(knob.description)}</p> : null}
-      {bounds ? <p className="text-muted">{`Границы: ${bounds}`}</p> : null}
-      <p className="text-muted">{`Раздел: ${sectionLabel(knob && knob.section)}`}</p>
+      <h3 className="mb-1.5 font-strong leading-tight text-[1.02rem]">{knobTitle(knob)}</h3>
+      {knob && knob.description ? <p className="mb-2">{String(knob.description)}</p> : null}
+      {bounds ? <p className="mb-2 text-muted">{`Границы: ${bounds}`}</p> : null}
+      <p className="mb-2 text-muted">{`Раздел: ${sectionLabel(knob && knob.section)}`}</p>
       {body}
     </article>
   );
@@ -196,7 +204,7 @@ function Knobs({ openSection }) {
           <Banner kind="ok" text="Записано в черновик, клиент увидит после публикации раздела" />
           <button
             type="button"
-            className="border-0 bg-transparent p-0 text-accent underline"
+            className="cursor-pointer border-0 bg-transparent p-0 text-accent underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             onClick={() => openSection(knob.section)}
           >
             Опубликовать раздел
@@ -218,7 +226,7 @@ function Knobs({ openSection }) {
   if (view.kind === "error") {
     return (
       <>
-        <h1>Ручки</h1>
+        <h1 className="mb-3 font-strong leading-tight text-[1.6rem]">Ручки</h1>
         <ErrorBlock lines={view.lines} />
       </>
     );
@@ -226,19 +234,19 @@ function Knobs({ openSection }) {
 
   return (
     <>
-      <h1>Ручки</h1>
-      <p className="text-muted">Значение попадает в черновик раздела. Клиент увидит его только после публикации.</p>
+      <h1 className="mb-3 font-strong leading-tight text-[1.6rem]">Ручки</h1>
+      <p className="mb-2 text-muted">Значение попадает в черновик раздела. Клиент увидит его только после публикации.</p>
       {view.groups.length > 0 ? (
         view.groups.map((group) => (
           <section key={group.layer || group.title}>
-            <h2>{group.title}</h2>
+            <h2 className="mb-2.5 font-strong leading-tight text-[1.15rem]">{group.title}</h2>
             {group.knobs.map((knob) => (
               <KnobCard key={knob.id || knobTitle(knob)} knob={knob} working={working} onApply={onApply} />
             ))}
           </section>
         ))
       ) : (
-        <p className="text-muted">Ручек пока нет</p>
+        <p className="mb-2 text-muted">Ручек пока нет</p>
       )}
     </>
   );
