@@ -1,12 +1,11 @@
 import { clearToken, getToken } from "../session/token.js";
 
-class AdminApiError extends Error {
-  constructor(status, body) {
-    super(status === 0 ? "network" : `http ${status}`);
-    this.name = "AdminApiError";
-    this.status = status;
-    this.body = body;
-  }
+function adminApiError(status, body) {
+  const error = new Error(status === 0 ? "network" : `http ${status}`);
+  error.name = "AdminApiError";
+  error.status = status;
+  error.body = body;
+  return error;
 }
 
 let onUnauthorized = () => {};
@@ -35,7 +34,7 @@ async function request(path, { method = "GET", body, signal } = {}) {
     });
   } catch (err) {
     if (isAbort(err)) throw err;
-    throw new AdminApiError(0, null);
+    throw adminApiError(0, null);
   }
 
   let payload = null;
@@ -51,9 +50,9 @@ async function request(path, { method = "GET", body, signal } = {}) {
   if (response.status === 401) {
     clearToken();
     onUnauthorized();
-    throw new AdminApiError(401, payload);
+    throw adminApiError(401, payload);
   }
-  if (!response.ok) throw new AdminApiError(response.status, payload);
+  if (!response.ok) throw adminApiError(response.status, payload);
   return payload;
 }
 
@@ -108,7 +107,6 @@ function readJournal(limit, options) {
 }
 
 export {
-  AdminApiError,
   setUnauthorizedHandler,
   isAbort,
   listSections,
