@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchCatalog } from "../api/catalog-api.js";
-import { initDragControls } from "./interaction/drag-controls.js";
 import { createFloor } from "./floor.js";
 import { clear as clearRegistry } from "./physics/registry.js";
 import { syncMeshes } from "./physics/sync.js";
@@ -36,12 +35,10 @@ function SceneView({ skus, onReady }) {
       if (!alive || !canvas) return;
       let worldReady = false;
       let view = null;
-      let stopDrag = () => {};
       let done = false;
       dispose = () => {
         if (done) return;
         done = true;
-        stopDrag();
         if (view) view.dispose();
         if (worldReady) disposeWorld();
         clearRegistry();
@@ -66,7 +63,6 @@ function SceneView({ skus, onReady }) {
           }
         });
         createFloor(world);
-        stopDrag = initDragControls({ camera: view.camera, canvas, controls: view.controls });
         if (!alive) {
           dispose();
           return;
