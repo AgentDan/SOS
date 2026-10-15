@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { computeScenePlan } from "./scene-plan.js";
+import { applySceneEdits, computeScenePlan } from "./scene-plan.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CATALOG_DIR = path.join(__dirname, "..", "..", "data", "catalog");
@@ -57,4 +57,77 @@ test("the same resolved sku is listed once", () => {
   });
   assert.equal(skus.filter((sku) => sku === "DESK-TOP-1800").length, 1);
   assert.equal(skus.filter((sku) => sku === "DESK-LEGS-1400").length, 1);
+});
+
+test("applySceneEdits adds a missing sku", () => {
+  assert.deepEqual(applySceneEdits(["DESK-LEGS-1400"], [{ op: "add", sku: "CHAIR-460" }]), [
+    "DESK-LEGS-1400",
+    "CHAIR-460"
+  ]);
+});
+
+test("applySceneEdits removes a sku", () => {
+  assert.deepEqual(
+    applySceneEdits(["DESK-LEGS-1400", "CHAIR-460"], [{ op: "remove", sku: "CHAIR-460" }]),
+    ["DESK-LEGS-1400"]
+  );
+});
+
+test("applySceneEdits replaces a sku in place", () => {
+  assert.deepEqual(
+    applySceneEdits(["DESK-LEGS-1400", "CHAIR-460"], [
+      { op: "replace", sku: "CHAIR-460", withSku: "DESK-TOP-1800" }
+    ]),
+    ["DESK-LEGS-1400", "DESK-TOP-1800"]
+  );
+});
+
+test("applySceneEdits skips a replace when the sku is missing", () => {
+  const skus = ["DESK-LEGS-1400"];
+  assert.deepEqual(
+    applySceneEdits(skus, [{ op: "replace", sku: "CHAIR-460", withSku: "DESK-TOP-1800" }]),
+    ["DESK-LEGS-1400"]
+  );
+  assert.deepEqual(skus, ["DESK-LEGS-1400"]);
+});
+
+test("applySceneEdits drops repeated skus", () => {
+  assert.deepEqual(
+    applySceneEdits(["DESK-LEGS-1400", "CHAIR-460"], [
+      { op: "add", sku: "CHAIR-460" },
+      { op: "add", sku: "CHAIR-460" }
+    ]),
+    ["DESK-LEGS-1400", "CHAIR-460"]
+  );
+});
+
+test("applySceneEdits ignores an unknown op", () => {
+  assert.deepEqual(
+    applySceneEdits(["DESK-LEGS-1400"], [
+      { op: "move", sku: "DESK-LEGS-1400" },
+      { op: "add", sku: "CHAIR-460" }
+    ]),
+    ["DESK-LEGS-1400", "CHAIR-460"]
+  );
+});
+
+test("computeScenePlan without sceneEdits matches the needs-only plan", () => {
+  const profile = {
+    needs: [{ id: "desk_top_wide", confidence: "medium", resolvedSku: "DESK-TOP-1800" }]
+  };
+  const skus = computeScenePlan(loadCatalog(), profile);
+  assert.ok(skus.includes("DESK-LEGS-1400"));
+  assert.ok(skus.includes("DESK-TOP-1800"));
+  assert.equal(skus.includes("CHAIR-460"), false);
+});
+
+test("computeScenePlan applies sceneEdits after the needs plan", () => {
+  const skus = computeScenePlan(loadCatalog(), {
+    needs: [{ id: "desk_top_wide", resolvedSku: "DESK-TOP-1800" }],
+    sceneEdits: [
+      { op: "add", sku: "CHAIR-460" },
+      { op: "remove", sku: "DESK-TOP-1800" }
+    ]
+  });
+  assert.deepEqual(skus, ["DESK-LEGS-1400", "CHAIR-460"]);
 });

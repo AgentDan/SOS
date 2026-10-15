@@ -147,3 +147,19 @@ test("modules honor the dependency rules", () => {
   const found = violations();
   assert.deepEqual(found, [], found.join("\n"));
 });
+
+test("only applySceneChange writes sceneEdits", () => {
+  const allowed = path.normalize(path.join(BACKEND, "scene", "apply-scene-change.js"));
+  const writePattern =
+    /sceneEdits\s*=|sceneEdits\s*\?\?=|sceneEdits\s*\|\|=|\.sceneEdits\.push\(|\.sceneEdits\.splice\(|\.sceneEdits\.length\s*=/;
+  const found = [];
+
+  for (const file of walkIfExists(BACKEND)) {
+    if (file.endsWith(".test.js")) continue;
+    if (path.normalize(file) === allowed) continue;
+    const source = readFileSync(file, "utf8");
+    if (writePattern.test(source)) found.push(file);
+  }
+
+  assert.deepEqual(found, [], found.join("\n"));
+});

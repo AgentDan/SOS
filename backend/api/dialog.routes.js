@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { runTurn } from "../pipeline/orchestrator.js";
+import { runMessage, runTurn } from "../pipeline/orchestrator.js";
 import { getNext, getProfile, getScene } from "../pipeline/reads.js";
 import { requireClientId } from "./middleware/client-id.js";
 
@@ -15,6 +15,15 @@ router.post("/dialog/answer", (req, res) => {
   const { clientId, questionId, optionId } = req.body ?? {};
   const result = runTurn({ clientId, questionId, optionId });
   res.status(result.status).json(result.body);
+});
+
+router.post("/dialog/message", (req, res) => {
+  const { clientId, text } = req.body ?? {};
+  if (typeof text !== "string") {
+    return res.status(400).json({ error: "text must be a string" });
+  }
+  const outcome = runMessage({ clientId, text });
+  res.status(200).json({ result: outcome.result });
 });
 
 router.get("/dialog/scene", (req, res) => {
