@@ -99,6 +99,12 @@ function validateCatalogDraft(catalog, errors) {
         errors.push(`catalog: product "${label}" references unknown type "${product.type}"`);
       }
 
+      if (product && product.label !== undefined) {
+        if (typeof product.label !== "string" || product.label.length === 0) {
+          errors.push(`catalog: product "${label}" label must be a non-empty string`);
+        }
+      }
+
       if (product && product.words !== undefined) {
         const words = product.words;
         const ok =

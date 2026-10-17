@@ -254,6 +254,37 @@ test("commands limits.maxItems must be an integer >= 1", () => {
   );
 });
 
+test("catalog product label is an optional non-empty string", () => {
+  const chair = (data) => data.catalog.draft.products.find((item) => item.sku === "CHAIR-460");
+
+  const kept = validPair();
+  assert.equal(typeof chair(kept).label, "string");
+  assert.ok(chair(kept).label.length > 0);
+  assert.equal(validateDialogData(kept), true);
+
+  const omitted = validPair();
+  delete chair(omitted).label;
+  assert.equal(validateDialogData(omitted), true);
+
+  const empty = validPair();
+  chair(empty).label = "";
+  assert.throws(
+    () => validateDialogData(empty),
+    (err) =>
+      err instanceof Error &&
+      /catalog: product "CHAIR-460" label must be a non-empty string/.test(err.message)
+  );
+
+  const number = validPair();
+  chair(number).label = 12;
+  assert.throws(
+    () => validateDialogData(number),
+    (err) =>
+      err instanceof Error &&
+      /catalog: product "CHAIR-460" label must be a non-empty string/.test(err.message)
+  );
+});
+
 test("catalog product words must be a non-empty array of strings", () => {
   const ok = validPair();
   ok.catalog.draft.products[0].words = ["опор"];
@@ -266,6 +297,43 @@ test("catalog product words must be a non-empty array of strings", () => {
     (err) =>
       err instanceof Error &&
       /catalog: product ".*?" words must be a non-empty array of non-empty strings/.test(err.message)
+  );
+});
+
+test("consultant replies are an optional map of templates", () => {
+  const omitted = loadSkeleton();
+  delete omitted.consultant.draft.replies;
+  assert.equal(validateDialogData(omitted), true);
+
+  const allowed = loadSkeleton();
+  allowed.consultant.draft.replies = {
+    sample: "{item} {newItem} {savedEur} {max} {answer} {question}"
+  };
+  assert.equal(validateDialogData(allowed), true);
+
+  const notObject = loadSkeleton();
+  notObject.consultant.draft.replies = ["Записал."];
+  assert.throws(
+    () => validateDialogData(notObject),
+    (err) => err instanceof Error && /consultant: replies must be an object/.test(err.message)
+  );
+
+  const empty = loadSkeleton();
+  empty.consultant.draft.replies = { answer_ok: "" };
+  assert.throws(
+    () => validateDialogData(empty),
+    (err) =>
+      err instanceof Error &&
+      /consultant: replies "answer_ok" must be a non-empty string/.test(err.message)
+  );
+
+  const placeholder = loadSkeleton();
+  placeholder.consultant.draft.replies = { cheaper_done: "Экономия {price} €." };
+  assert.throws(
+    () => validateDialogData(placeholder),
+    (err) =>
+      err instanceof Error &&
+      /consultant: replies "cheaper_done" has unknown placeholder "\{price\}"/.test(err.message)
   );
 });
 

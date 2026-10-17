@@ -45,6 +45,39 @@ function validateFaq(faq, errors) {
   }
 }
 
+const REPLY_PLACEHOLDERS = new Set([
+  "item",
+  "newItem",
+  "savedEur",
+  "max",
+  "answer",
+  "question"
+]);
+
+function validateReplies(replies, errors) {
+  if (replies === undefined) return;
+  if (!isPlainObject(replies)) {
+    errors.push("consultant: replies must be an object");
+    return;
+  }
+
+  for (const [key, value] of Object.entries(replies)) {
+    const label = key.length > 0 ? key : "<empty>";
+    if (key.length === 0) {
+      errors.push("consultant: replies key must be a non-empty string");
+    }
+    if (typeof value !== "string" || value.length === 0) {
+      errors.push(`consultant: replies "${label}" must be a non-empty string`);
+      continue;
+    }
+    for (const match of value.matchAll(/\{([^{}]*)\}/g)) {
+      if (!REPLY_PLACEHOLDERS.has(match[1])) {
+        errors.push(`consultant: replies "${label}" has unknown placeholder "{${match[1]}}"`);
+      }
+    }
+  }
+}
+
 function validateConsultant(consultant, errors) {
   if (consultant === undefined) return;
   if (!validateSectionEnvelope(consultant, "consultant", errors)) return;
@@ -65,6 +98,7 @@ function validateConsultant(consultant, errors) {
   checkType("consultant", draft.faq, "array", "faq", errors);
   validateTopics(draft.topics, errors);
   validateFaq(draft.faq, errors);
+  validateReplies(draft.replies, errors);
 
   if (checkType("consultant", draft.inserts, "object", "inserts", errors)) {
     checkType("consultant", draft.inserts.reactions, "array", "inserts.reactions", errors);

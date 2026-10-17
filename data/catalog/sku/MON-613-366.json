@@ -2,6 +2,7 @@
   "sku": "MON-613-366",
   "type": "monitor",
   "name": "Monitor 27-inch",
+  "label": "монитор",
   "dimensions": {
     "width": 613,
     "depth": 205,

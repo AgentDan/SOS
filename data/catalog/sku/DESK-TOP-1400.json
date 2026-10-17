@@ -2,6 +2,7 @@
   "sku": "DESK-TOP-1400",
   "type": "desk_top",
   "name": "Desk top 1400x700",
+  "label": "стол 140",
   "dimensions": {
     "width": 1400,
     "depth": 700,

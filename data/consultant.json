@@ -42,6 +42,23 @@
       "bridges": {},
       "tips": {},
       "confirmBridge": ""
+    },
+    "replies": {
+      "answer_ok": "Записал.",
+      "unclear": "Не совсем понял. Скажите иначе, пожалуйста.",
+      "not_implemented": "Это я пока не умею.",
+      "not_found": "Не нашёл такого. Уточните, пожалуйста.",
+      "unknown_sku": "Такого товара у нас нет.",
+      "limit": "Больше не поместится.",
+      "limit_max": "Больше {max} предметов на сцене не поместится.",
+      "cannot_remove_support": "Это убрать нельзя: на нём стоят другие вещи или это основа.",
+      "nothing_cheaper": "Дешевле этого варианта у нас нет.",
+      "command_added": "Готово, добавил: {item}.",
+      "command_removed": "Готово, убрал: {item}.",
+      "command_replaced": "Готово, заменил: {item} → {newItem}.",
+      "cheaper_done": "Сделал дешевле: {item} → {newItem}. Экономия {savedEur} €.",
+      "faq_answer": "{answer}",
+      "smalltalk": "Здравствуйте! Чем помочь?"
     }
   },
   "history": [

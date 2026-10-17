@@ -50,7 +50,14 @@ test("a garbage message is unclear and a missing text is 400", async () => {
     const body = await res.json();
 
     assert.equal(res.status, 200);
+    assert.equal(body.version, 1);
+    assert.equal(body.status, 200);
     assert.equal(body.result.reasonCode, "unclear");
+    assert.equal(body.reply.via, "template");
+    assert.equal(typeof body.reply.text, "string");
+    assert.ok(body.reply.text.length > 0);
+    assert.ok(Array.isArray(body.scene.skus));
+    assert.equal(body.question === null || typeof body.question === "object", true);
 
     const missing = await fetch(`http://127.0.0.1:${port}/dialog/message`, {
       method: "POST",
