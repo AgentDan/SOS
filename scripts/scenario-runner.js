@@ -3,6 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runTurn } from "../backend/pipeline/orchestrator.js";
 import { getProfile } from "../backend/pipeline/reads.js";
+import { prepareDraftData, removeDraftData } from "../tests/scenarios/prepare-draft-data.js";
+import { runSkeleton, skeletonSteps } from "../tests/scenarios/skeleton.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
@@ -155,6 +157,20 @@ function report(slug, steps, errors) {
   for (const error of errors) console.log(`      ${error}`);
 }
 
+function runSkeletonScenario() {
+  const previous = process.env.SOS_DATA_DIR;
+  let draftDir;
+  try {
+    draftDir = prepareDraftData();
+    process.env.SOS_DATA_DIR = draftDir;
+    return runSkeleton();
+  } finally {
+    if (previous === undefined) delete process.env.SOS_DATA_DIR;
+    else process.env.SOS_DATA_DIR = previous;
+    if (draftDir) removeDraftData(draftDir);
+  }
+}
+
 function main() {
   let failed = 0;
 
@@ -169,6 +185,15 @@ function main() {
     report(slug, data.steps?.length ?? 0, errors);
     if (errors.length > 0) failed += 1;
   }
+
+  let skeletonErrors;
+  try {
+    skeletonErrors = runSkeletonScenario().errors;
+  } catch (err) {
+    skeletonErrors = [err instanceof Error ? err.message : String(err)];
+  }
+  report("skeleton", skeletonSteps.length, skeletonErrors);
+  if (skeletonErrors.length > 0) failed += 1;
 
   if (failed > 0) process.exit(1);
 }
