@@ -8,6 +8,10 @@
     "height": 30
   },
   "priceEur": 259,
+  "words": [
+    "стол",
+    "столешниц"
+  ],
   "media": {
     "model3d": "/models/desk.glb"
   },

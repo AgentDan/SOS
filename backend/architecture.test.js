@@ -15,7 +15,16 @@ const PIPELINE = path.join(BACKEND, "pipeline");
 const AI = path.join(BACKEND, "ai");
 const CONFIG = path.join(BACKEND, "config");
 
-const BLOCK_NAMES = ["understanding", "profile", "scene", "needs", "sales", "director", "voice"];
+const BLOCK_NAMES = [
+  "understanding",
+  "profile",
+  "scene",
+  "needs",
+  "sales",
+  "director",
+  "voice",
+  "commands"
+];
 const BLOCK_DIRS = BLOCK_NAMES.map((name) => path.join(BACKEND, name));
 const CLIENT_PARTS = ["chat", "summary", "order", "scene"].map((name) => path.join(CLIENT, name));
 const CLIENT_API = path.join(CLIENT, "api");

@@ -1,22 +1,116 @@
 {
   "section": "commands",
   "draftVersion": 1,
-  "publishedVersion": 1,
+  "publishedVersion": 2,
   "draft": {
-    "commands": [],
+    "commands": [
+      {
+        "action": "add",
+        "words": [
+          "добав",
+          "постав",
+          "положи"
+        ]
+      },
+      {
+        "action": "remove",
+        "words": [
+          "убер",
+          "убра",
+          "удал",
+          "сними"
+        ]
+      },
+      {
+        "action": "replace",
+        "words": [
+          "замен",
+          "поменя"
+        ]
+      }
+    ],
     "directions": [],
-    "amounts": []
+    "amounts": [],
+    "limits": {
+      "maxItems": 12
+    }
   },
   "history": [
     {
       "version": 1,
       "date": "2026-10-06T18:35:48.523Z",
       "description": "initial publish"
+    },
+    {
+      "version": 2,
+      "date": "2026-10-17T10:13:26.568Z",
+      "description": "три команды: добавить, убрать, заменить",
+      "snapshot": {
+        "commands": [
+          {
+            "action": "add",
+            "words": [
+              "добав",
+              "постав",
+              "положи"
+            ]
+          },
+          {
+            "action": "remove",
+            "words": [
+              "убер",
+              "убра",
+              "удал",
+              "сними"
+            ]
+          },
+          {
+            "action": "replace",
+            "words": [
+              "замен",
+              "поменя"
+            ]
+          }
+        ],
+        "directions": [],
+        "amounts": [],
+        "limits": {
+          "maxItems": 12
+        }
+      }
     }
   ],
   "published": {
-    "commands": [],
+    "commands": [
+      {
+        "action": "add",
+        "words": [
+          "добав",
+          "постав",
+          "положи"
+        ]
+      },
+      {
+        "action": "remove",
+        "words": [
+          "убер",
+          "убра",
+          "удал",
+          "сними"
+        ]
+      },
+      {
+        "action": "replace",
+        "words": [
+          "замен",
+          "поменя"
+        ]
+      }
+    ],
     "directions": [],
-    "amounts": []
+    "amounts": [],
+    "limits": {
+      "maxItems": 12
+    }
   }
 }

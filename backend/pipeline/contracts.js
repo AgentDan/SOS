@@ -66,6 +66,7 @@ function validateAnswerPayload(payload, errors) {
 function validateCommandPayload(payload, errors) {
   requireString(payload, "action", "payload.action", errors);
   optionalString(payload, "sku", "payload.sku", errors);
+  optionalString(payload, "withSku", "payload.withSku", errors);
   optionalString(payload, "direction", "payload.direction", errors);
   optionalNumber(payload, "amount", "payload.amount", errors);
   optionalString(payload, "unit", "payload.unit", errors);

@@ -12,13 +12,14 @@ alwaysApply: true
 ```
 data/ → backend/config → backend/pipeline → backend/api → client/api → client
                               ↑
-        understanding, profile, scene, needs, sales, director, voice
+        understanding, profile, scene, needs, sales, director, voice, commands
                               ↑
                     backend/ai (только understanding и voice)
 ```
 
 - `backend/api/**` импортирует только `backend/pipeline`, `backend/orders`, `backend/sessions`, `backend/admin-api`, `backend/config` и свои файлы.
-- Блоки `understanding`, `profile`, `scene`, `needs`, `sales`, `director`, `voice` не импортируют друг друга, а также `api`, `pipeline`, `config`, `orders`, `sessions`, `analytics`, `admin-api`. Только свои файлы, `node:*` и сторонние пакеты. К `ai` обращаются только `understanding` и `voice`.
+- Блоки `understanding`, `profile`, `scene`, `needs`, `sales`, `director`, `voice`, `commands` не импортируют друг друга, а также `api`, `pipeline`, `config`, `orders`, `sessions`, `analytics`, `admin-api`. Только свои файлы, `node:*` и сторонние пакеты. К `ai` обращаются только `understanding` и `voice`.
+- `commands` получает сцену как переданную функцию, `scene` не импортирует.
 - `backend/ai/**` не импортирует `api`, `pipeline`, блоки, `client`, `admin`.
 - `backend/pipeline/**` может импортировать блоки и `config`, но не `api`.
 - `client/**` не импортирует `backend/**` и `admin/**`. `admin/**` не импортирует `backend/**` и `client/**`.

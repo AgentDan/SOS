@@ -8,6 +8,10 @@
     "height": 900
   },
   "priceEur": 12,
+  "words": [
+    "кресл",
+    "стул"
+  ],
   "placement": {
     "offset": {
       "x": 0,

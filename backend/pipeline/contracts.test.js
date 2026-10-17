@@ -94,12 +94,24 @@ test("validateIntent accepts a command with optional fields", () => {
       payload: {
         action: "resize",
         sku: "DESK-TOP-1800",
+        withSku: "DESK-TOP-1400",
         direction: "wider",
         amount: 20,
         unit: "cm"
       }
     })
   );
+});
+
+test("validateIntent rejects a command withSku that is not a string", () => {
+  const errors = rejected(
+    validateIntent({
+      type: "command",
+      source: "text",
+      payload: { action: "replace", sku: "DESK-TOP-1800", withSku: 1400 }
+    })
+  );
+  assert.deepEqual(errors, ["payload.withSku must be a string"]);
 });
 
 test("validateIntent accepts every talk topic", () => {

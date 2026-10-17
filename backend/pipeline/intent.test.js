@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { interpret } from "../understanding/interpret.js";
 import { readCatalog, readQuestionnaire } from "../config/load.js";
 import { computeScenePlan } from "../scene/scene-plan.js";
 import { validateExecutorResult } from "./contracts.js";
@@ -133,23 +134,109 @@ test("applyIntent answer of an unknown question matches applyTurn", () => {
   assert.equal(viaIntent.result.reasonCode, "not_found");
 });
 
-test("applyIntent command is a stub and leaves the profile alone", () => {
+test("applyIntent command adds a sku and writes sceneEdits only on success", () => {
   const profile = freshProfile();
-  const before = structuredClone(profile);
   const outcome = applyIntent({
     questionnaire,
     catalog,
     profile,
-    intent: { type: "command", source: "text", payload: { action: "remove", sku: "CHAIR-460" } }
+    intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } },
+    limits: { maxItems: 12 }
   });
 
   assert.equal(outcome.status, 200);
   assert.deepEqual(outcome.body, { ok: true });
-  assert.deepEqual(outcome.profile, before);
   acceptedResult(outcome.result);
-  assert.equal(outcome.result.ok, false);
+  assert.equal(outcome.result.ok, true);
   assert.equal(outcome.result.kind, "command");
-  assert.equal(outcome.result.reasonCode, "not_implemented");
+  assert.equal(outcome.result.say.code, "command_added");
+  assert.deepEqual(outcome.profile.sceneEdits, [{ op: "add", sku: "CHAIR-460" }]);
+  assert.ok(computeScenePlan(catalog, outcome.profile).includes("CHAIR-460"));
+});
+
+test("applyIntent command refusals do not write sceneEdits", () => {
+  const profile = freshProfile();
+  const refused = applyIntent({
+    questionnaire,
+    catalog,
+    profile,
+    intent: { type: "command", source: "text", payload: { action: "remove", sku: "DESK-LEGS-1400" } }
+  });
+  acceptedResult(refused.result);
+  assert.equal(refused.result.reasonCode, "cannot_remove_support");
+  assert.equal(refused.profile.sceneEdits, undefined);
+
+  const missing = applyIntent({
+    questionnaire,
+    catalog,
+    profile: freshProfile(),
+    intent: { type: "command", source: "text", payload: { action: "add", sku: "NO-SUCH" } }
+  });
+  acceptedResult(missing.result);
+  assert.equal(missing.result.reasonCode, "unknown_sku");
+  assert.equal(missing.profile.sceneEdits, undefined);
+
+  const missingOnScene = applyIntent({
+    questionnaire,
+    catalog,
+    profile: freshProfile(),
+    intent: { type: "command", source: "text", payload: { action: "remove", sku: "CHAIR-460" } }
+  });
+  acceptedResult(missingOnScene.result);
+  assert.equal(missingOnScene.result.reasonCode, "not_found");
+  assert.equal(missingOnScene.profile.sceneEdits, undefined);
+
+  const added = freshProfile();
+  applyIntent({
+    questionnaire,
+    catalog,
+    profile: added,
+    intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } },
+    limits: { maxItems: 12 }
+  });
+  const again = applyIntent({
+    questionnaire,
+    catalog,
+    profile: added,
+    intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } },
+    limits: { maxItems: 12 }
+  });
+  acceptedResult(again.result);
+  assert.equal(again.result.reasonCode, "limit");
+  assert.deepEqual(added.sceneEdits, [{ op: "add", sku: "CHAIR-460" }]);
+});
+
+test("interpret then applyIntent removes a chair from a test catalog", () => {
+  const localCatalog = {
+    types: [
+      { id: "desk_legs", maxOnScene: 1 },
+      { id: "chair", maxOnScene: 2 }
+    ],
+    products: [
+      { sku: "DESK-LEGS-1400", type: "desk_legs", alwaysPresent: true },
+      { sku: "CHAIR-460", type: "chair", words: ["кресл"] }
+    ]
+  };
+  const vocab = {
+    commands: [{ action: "remove", words: ["убер"] }],
+    products: [{ sku: "CHAIR-460", words: ["кресл"] }]
+  };
+  const profile = {
+    ...freshProfile(),
+    sceneEdits: [{ op: "add", sku: "CHAIR-460" }]
+  };
+  const intent = interpret({ source: "text", text: "убери кресло" }, vocab);
+  const outcome = applyIntent({
+    questionnaire,
+    catalog: localCatalog,
+    profile,
+    intent,
+    limits: { maxItems: 12 }
+  });
+  acceptedResult(outcome.result);
+  assert.equal(outcome.result.ok, true);
+  assert.equal(outcome.result.say.code, "command_removed");
+  assert.equal(computeScenePlan(localCatalog, outcome.profile).includes("CHAIR-460"), false);
 });
 
 test("applyIntent talk is a stub", () => {

@@ -2,6 +2,7 @@ import { getPendingConfirmations } from "../director/confirmation-engine.js";
 import { deriveNeeds } from "../needs/derive-needs.js";
 import { applyConfirmation } from "../profile/apply-confirmation.js";
 import { applyFact } from "../profile/apply-facts.js";
+import { runCommand } from "../commands/commands.js";
 import { applySceneChange } from "../scene/apply-scene-change.js";
 import { computeScenePlan } from "../scene/scene-plan.js";
 import { checkAnswer, checkConfirmation } from "../understanding/check-answer.js";
@@ -58,13 +59,23 @@ function answerIntent({ questionnaire, catalog, profile, intent }) {
   };
 }
 
-function applyIntent({ questionnaire, catalog, profile, intent }) {
+function applyIntent({ questionnaire, catalog, profile, intent, limits }) {
   if (intent?.type === "answer") {
     return answerIntent({ questionnaire, catalog, profile, intent });
   }
 
   if (intent?.type === "command") {
-    return { status: 200, body: { ok: true }, profile, result: notImplemented("command") };
+    const before = computeScenePlan(catalog, profile);
+    const result = runCommand({
+      intent,
+      catalog,
+      scene: {
+        skus: before,
+        apply: (change) => applySceneChange({ catalog, profile, change, before })
+      },
+      limits: limits ?? {}
+    });
+    return { status: 200, body: { ok: true }, profile, result };
   }
 
   if (intent?.type === "talk") {

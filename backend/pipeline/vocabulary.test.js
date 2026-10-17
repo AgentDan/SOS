@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readCatalog, readCommands, readConsultant } from "../config/load.js";
+import { readCatalog, readConsultant, readDraft } from "../config/load.js";
 import { buildVocabulary } from "./vocabulary.js";
 
 function deepFreeze(value) {
@@ -38,18 +38,19 @@ test("full sources fill every vocabulary list", () => {
   });
 });
 
-test("shipped commands and consultant give an empty vocabulary", () => {
+test("published commands fill command words until the catalog is published", () => {
   const vocab = buildVocabulary({
-    commands: readCommands(),
+    commands: readDraft("commands"),
     consultant: readConsultant(),
     catalog: readCatalog()
   });
-  assert.deepEqual(vocab, {
-    commands: [],
-    products: [],
-    topics: { cheaper: [], smalltalk: [] },
-    faq: []
-  });
+  assert.deepEqual(
+    vocab.commands.map((entry) => entry.action),
+    ["add", "remove", "replace"]
+  );
+  assert.deepEqual(vocab.products, []);
+  assert.deepEqual(vocab.topics, { cheaper: [], smalltalk: [] });
+  assert.deepEqual(vocab.faq, []);
 });
 
 test("missing or crooked sources do not throw", () => {

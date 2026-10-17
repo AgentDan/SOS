@@ -99,6 +99,19 @@ function validateCatalogDraft(catalog, errors) {
         errors.push(`catalog: product "${label}" references unknown type "${product.type}"`);
       }
 
+      if (product && product.words !== undefined) {
+        const words = product.words;
+        const ok =
+          Array.isArray(words) &&
+          words.length > 0 &&
+          words.every((word) => typeof word === "string" && word.length > 0);
+        if (!ok) {
+          errors.push(
+            `catalog: product "${label}" words must be a non-empty array of non-empty strings`
+          );
+        }
+      }
+
       const model3d = product && product.media && product.media.model3d;
       if (model3d !== undefined && model3d !== null && model3d !== "") {
         if (typeof model3d !== "string" || !model3d.startsWith("/")) {

@@ -144,6 +144,59 @@ test("consultant formality must be вы or ты", () => {
   );
 });
 
+test("command words and unique actions are required", () => {
+  const ok = loadSkeleton();
+  assert.equal(validateDialogData(ok), true);
+
+  const duplicate = loadSkeleton();
+  duplicate.commands.draft.commands.push({
+    action: "add",
+    words: ["ещё"]
+  });
+  assert.throws(
+    () => validateDialogData(duplicate),
+    (err) => err instanceof Error && /commands: duplicate action "add"/.test(err.message)
+  );
+
+  const emptyWords = loadSkeleton();
+  emptyWords.commands.draft.commands[0].words = [""];
+  assert.throws(
+    () => validateDialogData(emptyWords),
+    (err) =>
+      err instanceof Error &&
+      /commands: "add" words must be a non-empty array of non-empty strings/.test(err.message)
+  );
+});
+
+test("commands limits.maxItems must be an integer >= 1", () => {
+  const ok = loadSkeleton();
+  ok.commands.draft.limits = { maxItems: 1 };
+  assert.equal(validateDialogData(ok), true);
+
+  const bad = loadSkeleton();
+  bad.commands.draft.limits = { maxItems: 0 };
+  assert.throws(
+    () => validateDialogData(bad),
+    (err) =>
+      err instanceof Error && /commands: limits.maxItems must be an integer >= 1/.test(err.message)
+  );
+});
+
+test("catalog product words must be a non-empty array of strings", () => {
+  const ok = validPair();
+  ok.catalog.draft.products[0].words = ["опор"];
+  assert.equal(validateDialogData(ok), true);
+
+  const bad = validPair();
+  bad.catalog.draft.products[0].words = [""];
+  assert.throws(
+    () => validateDialogData(bad),
+    (err) =>
+      err instanceof Error &&
+      /catalog: product ".*?" words must be a non-empty array of non-empty strings/.test(err.message)
+  );
+});
+
 test("ai-rules output.noContradict must be a boolean", () => {
   const data = loadSkeleton();
   data.aiRules.draft.output.noContradict = "yes";
