@@ -23,7 +23,8 @@ const BLOCK_NAMES = [
   "sales",
   "director",
   "voice",
-  "commands"
+  "commands",
+  "talk"
 ];
 const BLOCK_DIRS = BLOCK_NAMES.map((name) => path.join(BACKEND, name));
 const CLIENT_PARTS = ["chat", "summary", "order", "scene"].map((name) => path.join(CLIENT, name));

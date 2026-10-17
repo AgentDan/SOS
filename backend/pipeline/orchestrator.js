@@ -3,6 +3,7 @@ import { deriveNeeds } from "../needs/derive-needs.js";
 import { applyConfirmation } from "../profile/apply-confirmation.js";
 import { applyFact } from "../profile/apply-facts.js";
 import { runCommand } from "../commands/commands.js";
+import { runTalk } from "../talk/talk.js";
 import { applySceneChange } from "../scene/apply-scene-change.js";
 import { computeScenePlan } from "../scene/scene-plan.js";
 import { checkAnswer, checkConfirmation } from "../understanding/check-answer.js";
@@ -10,7 +11,7 @@ import { interpret } from "../understanding/interpret.js";
 import { readQuestionnaire } from "../config/load.js";
 import { buildContext } from "./context.js";
 import { persistTurn } from "./persist.js";
-import { failResult, notImplemented, okResult } from "./results.js";
+import { failResult, okResult } from "./results.js";
 
 function applyTurn({ questionnaire, catalog, profile, questionId, optionId }) {
   if (typeof questionId === "string" && questionId.startsWith("confirm_")) {
@@ -59,7 +60,7 @@ function answerIntent({ questionnaire, catalog, profile, intent }) {
   };
 }
 
-function applyIntent({ questionnaire, catalog, profile, intent, limits }) {
+function applyIntent({ questionnaire, catalog, profile, intent, limits, consultant }) {
   if (intent?.type === "answer") {
     return answerIntent({ questionnaire, catalog, profile, intent });
   }
@@ -79,7 +80,17 @@ function applyIntent({ questionnaire, catalog, profile, intent, limits }) {
   }
 
   if (intent?.type === "talk") {
-    return { status: 200, body: { ok: true }, profile, result: notImplemented("talk") };
+    const before = computeScenePlan(catalog, profile);
+    const result = runTalk({
+      intent,
+      catalog,
+      consultant,
+      scene: {
+        skus: before,
+        apply: (change) => applySceneChange({ catalog, profile, change, before })
+      }
+    });
+    return { status: 200, body: { ok: true }, profile, result };
   }
 
   if (intent?.type === "unclear") {

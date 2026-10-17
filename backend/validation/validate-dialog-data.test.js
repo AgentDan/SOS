@@ -130,6 +130,78 @@ test("inference resultNeed must exist in catalog needs", () => {
   );
 });
 
+test("consultant faq entries need a unique id, words and an answer", () => {
+  const duplicate = loadSkeleton();
+  duplicate.consultant.draft.faq.push({
+    id: "delivery",
+    words: ["ещё"],
+    answer: "ТЕСТ: текст ответа заполняет владелец"
+  });
+  assert.throws(
+    () => validateDialogData(duplicate),
+    (err) => err instanceof Error && /consultant: duplicate faq id "delivery"/.test(err.message)
+  );
+
+  const emptyId = loadSkeleton();
+  emptyId.consultant.draft.faq[0].id = "";
+  assert.throws(
+    () => validateDialogData(emptyId),
+    (err) => err instanceof Error && /consultant: faq id must be a non-empty string/.test(err.message)
+  );
+
+  const emptyWords = loadSkeleton();
+  emptyWords.consultant.draft.faq[0].words = [""];
+  assert.throws(
+    () => validateDialogData(emptyWords),
+    (err) =>
+      err instanceof Error &&
+      /consultant: faq "delivery" words must be a non-empty array of non-empty strings/.test(err.message)
+  );
+
+  const emptyAnswer = loadSkeleton();
+  emptyAnswer.consultant.draft.faq[0].answer = "";
+  assert.throws(
+    () => validateDialogData(emptyAnswer),
+    (err) =>
+      err instanceof Error && /consultant: faq "delivery" answer must be a non-empty string/.test(err.message)
+  );
+});
+
+test("consultant topics are optional arrays of non-empty strings", () => {
+  const omitted = loadSkeleton();
+  delete omitted.consultant.draft.topics;
+  assert.equal(validateDialogData(omitted), true);
+
+  const emptyList = loadSkeleton();
+  emptyList.consultant.draft.topics = { cheaper: [], smalltalk: ["привет"] };
+  assert.equal(validateDialogData(emptyList), true);
+
+  const blank = loadSkeleton();
+  blank.consultant.draft.topics.cheaper = ["дешевл", ""];
+  assert.throws(
+    () => validateDialogData(blank),
+    (err) =>
+      err instanceof Error &&
+      /consultant: topics\.cheaper must be an array of non-empty strings/.test(err.message)
+  );
+
+  const missing = loadSkeleton();
+  missing.consultant.draft.topics = { cheaper: ["дешевл"] };
+  assert.throws(
+    () => validateDialogData(missing),
+    (err) =>
+      err instanceof Error &&
+      /consultant: topics\.smalltalk must be an array of non-empty strings/.test(err.message)
+  );
+
+  const notObject = loadSkeleton();
+  notObject.consultant.draft.topics = ["дешевл"];
+  assert.throws(
+    () => validateDialogData(notObject),
+    (err) => err instanceof Error && /consultant: topics must be an object/.test(err.message)
+  );
+});
+
 test("consultant formality must be вы or ты", () => {
   const formal = loadSkeleton();
   formal.consultant.draft.formality = "ты";

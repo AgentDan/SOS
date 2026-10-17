@@ -5,14 +5,16 @@ import { buildVocabulary } from "./vocabulary.js";
 function buildContext(clientId) {
   const catalog = readCatalog();
   const commands = readCommands();
+  const consultant = readConsultant();
   return {
     clientId,
     questionnaire: readQuestionnaire(),
     catalog,
+    consultant,
     profile: loadProfile(clientId),
     vocabulary: buildVocabulary({
       commands,
-      consultant: readConsultant(),
+      consultant,
       catalog
     }),
     limits: commands.limits ?? {}

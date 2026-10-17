@@ -1,10 +1,51 @@
-import test from "node:test";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
 import { interpret } from "../understanding/interpret.js";
 import { readCatalog, readQuestionnaire } from "../config/load.js";
+import { saveProfile } from "../profile/profile-store.js";
 import { computeScenePlan } from "../scene/scene-plan.js";
 import { validateExecutorResult } from "./contracts.js";
-import { applyIntent, applyTurn } from "./orchestrator.js";
+import { applyIntent, applyTurn, runMessage } from "./orchestrator.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const TALK_CLIENTS = ["intent-talk-faq", "intent-talk-cheaper", "intent-talk-smalltalk"];
+let talkDataDir;
+let previousDataDir;
+let talkDataReady = false;
+
+function forgetClient(clientId) {
+  rmSync(path.join(__dirname, "..", "..", "runtime", "clients", clientId), {
+    recursive: true,
+    force: true
+  });
+}
+
+before(() => {
+  for (const clientId of TALK_CLIENTS) forgetClient(clientId);
+  previousDataDir = process.env.SOS_DATA_DIR;
+  talkDataDir = mkdtempSync(path.join(os.tmpdir(), "sos-talk-"));
+  cpSync(path.join(__dirname, "..", "..", "data"), talkDataDir, { recursive: true });
+  const file = path.join(talkDataDir, "consultant.json");
+  const consultant = JSON.parse(readFileSync(file, "utf8"));
+  consultant.published.topics = structuredClone(consultant.draft.topics);
+  consultant.published.faq = structuredClone(consultant.draft.faq);
+  writeFileSync(file, `${JSON.stringify(consultant, null, 2)}\n`);
+  process.env.SOS_DATA_DIR = talkDataDir;
+  talkDataReady = true;
+});
+
+after(() => {
+  if (talkDataReady) {
+    if (previousDataDir === undefined) delete process.env.SOS_DATA_DIR;
+    else process.env.SOS_DATA_DIR = previousDataDir;
+  }
+  if (talkDataDir) rmSync(talkDataDir, { recursive: true, force: true });
+  for (const clientId of TALK_CLIENTS) forgetClient(clientId);
+});
 
 const questionnaire = readQuestionnaire();
 const catalog = readCatalog();
@@ -239,19 +280,68 @@ test("interpret then applyIntent removes a chair from a test catalog", () => {
   assert.equal(computeScenePlan(localCatalog, outcome.profile).includes("CHAIR-460"), false);
 });
 
-test("applyIntent talk is a stub", () => {
-  const outcome = applyIntent({
-    questionnaire,
-    catalog,
-    profile: freshProfile(),
-    intent: { type: "talk", source: "text", payload: { topic: "cheaper" } }
-  });
-
+test("runMessage faq is answered from the consultant", () => {
+  const clientId = "intent-talk-faq";
+  forgetClient(clientId);
+  const outcome = runMessage({ clientId, text: "а доставка есть?" });
   assert.equal(outcome.status, 200);
   assert.deepEqual(outcome.body, { ok: true });
   acceptedResult(outcome.result);
+  assert.equal(outcome.result.ok, true);
   assert.equal(outcome.result.kind, "talk");
-  assert.equal(outcome.result.reasonCode, "not_implemented");
+  assert.equal(outcome.result.sceneChanged, false);
+  assert.equal(outcome.result.say.code, "faq_answer");
+  assert.equal(outcome.result.facts.faqId, "delivery");
+  assert.equal(outcome.result.facts.answer, "ТЕСТ: текст ответа заполняет владелец");
+  assert.notEqual(outcome.result.reasonCode, "not_implemented");
+});
+
+test("runMessage cheaper replaces a dearer desk already on the scene", () => {
+  const clientId = "intent-talk-cheaper";
+  forgetClient(clientId);
+  saveProfile({
+    clientId,
+    scenario: null,
+    status: "in_progress",
+    fields: {},
+    needs: [],
+    confirmedNeeds: [],
+    rejectedNeeds: [],
+    sceneEdits: [{ op: "add", sku: "DESK-TOP-1800" }]
+  });
+  const outcome = runMessage({ clientId, text: "покажи дешевле" });
+  const products = readCatalog().products;
+  const price = (sku) => products.find((item) => item.sku === sku).priceEur;
+  assert.equal(outcome.status, 200);
+  assert.deepEqual(outcome.body, { ok: true });
+  acceptedResult(outcome.result);
+  assert.equal(outcome.result.ok, true);
+  assert.equal(outcome.result.kind, "talk");
+  assert.equal(outcome.result.say.code, "cheaper_done");
+  assert.equal(outcome.result.facts.sku, "DESK-TOP-1800");
+  assert.equal(outcome.result.facts.withSku, "DESK-TOP-1400");
+  assert.equal(outcome.result.facts.savedEur, price("DESK-TOP-1800") - price("DESK-TOP-1400"));
+  assert.deepEqual(outcome.profile.sceneEdits.at(-1), {
+    op: "replace",
+    sku: "DESK-TOP-1800",
+    withSku: "DESK-TOP-1400"
+  });
+  assert.notEqual(outcome.result.reasonCode, "not_implemented");
+});
+
+test("runMessage smalltalk is not a stub", () => {
+  const clientId = "intent-talk-smalltalk";
+  forgetClient(clientId);
+  const outcome = runMessage({ clientId, text: "привет" });
+  assert.equal(outcome.status, 200);
+  assert.deepEqual(outcome.body, { ok: true });
+  acceptedResult(outcome.result);
+  assert.equal(outcome.result.ok, true);
+  assert.equal(outcome.result.kind, "talk");
+  assert.equal(outcome.result.sceneChanged, false);
+  assert.deepEqual(outcome.result.facts, { topic: "smalltalk" });
+  assert.deepEqual(outcome.result.say, { code: "smalltalk", params: {} });
+  assert.notEqual(outcome.result.reasonCode, "not_implemented");
 });
 
 test("applyIntent unclear keeps the profile and names the reason", () => {
