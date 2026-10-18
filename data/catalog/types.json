@@ -13,7 +13,7 @@
     "canHostOn": [
       "desk_legs"
     ],
-    "maxOnScene": 1
+    "maxOnScene": 2
   },
   {
     "id": "monitor",
