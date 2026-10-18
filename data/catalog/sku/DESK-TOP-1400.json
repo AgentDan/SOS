@@ -14,7 +14,7 @@
     "столешниц"
   ],
   "media": {
-    "model3d": "/models/desk.glb"
+    "model3d": "DESK-TOP-1400.glb"
   },
   "placement": {
     "hostSku": "DESK-LEGS-1400"

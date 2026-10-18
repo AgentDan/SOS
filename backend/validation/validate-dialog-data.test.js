@@ -285,6 +285,26 @@ test("catalog product label is an optional non-empty string", () => {
   );
 });
 
+test("catalog model3d is the glb object key of the product", () => {
+  const ok = validPair();
+  assert.equal(validateDialogData(ok), true);
+  for (const product of ok.catalog.draft.products) {
+    assert.equal(product.media.model3d, `${product.sku}.glb`);
+  }
+  for (const product of ok.catalog.published.products) {
+    assert.equal(product.media.model3d, `${product.sku}.glb`);
+  }
+
+  const pathKey = validPair();
+  pathKey.catalog.draft.products[0].media = { model3d: "/models/desk.glb" };
+  assert.throws(
+    () => validateDialogData(pathKey),
+    (err) =>
+      err instanceof Error &&
+      /catalog: product ".*?" media\.model3d must be ".*\.glb"/.test(err.message)
+  );
+});
+
 test("catalog product words must be a non-empty array of strings", () => {
   const ok = validPair();
   ok.catalog.draft.products[0].words = ["опор"];

@@ -14,6 +14,7 @@
     "admin": "vite --config admin/vite.config.js",
     "test": "node --test \"backend/**/*.test.js\" \"admin/**/*.test.js\"",
     "validate": "node scripts/validate.js",
+    "models": "node scripts/build-placeholder-models.js",
     "publish-config": "node scripts/publish.js",
     "scenario": "node scripts/scenario-runner.js",
     "build:client": "vite build --config client/vite.config.js",

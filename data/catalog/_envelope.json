@@ -742,7 +742,10 @@
         "words": [
           "опор",
           "ножк"
-        ]
+        ],
+        "media": {
+          "model3d": "DESK-LEGS-1400.glb"
+        }
       },
       {
         "sku": "DESK-TOP-1400",
@@ -760,7 +763,7 @@
           "столешниц"
         ],
         "media": {
-          "model3d": "/models/desk.glb"
+          "model3d": "DESK-TOP-1400.glb"
         },
         "placement": {
           "hostSku": "DESK-LEGS-1400"
@@ -782,7 +785,7 @@
           "столешниц"
         ],
         "media": {
-          "model3d": "/models/desk.glb"
+          "model3d": "DESK-TOP-1800.glb"
         },
         "placement": {
           "hostSku": "DESK-LEGS-1400"
@@ -805,6 +808,9 @@
         ],
         "placement": {
           "hostSku": "DESK-TOP-1400"
+        },
+        "media": {
+          "model3d": "MON-613-366.glb"
         }
       },
       {
@@ -827,6 +833,9 @@
             "x": 0,
             "z": 760
           }
+        },
+        "media": {
+          "model3d": "CHAIR-460.glb"
         }
       }
     ]

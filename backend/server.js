@@ -1,4 +1,6 @@
 import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
 import { readKnobs } from "./config/load.js";
@@ -19,9 +21,30 @@ try {
   process.exit(1);
 }
 
+const modelsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "models");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use("/models", (req, res, next) => {
+  const file = path.basename(req.path);
+  if (file !== req.path.replace(/^\/+/, "") || !file.endsWith(".glb")) {
+    res.status(404).end();
+    return;
+  }
+  next();
+});
+app.use(
+  "/models",
+  express.static(modelsDir, {
+    fallthrough: false,
+    index: false,
+    dotfiles: "deny",
+    setHeaders(res, filePath) {
+      if (filePath.endsWith(".glb")) res.setHeader("Content-Type", "model/gltf-binary");
+    }
+  })
+);
 app.use("/api", apiRoutes);
 app.use(invalidJsonHandler);
 

@@ -9,6 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [tailwindcss(), react()],
   root: __dirname,
+  envDir: path.join(__dirname, ".."),
   server: {
     port: 5173,
     proxy: {
@@ -18,6 +19,9 @@ export default defineConfig({
           const pathname = (req.url ?? "").split("?")[0];
           if (pathname.startsWith("/api/") && pathname.endsWith(".js")) return req.url;
         }
+      },
+      "/models": {
+        target: "http://localhost:3000"
       }
     }
   }

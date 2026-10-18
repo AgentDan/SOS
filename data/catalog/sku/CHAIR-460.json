@@ -13,6 +13,9 @@
     "кресл",
     "стул"
   ],
+  "media": {
+    "model3d": "CHAIR-460.glb"
+  },
   "placement": {
     "offset": {
       "x": 0,

@@ -30,18 +30,36 @@ function fitToCatalogDimensions(model, dimensions) {
   return wrapper;
 }
 
+function modelsBase() {
+  const fromEnv = import.meta.env.VITE_MODELS_BASE_URL;
+  if (typeof fromEnv === "string" && fromEnv.trim() !== "") return fromEnv.trim();
+  return "/models/";
+}
+
+function modelUrl(model3d) {
+  if (typeof model3d !== "string" || model3d.trim() === "") return null;
+  const key = model3d.trim();
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(key) || key.startsWith("/")) return key;
+  return `${modelsBase().replace(/\/+$/, "")}/${key}`;
+}
+
 async function loadCatalogModel(product) {
-  const url = product.media && product.media.model3d;
+  const url = modelUrl(product.media && product.media.model3d);
   if (!url) return null;
 
-  const gltf = await loadGltf(url);
-  gltf.scene.traverse((obj) => {
-    if (obj.isMesh) {
-      obj.castShadow = false;
-      obj.receiveShadow = false;
-    }
-  });
-  return fitToCatalogDimensions(gltf.scene, product.dimensions);
+  try {
+    const gltf = await loadGltf(url);
+    gltf.scene.traverse((obj) => {
+      if (obj.isMesh) {
+        obj.castShadow = false;
+        obj.receiveShadow = false;
+      }
+    });
+    return fitToCatalogDimensions(gltf.scene, product.dimensions);
+  } catch (err) {
+    console.error(`Could not load model ${url}:`, err);
+    return null;
+  }
 }
 
 export { loadCatalogModel };

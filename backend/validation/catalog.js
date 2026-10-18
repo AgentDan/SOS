@@ -120,10 +120,9 @@ function validateCatalogDraft(catalog, errors) {
 
       const model3d = product && product.media && product.media.model3d;
       if (model3d !== undefined && model3d !== null && model3d !== "") {
-        if (typeof model3d !== "string" || !model3d.startsWith("/")) {
-          errors.push(
-            `catalog: product "${label}" media.model3d must be a string starting with "/"`
-          );
+        const key = product && product.sku ? `${product.sku}.glb` : "";
+        if (model3d !== key) {
+          errors.push(`catalog: product "${label}" media.model3d must be "${key || "<sku>.glb"}"`);
         }
       }
     }

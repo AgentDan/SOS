@@ -13,6 +13,9 @@
     "монитор",
     "экран"
   ],
+  "media": {
+    "model3d": "MON-613-366.glb"
+  },
   "placement": {
     "hostSku": "DESK-TOP-1400"
   }
