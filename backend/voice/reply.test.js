@@ -232,6 +232,58 @@ test("maxWords clips on a word boundary, and a bad limit does not clip", () => {
   assert.equal(speak(result, { templates: source, maxWords: Number.NaN }).text, "альфа бета гамма дельта");
 });
 
+test("distance text comes from templates and leaves the number for the client", () => {
+  const measured = speak(
+    sayResult({
+      ok: true,
+      kind: "command",
+      code: "distance_measure",
+      params: { a: "монитор", b: "кресло" }
+    })
+  );
+  assert.equal(measured.via, "template");
+  assert.equal(measured.text, "Расстояние между монитор и кресло: {distance}.");
+  assert.equal(measured.fallback, "Для такого замера нужны две штуки на сцене.");
+
+  const missing = speak(
+    sayResult({
+      ok: false,
+      kind: "command",
+      code: "distance_not_on_scene",
+      params: { name: "кресло" }
+    })
+  );
+  assert.equal(missing.text, "кресло нет на сцене.");
+
+  const unclearDistance = speak(
+    sayResult({ ok: false, kind: "command", code: "distance_unclear" })
+  );
+  assert.equal(
+    unclearDistance.text,
+    "Назовите два объекта, между которыми нужно измерить расстояние."
+  );
+
+  const needTwo = speak(sayResult({ ok: false, kind: "command", code: "distance_need_two" }));
+  assert.equal(needTwo.text, "Для такого замера нужны две штуки на сцене.");
+
+  const neutral = speak(
+    sayResult({
+      ok: true,
+      kind: "command",
+      code: "distance_measure",
+      params: { a: "монитор", b: "стол" }
+    }),
+    {
+      templates: {
+        distance_measure: "Расстояние между {a} и {b}: {distance}.",
+        unclear: "Не совсем понял. Скажите иначе, пожалуйста."
+      }
+    }
+  );
+  assert.equal(neutral.text, "Расстояние между монитор и стол: {distance}.");
+  assert.equal(neutral.fallback, "Не совсем понял. Скажите иначе, пожалуйста.");
+});
+
 test("the next question is appended only after a successful answer", () => {
   const answer = speak(
     sayResult({ ok: true, kind: "answer", code: "answer_ok" }),

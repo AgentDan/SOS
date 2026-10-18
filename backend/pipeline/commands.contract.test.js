@@ -70,7 +70,23 @@ const cases = [
     intent: intent("replace", "CHAIR-460"),
     skus: ["DESK-LEGS-1400", "CHAIR-460"]
   },
-  { name: "unknown action", intent: intent("spin", "CHAIR-460"), skus: ["DESK-LEGS-1400"] }
+  { name: "unknown action", intent: intent("spin", "CHAIR-460"), skus: ["DESK-LEGS-1400"] },
+  {
+    name: "distance ok",
+    intent: intent("distance", undefined, { skus: ["CHAIR-460", "DESK-TOP-1800"] }),
+    skus: ["DESK-LEGS-1400", "CHAIR-460", "DESK-TOP-1800"]
+  },
+  {
+    name: "distance missing",
+    intent: intent("distance", undefined, { skus: ["CHAIR-460", "DESK-TOP-1800"] }),
+    skus: ["DESK-LEGS-1400", "CHAIR-460"]
+  },
+  {
+    name: "distance one copy",
+    intent: intent("distance", undefined, { skus: ["CHAIR-460", "CHAIR-460"] }),
+    skus: ["DESK-LEGS-1400", "CHAIR-460"]
+  },
+  { name: "distance unclear", intent: intent("distance"), skus: ["DESK-LEGS-1400"] }
 ];
 
 test("runCommand results satisfy the executor contract", () => {

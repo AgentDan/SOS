@@ -132,12 +132,53 @@ function runReplace({ sku, withSku, sceneSkus, apply, catalog, limits, action })
   return fromApply(apply({ op: "replace", sku: target, withSku: replacement }), facts, SAY.replace);
 }
 
+function productLabel(catalog, sku) {
+  const product = findProduct(catalog, sku);
+  if (typeof product?.label === "string" && product.label.length > 0) return product.label;
+  return sku;
+}
+
+function copyCount(sceneSkus, sku) {
+  return sceneSkus.filter((item) => item === sku).length;
+}
+
+function namedSkus(skus) {
+  if (!Array.isArray(skus)) return [];
+  return skus.filter((sku) => typeof sku === "string" && sku.length > 0).slice(0, 2);
+}
+
+function runDistance({ skus, sceneSkus, catalog, action }) {
+  const named = namedSkus(skus);
+  const facts = factsOf(action);
+  if (named.length < 2) return refused("distance_unclear", facts, {});
+
+  const [a, b] = named;
+  const countA = copyCount(sceneSkus, a);
+  const countB = a === b ? countA : copyCount(sceneSkus, b);
+  if (countA === 0) return refused("distance_not_on_scene", facts, { name: productLabel(catalog, a) });
+  if (countB === 0) return refused("distance_not_on_scene", facts, { name: productLabel(catalog, b) });
+  if (a === b && countA < 2) return refused("distance_need_two", facts, {});
+
+  return okCommand({
+    sceneChanged: false,
+    facts: { action, measure: { a, b } },
+    say: {
+      code: "distance_measure",
+      params: { a: productLabel(catalog, a), b: productLabel(catalog, b) }
+    }
+  });
+}
+
 function runCommand({ intent, catalog, scene, limits }) {
   const action = intent?.payload?.action;
   const sku = intent?.payload?.sku;
   const withSku = intent?.payload?.withSku;
   const sceneSkus = Array.isArray(scene?.skus) ? scene.skus : [];
   const apply = typeof scene?.apply === "function" ? scene.apply : () => ({ ok: false, reasonCode: "not_found" });
+
+  if (action === "distance") {
+    return runDistance({ skus: intent?.payload?.skus, sceneSkus, catalog, action });
+  }
 
   if (action !== "add" && action !== "remove" && action !== "replace") {
     return refused("not_implemented", factsOf(action), { action });

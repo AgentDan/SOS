@@ -57,6 +57,19 @@ const controlPhrases = [
   { name: "stem inside a word", input: text("скресл") }
 ];
 
+test("a distance intent with two skus satisfies the contract", () => {
+  const vocab = {
+    commands: [{ action: "distance", words: ["расстоя"] }],
+    products: [
+      { sku: "MON-613-366", words: ["монитор"] },
+      { sku: "CHAIR-460", words: ["кресл"] }
+    ]
+  };
+  const intent = interpret(text("расстояние между монитором и креслом"), vocab);
+  assert.deepEqual(validateIntent(intent), { ok: true, errors: [] });
+  assert.deepEqual(intent.payload.skus, ["MON-613-366", "CHAIR-460"]);
+});
+
 test("control phrases satisfy the intent contract", () => {
   for (const row of controlPhrases) {
     const intent = interpret(row.input, vocabulary);

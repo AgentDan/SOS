@@ -8,7 +8,10 @@ const REASON_CODES = Object.freeze([
   "cannot_remove_support",
   "nothing_cheaper",
   "not_found",
-  "not_implemented"
+  "not_implemented",
+  "distance_unclear",
+  "distance_not_on_scene",
+  "distance_need_two"
 ]);
 const REPLY_VIA = Object.freeze(["template", "ai"]);
 

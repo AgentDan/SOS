@@ -26,17 +26,25 @@
  *
  * Текст, первое совпадение выигрывает:
  * 1. Пустая строка, не строка или одни пробелы → unclear, reason "empty".
- * 2. Команда из commands → command { action, sku? }. sku — товар, чьё слово
- *    стоит в тексте раньше остальных. Нет артикула — поля sku нет.
+ * 2. Команда distance → command { action: "distance", skus? }.
+ *    Проверяется раньше add, remove и replace: если в тексте есть её слово,
+ *    это distance, даже когда слово другой команды стоит раньше.
+ *    skus — до двух товаров в порядке упоминания. Повтор того же слова
+ *    («монитором и монитором») даёт один sku дважды: две разные копии.
+ *    Два разных слова одного типа тоже попадают в skus. Один товар — массив
+ *    из одного элемента. Нет товаров — поля skus нет.
+ * 3. Другая команда из commands → command { action, sku? }. sku — товар, чьё
+ *    слово стоит в тексте раньше остальных. Нет артикула — поля sku нет.
  *    direction, amount и unit скелет не заполняет.
- * 3. Слово из topics.cheaper → talk { topic: "cheaper" }.
- * 4. Слово из faq[].words → talk { topic: "faq", faqId }. При нескольких
+ * 4. Слово из topics.cheaper → talk { topic: "cheaper" }.
+ * 5. Слово из faq[].words → talk { topic: "faq", faqId }. При нескольких
  *    совпадениях берётся то, чьё слово стоит в тексте раньше.
- * 5. Слово из topics.smalltalk → talk { topic: "smalltalk" }.
- * 6. Иначе → unclear, reason "no_match".
+ * 6. Слово из topics.smalltalk → talk { topic: "smalltalk" }.
+ * 7. Иначе → unclear, reason "no_match".
  *
- * Внутри шагов 2 и 4 при равной позиции в тексте побеждает запись,
- * которая раньше в словаре.
+ * Внутри шагов 3 и 5 при равной позиции в тексте побеждает запись,
+ * которая раньше в словаре. У distance на одном индексе то же правило,
+ * дальше берутся следующие вхождения.
  */
 
 function isPlainObject(value) {
@@ -88,6 +96,47 @@ function listMatches(text, words) {
   return earliestIndex(text, words) >= 0;
 }
 
+function findAllBoundaries(text, phrase) {
+  const indexes = [];
+  let from = 0;
+  while (from < text.length) {
+    const index = text.indexOf(phrase, from);
+    if (index === -1) break;
+    if (index === 0 || text.charAt(index - 1) === " ") indexes.push(index);
+    from = index + 1;
+  }
+  return indexes;
+}
+
+function productHits(text, products) {
+  const byIndex = new Map();
+  if (!Array.isArray(products)) return [];
+  products.forEach((entry, order) => {
+    if (!isPlainObject(entry) || typeof entry.sku !== "string" || !Array.isArray(entry.words)) return;
+    for (const word of entry.words) {
+      if (typeof word !== "string") continue;
+      const phrase = normalize(word);
+      if (!phrase) continue;
+      for (const index of findAllBoundaries(text, phrase)) {
+        const current = byIndex.get(index);
+        if (!current || order < current.order) byIndex.set(index, { index, sku: entry.sku, order });
+      }
+    }
+  });
+  return [...byIndex.values()].sort((left, right) => left.index - right.index || left.order - right.order);
+}
+
+function matchingCommand(text, commands) {
+  const list = Array.isArray(commands) ? commands : [];
+  const distance = list.find((entry) => isPlainObject(entry) && entry.action === "distance");
+  if (distance && earliestIndex(text, distance.words) >= 0) return distance;
+  return earliestEntry(
+    text,
+    list,
+    (entry) => typeof entry.action === "string" && entry.action !== "distance"
+  );
+}
+
 function unclear(source, reason) {
   return { type: "unclear", source, payload: { reason } };
 }
@@ -110,11 +159,17 @@ function fromText(text, vocabulary) {
   const vocab = isPlainObject(vocabulary) ? vocabulary : {};
   const topics = isPlainObject(vocab.topics) ? vocab.topics : {};
 
-  const command = earliestEntry(normalized, vocab.commands, (entry) => typeof entry.action === "string");
+  const hits = productHits(normalized, vocab.products);
+  const command = matchingCommand(normalized, vocab.commands);
   if (command) {
+    if (command.action === "distance") {
+      const payload = { action: "distance" };
+      const skus = hits.slice(0, 2).map((hit) => hit.sku);
+      if (skus.length > 0) payload.skus = skus;
+      return { type: "command", source: "text", payload };
+    }
     const payload = { action: command.action };
-    const product = earliestEntry(normalized, vocab.products, (entry) => typeof entry.sku === "string");
-    if (product) payload.sku = product.sku;
+    if (hits.length > 0) payload.sku = hits[0].sku;
     return { type: "command", source: "text", payload };
   }
 

@@ -231,7 +231,8 @@ test("command words and unique actions are required", () => {
   );
 
   const emptyWords = loadSkeleton();
-  emptyWords.commands.draft.commands[0].words = [""];
+  const add = emptyWords.commands.draft.commands.find((entry) => entry.action === "add");
+  add.words = [""];
   assert.throws(
     () => validateDialogData(emptyWords),
     (err) =>

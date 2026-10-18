@@ -245,3 +245,52 @@ test("interpret does not change the input or a frozen vocabulary", () => {
   assert.deepEqual(interpret(button, vocab), unclear("button", "bad_button"));
   assert.deepEqual(button, beforeButton);
 });
+
+const distanceVocabulary = {
+  commands: [
+    { action: "add", words: ["добав"] },
+    { action: "remove", words: ["убер"] },
+    { action: "replace", words: ["замен"] },
+    { action: "distance", words: ["расстоя", "дистанц", "как далеко", "сколько до"] }
+  ],
+  products: [
+    { sku: "MON-613-366", words: ["монитор"] },
+    { sku: "MON-613-367", words: ["экран"] },
+    { sku: "CHAIR-460", words: ["кресл"] },
+    { sku: "DESK-TOP-1800", words: ["стол"] }
+  ]
+};
+
+test("distance names two objects in mention order and leaves other commands alone", () => {
+  assert.deepEqual(interpret(text("расстояние между монитором и креслом"), distanceVocabulary), {
+    type: "command",
+    source: "text",
+    payload: { action: "distance", skus: ["MON-613-366", "CHAIR-460"] }
+  });
+  assert.deepEqual(interpret(text("расстояние до стола"), distanceVocabulary), {
+    type: "command",
+    source: "text",
+    payload: { action: "distance", skus: ["DESK-TOP-1800"] }
+  });
+  assert.deepEqual(interpret(text("убери монитор"), distanceVocabulary), command("remove", "MON-613-366"));
+  assert.deepEqual(interpret(text("расстояние между монитором и монитором"), distanceVocabulary), {
+    type: "command",
+    source: "text",
+    payload: { action: "distance", skus: ["MON-613-366", "MON-613-366"] }
+  });
+  assert.deepEqual(interpret(text("как далеко от монитора до экрана"), distanceVocabulary), {
+    type: "command",
+    source: "text",
+    payload: { action: "distance", skus: ["MON-613-366", "MON-613-367"] }
+  });
+  assert.deepEqual(interpret(text("добавь расстояние между монитором и креслом"), distanceVocabulary), {
+    type: "command",
+    source: "text",
+    payload: { action: "distance", skus: ["MON-613-366", "CHAIR-460"] }
+  });
+  assert.deepEqual(interpret(text("сколько до"), distanceVocabulary), {
+    type: "command",
+    source: "text",
+    payload: { action: "distance" }
+  });
+});

@@ -67,7 +67,10 @@ function reply({ result, context, templates, names, maxWords } = {}) {
     savedEur: params.savedEur,
     max: params.max,
     answer: facts.answer,
-    question
+    question,
+    a: params.a,
+    b: params.b,
+    name: params.name
   });
 
   if (outcome.ok === true && outcome.kind === "answer" && question) {
@@ -77,7 +80,13 @@ function reply({ result, context, templates, names, maxWords } = {}) {
   text = clipWords(text, maxWords);
   if (text.trim() === "") text = FALLBACK_TEXT;
 
-  return { text, via: "template" };
+  const spoken = { text, via: "template" };
+  if (say.code === "distance_measure") {
+    const map = asMap(templates);
+    const fallback = nonEmpty(map.distance_need_two) ?? nonEmpty(map.unclear);
+    if (fallback) spoken.fallback = fallback;
+  }
+  return spoken;
 }
 
 export { reply, FALLBACK_TEXT };

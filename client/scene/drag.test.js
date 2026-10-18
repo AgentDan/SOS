@@ -2,7 +2,7 @@ import * as THREE from "three";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createDrag } from "./drag.js";
-import { clear, register } from "./physics/registry.js";
+import { clear, get, register } from "./physics/registry.js";
 import { RAPIER } from "./physics/world.js";
 
 function fakeCanvas() {
@@ -69,8 +69,10 @@ test("a drag notifies subscribers once the object actually moves", async () => {
   };
   canvas.emit("pointerdown", down, true);
   assert.equal(calls, 0);
+  assert.equal(get("BOX#1").moved, undefined);
   canvas.emit("pointermove", { clientX: 80, clientY: 40, pointerId: 1 });
   assert.equal(calls, 1);
+  assert.equal(get("BOX#1").moved, true);
   canvas.emit("pointermove", { clientX: 90, clientY: 30, pointerId: 1 });
   assert.equal(calls, 1);
   drag.dispose();

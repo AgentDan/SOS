@@ -51,7 +51,11 @@ const REPLY_PLACEHOLDERS = new Set([
   "savedEur",
   "max",
   "answer",
-  "question"
+  "question",
+  "a",
+  "b",
+  "name",
+  "distance"
 ]);
 
 function validateReplies(replies, errors) {

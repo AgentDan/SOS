@@ -192,7 +192,7 @@ test("distance uses registry meshes and does not register the arrow", () => {
       return () => {};
     }
   });
-  const result = measure.distance();
+  const result = measure.distance({ a: "BOX", b: "BOX" });
   assert.equal(all().size, 2);
   closeTo(result.distanceMm, 3000, 1e-2);
   assert.equal(result.label, "300,0 см");
@@ -229,4 +229,76 @@ test("a scene change or a drag clears the arrow", () => {
   onDrag();
   assert.equal(cleared, 2);
   measure.dispose();
+});
+
+function meshAt(x) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+  mesh.position.set(x, 0, 0);
+  mesh.updateMatrixWorld(true);
+  return mesh;
+}
+
+function pairIds(result) {
+  return [result.idA, result.idB].sort();
+}
+
+test("distance measures the named pair and ignores the rest of the scene", () => {
+  clear();
+  const meshes = [
+    ["ALPHA#1", 0],
+    ["BETA#1", 2],
+    ["GAMMA#1", 20],
+    ["DELTA#1", 40],
+    ["EPSILON#1", 60]
+  ].map(([id, x]) => {
+    const mesh = meshAt(x);
+    register(id, { mesh, product: { sku: id.replace(/#\d+$/, "") } });
+    return mesh;
+  });
+  const measure = createMeasure({
+    arrow: { show() {}, clear() {}, dispose() {} },
+    subscribeScene() {
+      return () => {};
+    },
+    subscribeDrag() {
+      return () => {};
+    }
+  });
+  const result = measure.distance({ a: "ALPHA", b: "EPSILON" });
+  assert.deepEqual(pairIds(result), ["ALPHA#1", "EPSILON#1"]);
+  closeTo(result.distanceMm, 59000, 1);
+  measure.dispose();
+  for (const mesh of meshes) mesh.geometry.dispose();
+  clear();
+});
+
+test("monitor to chair uses the closest monitor, and two monitors use the closest copies", () => {
+  clear();
+  const placed = [
+    ["MON#1", 0, "MON"],
+    ["MON#2", 1.2, "MON"],
+    ["MON#3", 10, "MON"],
+    ["CHAIR#1", 6, "CHAIR"]
+  ].map(([id, x, sku]) => {
+    const mesh = meshAt(x);
+    register(id, { mesh, product: { sku } });
+    return mesh;
+  });
+  const measure = createMeasure({
+    arrow: { show() {}, clear() {}, dispose() {} },
+    subscribeScene() {
+      return () => {};
+    },
+    subscribeDrag() {
+      return () => {};
+    }
+  });
+  const toChair = measure.distance({ a: "MON", b: "CHAIR" });
+  assert.deepEqual(pairIds(toChair), ["CHAIR#1", "MON#3"]);
+  const copies = measure.distance({ a: "MON", b: "MON" });
+  assert.deepEqual(pairIds(copies), ["MON#1", "MON#2"]);
+  assert.equal(measure.distance({ a: "MON", b: "MISSING" }), null);
+  measure.dispose();
+  for (const mesh of placed) mesh.geometry.dispose();
+  clear();
 });

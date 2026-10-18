@@ -204,6 +204,105 @@ test("unknown action is not_implemented", () => {
   assert.deepEqual(board.calls, []);
 });
 
+test("distance measures two named objects and does not change the scene", () => {
+  const labels = {
+    "CHAIR-460": "кресло",
+    "DESK-TOP-1800": "стол",
+    "MON-613-366": "монитор"
+  };
+  const named = {
+    ...catalog,
+    products: [
+      ...catalog.products.map((product) =>
+        labels[product.sku] ? { ...product, label: labels[product.sku] } : product
+      ),
+      { sku: "MON-613-366", type: "monitor", label: "монитор" }
+    ]
+  };
+  const skus = ["DESK-LEGS-1400", "MON-613-366", "MON-613-366", "CHAIR-460"];
+  const before = skus.slice();
+  const intent = {
+    type: "command",
+    source: "text",
+    payload: { action: "distance", skus: ["MON-613-366", "CHAIR-460"] }
+  };
+  const { result, board } = run(intent, skus, { catalog: named });
+  assert.equal(result.ok, true);
+  assert.equal(result.sceneChanged, false);
+  assert.equal(result.reasonCode, null);
+  assert.deepEqual(result.facts, {
+    action: "distance",
+    measure: { a: "MON-613-366", b: "CHAIR-460" }
+  });
+  assert.deepEqual(result.say, {
+    code: "distance_measure",
+    params: { a: "монитор", b: "кресло" }
+  });
+  assert.deepEqual(board.calls, []);
+  assert.deepEqual(board.skus, before);
+});
+
+test("distance reports a missing object, a single copy, and an unclear request", () => {
+  const named = {
+    products: [
+      { sku: "MON-613-366", type: "monitor", label: "монитор" },
+      { sku: "CHAIR-460", type: "chair", label: "кресло" }
+    ]
+  };
+  const missing = run(
+    {
+      type: "command",
+      source: "text",
+      payload: { action: "distance", skus: ["MON-613-366", "CHAIR-460"] }
+    },
+    ["MON-613-366"],
+    { catalog: named }
+  );
+  assert.equal(missing.result.ok, false);
+  assert.equal(missing.result.reasonCode, "distance_not_on_scene");
+  assert.equal(missing.result.sceneChanged, false);
+  assert.deepEqual(missing.result.say.params, { name: "кресло" });
+  assert.deepEqual(missing.board.calls, []);
+  assert.deepEqual(missing.board.skus, ["MON-613-366"]);
+
+  const oneCopy = run(
+    {
+      type: "command",
+      source: "text",
+      payload: { action: "distance", skus: ["MON-613-366", "MON-613-366"] }
+    },
+    ["MON-613-366"],
+    { catalog: named }
+  );
+  assert.equal(oneCopy.result.reasonCode, "distance_need_two");
+  assert.equal(oneCopy.result.sceneChanged, false);
+  assert.deepEqual(oneCopy.board.calls, []);
+  assert.deepEqual(oneCopy.board.skus, ["MON-613-366"]);
+
+  const none = run(
+    { type: "command", source: "text", payload: { action: "distance" } },
+    ["MON-613-366"],
+    { catalog: named }
+  );
+  assert.equal(none.result.reasonCode, "distance_unclear");
+  assert.equal(none.result.sceneChanged, false);
+  assert.deepEqual(none.board.calls, []);
+
+  const pair = run(
+    {
+      type: "command",
+      source: "text",
+      payload: { action: "distance", skus: ["MON-613-366", "MON-613-366"] }
+    },
+    ["MON-613-366", "MON-613-366"],
+    { catalog: named }
+  );
+  assert.equal(pair.result.ok, true);
+  assert.deepEqual(pair.result.facts.measure, { a: "MON-613-366", b: "MON-613-366" });
+  assert.deepEqual(pair.board.skus, ["MON-613-366", "MON-613-366"]);
+  assert.deepEqual(pair.board.calls, []);
+});
+
 test("runCommand does not change the catalog or the intent", () => {
   const frozenCatalog = structuredClone(catalog);
   const intent = command("add", "CHAIR-460");

@@ -1,9 +1,18 @@
 {
   "section": "commands",
-  "draftVersion": 1,
-  "publishedVersion": 2,
+  "draftVersion": 2,
+  "publishedVersion": 3,
   "draft": {
     "commands": [
+      {
+        "action": "distance",
+        "words": [
+          "расстоя",
+          "дистанц",
+          "как далеко",
+          "сколько до"
+        ]
+      },
       {
         "action": "add",
         "words": [
@@ -78,10 +87,66 @@
           "maxItems": 12
         }
       }
+    },
+    {
+      "version": 3,
+      "date": "2026-10-18T19:26:27.048Z",
+      "description": "ddd",
+      "snapshot": {
+        "commands": [
+          {
+            "action": "distance",
+            "words": [
+              "расстоя",
+              "дистанц",
+              "как далеко",
+              "сколько до"
+            ]
+          },
+          {
+            "action": "add",
+            "words": [
+              "добав",
+              "постав",
+              "положи"
+            ]
+          },
+          {
+            "action": "remove",
+            "words": [
+              "убер",
+              "убра",
+              "удал",
+              "сними"
+            ]
+          },
+          {
+            "action": "replace",
+            "words": [
+              "замен",
+              "поменя"
+            ]
+          }
+        ],
+        "directions": [],
+        "amounts": [],
+        "limits": {
+          "maxItems": 12
+        }
+      }
     }
   ],
   "published": {
     "commands": [
+      {
+        "action": "distance",
+        "words": [
+          "расстоя",
+          "дистанц",
+          "как далеко",
+          "сколько до"
+        ]
+      },
       {
         "action": "add",
         "words": [

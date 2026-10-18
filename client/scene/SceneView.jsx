@@ -20,15 +20,17 @@ function exclusive(task) {
   return run;
 }
 
-function SceneView({ skus, onReady, distanceToken = 0 }) {
+function SceneView({ skus, onReady, distanceToken = 0, measure = null, onDistance }) {
   const hostRef = useRef(null);
   const canvasRef = useRef(null);
   const syncRef = useRef(null);
   const sceneRef = useRef(null);
   const measureRef = useRef(null);
   const onReadyRef = useRef(onReady);
+  const onDistanceRef = useRef(onDistance);
   const [booted, setBooted] = useState(false);
   onReadyRef.current = onReady;
+  onDistanceRef.current = onDistance;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -65,7 +67,7 @@ function SceneView({ skus, onReady, distanceToken = 0 }) {
           dispose();
           return;
         }
-        const sync = createSceneSync({ world, products });
+        const sync = createSceneSync({ world, products, types: catalog.types ?? [] });
         view = initScene(canvas, {
           onFrame: () => {
             if (drag) drag.apply();
@@ -130,18 +132,25 @@ function SceneView({ skus, onReady, distanceToken = 0 }) {
   useEffect(() => {
     if (!booted || !distanceToken) return undefined;
     let cancelled = false;
+    const token = distanceToken;
+    const a = measure?.a;
+    const b = measure?.b;
     exclusive(async () => {
-      if (cancelled || !measureRef.current) return;
+      if (cancelled) return;
+      let label = null;
       try {
-        measureRef.current.distance();
+        if (measureRef.current && typeof a === "string" && typeof b === "string") {
+          label = measureRef.current.distance({ a, b })?.label ?? null;
+        }
       } catch (err) {
         if (!cancelled) console.error("Distance failed:", err);
       }
+      if (!cancelled) onDistanceRef.current?.({ token, label });
     });
     return () => {
       cancelled = true;
     };
-  }, [booted, distanceToken]);
+  }, [booted, distanceToken, measure]);
 
   return (
     <div ref={hostRef} className="absolute inset-0 overflow-hidden">

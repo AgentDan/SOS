@@ -131,6 +131,7 @@ function createDrag({ canvas, camera, controls }) {
     const nextZ = hitPoint.z + state.offsetZ;
     if (!state.notified && (nextX !== state.target.x || nextZ !== state.target.z)) {
       state.notified = true;
+      state.entry.moved = true;
       notify();
     }
     state.target.x = nextX;

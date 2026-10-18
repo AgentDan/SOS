@@ -1,7 +1,7 @@
 import { all, enumerateInstances, get, unregister } from "./physics/registry.js";
-import { placeProducts } from "./place-products.js";
+import { placeProducts, reseatCopies } from "./place-products.js";
 
-function createSceneSync({ world, products }) {
+function createSceneSync({ world, products, types }) {
   const listeners = new Set();
 
   function subscribe(listener) {
@@ -17,9 +17,11 @@ function createSceneSync({ world, products }) {
     const occurrences = enumerateInstances(skus);
     const target = new Set(occurrences.map((item) => item.id));
     let changed = false;
+    const removedSkus = [];
     for (const [id, entry] of all()) {
       if (id === "floor") continue;
       if (target.has(id)) continue;
+      if (typeof entry?.product?.sku === "string") removedSkus.push(entry.product.sku);
       if (entry.rigidBody) world.removeRigidBody(entry.rigidBody);
       if (entry.mesh) scene.remove(entry.mesh);
       unregister(id);
@@ -35,8 +37,9 @@ function createSceneSync({ world, products }) {
     }
     if (fresh.length > 0) changed = true;
     if (changed) notify();
+    if (removedSkus.length > 0) reseatCopies({ skus: removedSkus });
     if (fresh.length === 0) return;
-    return placeProducts(scene, fresh);
+    return placeProducts(scene, fresh, types);
   }
 
   return { syncScene, subscribe };
