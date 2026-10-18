@@ -1,7 +1,7 @@
 {
   "section": "catalog",
   "draftVersion": 7,
-  "publishedVersion": 6,
+  "publishedVersion": 7,
   "history": [
     {
       "version": 1,
@@ -843,6 +843,199 @@
           }
         ]
       }
+    },
+    {
+      "version": 7,
+      "date": "2026-10-18T15:13:01.609Z",
+      "description": "add monitor",
+      "snapshot": {
+        "types": [
+          {
+            "id": "desk_legs",
+            "label": "Desk legs",
+            "canBeHost": true,
+            "canHostOn": [],
+            "maxOnScene": 1
+          },
+          {
+            "id": "desk_top",
+            "label": "Desk top",
+            "canBeHost": true,
+            "canHostOn": [
+              "desk_legs"
+            ],
+            "maxOnScene": 2
+          },
+          {
+            "id": "monitor",
+            "label": "Monitor",
+            "canBeHost": false,
+            "canHostOn": [
+              "desk_top"
+            ],
+            "maxOnScene": 3
+          },
+          {
+            "id": "chair",
+            "label": "Chair",
+            "canBeHost": false,
+            "canHostOn": [],
+            "maxOnScene": 2
+          }
+        ],
+        "needs": [
+          {
+            "id": "desk_top_wide",
+            "name": "Широкая столешница",
+            "why": "",
+            "criteria": {
+              "type": "desk_top",
+              "minWidth": 1600
+            }
+          },
+          {
+            "id": "ergonomic_chair",
+            "name": "Эргономичное кресло",
+            "why": "",
+            "criteria": {
+              "type": "chair"
+            }
+          }
+        ],
+        "products": [
+          {
+            "sku": "DESK-LEGS-1400",
+            "type": "desk_legs",
+            "name": "Desk legs 1400x700",
+            "label": "опоры стола",
+            "dimensions": {
+              "width": 1400,
+              "depth": 700,
+              "height": 1000
+            },
+            "priceEur": 79,
+            "alwaysPresent": true,
+            "words": [
+              "опор",
+              "ножк"
+            ],
+            "media": {
+              "model3d": "DESK-LEGS-1400.glb"
+            }
+          },
+          {
+            "sku": "DESK-TOP-1400",
+            "type": "desk_top",
+            "name": "Desk top 1400x700",
+            "label": "стол 140",
+            "dimensions": {
+              "width": 1400,
+              "depth": 700,
+              "height": 30
+            },
+            "priceEur": 189,
+            "words": [
+              "стол",
+              "столешниц"
+            ],
+            "media": {
+              "model3d": "DESK-TOP-1400.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-LEGS-1400"
+            }
+          },
+          {
+            "sku": "DESK-TOP-1800",
+            "type": "desk_top",
+            "name": "Desk top 1800x800",
+            "label": "стол 180",
+            "dimensions": {
+              "width": 1800,
+              "depth": 800,
+              "height": 30
+            },
+            "priceEur": 259,
+            "words": [
+              "стол",
+              "столешниц"
+            ],
+            "media": {
+              "model3d": "DESK-TOP-1800.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-LEGS-1400"
+            }
+          },
+          {
+            "sku": "MON-613-366",
+            "type": "monitor",
+            "name": "Monitor 27-inch",
+            "label": "монитор",
+            "dimensions": {
+              "width": 613,
+              "depth": 205,
+              "height": 366
+            },
+            "priceEur": 249,
+            "words": [
+              "монитор",
+              "экран"
+            ],
+            "media": {
+              "model3d": "MON-613-366.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-TOP-1400"
+            }
+          },
+          {
+            "sku": "MON-613-367",
+            "type": "monitor",
+            "name": "Monitor 27-inch",
+            "label": "монитор",
+            "dimensions": {
+              "width": 613,
+              "depth": 205,
+              "height": 366
+            },
+            "priceEur": 249,
+            "words": [
+              "монитор",
+              "экран"
+            ],
+            "media": {},
+            "placement": {
+              "hostSku": "DESK-TOP-1400"
+            }
+          },
+          {
+            "sku": "CHAIR-460",
+            "type": "chair",
+            "name": "Chair 460x520",
+            "label": "кресло",
+            "dimensions": {
+              "width": 460,
+              "depth": 520,
+              "height": 900
+            },
+            "priceEur": 129,
+            "words": [
+              "кресл",
+              "стул"
+            ],
+            "media": {
+              "model3d": "CHAIR-460.glb"
+            },
+            "placement": {
+              "offset": {
+                "x": 0,
+                "z": 760
+              }
+            }
+          }
+        ]
+      }
     }
   ],
   "published": {
@@ -982,6 +1175,26 @@
         "media": {
           "model3d": "MON-613-366.glb"
         },
+        "placement": {
+          "hostSku": "DESK-TOP-1400"
+        }
+      },
+      {
+        "sku": "MON-613-367",
+        "type": "monitor",
+        "name": "Monitor 27-inch",
+        "label": "монитор",
+        "dimensions": {
+          "width": 613,
+          "depth": 205,
+          "height": 366
+        },
+        "priceEur": 249,
+        "words": [
+          "монитор",
+          "экран"
+        ],
+        "media": {},
         "placement": {
           "hostSku": "DESK-TOP-1400"
         }
