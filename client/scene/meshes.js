@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { framePartsForItem, mmToM } from "./physics/bodies.js";
 
 const TYPE_COLORS = {
   desk_legs: 0x5c4033,
@@ -9,52 +8,23 @@ const TYPE_COLORS = {
 };
 const DEFAULT_COLOR = 0x888888;
 
-function boxMesh(dimensions, color) {
-  const geometry = new THREE.BoxGeometry(
-    mmToM(dimensions.width),
-    mmToM(dimensions.height),
-    mmToM(dimensions.depth)
-  );
-  const material = new THREE.MeshStandardMaterial({ color });
-  return new THREE.Mesh(geometry, material);
-}
-
-function catalogMesh(product, color) {
-  const parts = framePartsForItem(product);
-  if (parts.length === 1) {
-    return boxMesh(product.dimensions, color);
-  }
-
-  const group = new THREE.Group();
-  const material = new THREE.MeshStandardMaterial({ color });
-  for (const part of parts) {
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(part.half.x * 2, part.half.y * 2, part.half.z * 2),
-      material
-    );
-    mesh.position.set(part.local.x, part.local.y, part.local.z);
-    group.add(mesh);
-  }
-  return group;
-}
-
 function meshColorForType(type) {
   return TYPE_COLORS[type] ?? DEFAULT_COLOR;
 }
 
 const COLLIDER_COLOR = 0xffb020;
 
-function withColliderWire(visual, product) {
+function withColliderWire(visual, parts) {
   const mesh = new THREE.Group();
   mesh.add(visual);
-  mesh.add(colliderWire(product));
+  mesh.add(colliderWire(parts));
   return mesh;
 }
 
-function colliderWire(product) {
+function colliderWire(parts) {
   const group = new THREE.Group();
   const material = new THREE.LineBasicMaterial({ color: COLLIDER_COLOR, depthTest: false });
-  for (const part of framePartsForItem(product)) {
+  for (const part of parts) {
     const box = new THREE.BoxGeometry(part.half.x * 2, part.half.y * 2, part.half.z * 2);
     const lines = new THREE.LineSegments(new THREE.EdgesGeometry(box), material);
     box.dispose();
@@ -65,4 +35,4 @@ function colliderWire(product) {
   return group;
 }
 
-export { TYPE_COLORS, DEFAULT_COLOR, boxMesh, catalogMesh, meshColorForType, withColliderWire };
+export { TYPE_COLORS, DEFAULT_COLOR, meshColorForType, withColliderWire };

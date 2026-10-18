@@ -14,11 +14,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sourceData = path.join(__dirname, "..", "..", "data");
 const tempData = mkdtempSync(path.join(tmpdir(), "sos-admin-data-"));
 const tempRuntime = mkdtempSync(path.join(tmpdir(), "sos-admin-runtime-"));
+const tempModels = mkdtempSync(path.join(tmpdir(), "sos-admin-models-"));
 cpSync(sourceData, tempData, { recursive: true });
 
 const TOKEN = "desk-admin-test-token";
 process.env.SOS_DATA_DIR = tempData;
 process.env.SOS_RUNTIME_DIR = tempRuntime;
+process.env.SOS_MODELS_DIR = tempModels;
 process.env.ADMIN_TOKEN = TOKEN;
 
 let server;
@@ -63,11 +65,65 @@ function journalEntries() {
     .map((line) => JSON.parse(line));
 }
 
-async function api(pathname, { method = "GET", token = TOKEN, body, raw } = {}) {
+function pad4(bytes, fill) {
+  const extra = (4 - (bytes.length % 4)) % 4;
+  if (extra === 0) return bytes;
+  const out = Buffer.alloc(bytes.length + extra, fill);
+  bytes.copy(out);
+  return out;
+}
+
+function simpleGlb(nodeName, hx, hy, hz) {
+  const positions = [];
+  for (const x of [-hx, hx]) {
+    for (const y of [-hy, hy]) {
+      for (const z of [-hz, hz]) positions.push(x, y, z);
+    }
+  }
+  const bin = pad4(Buffer.from(new Float32Array(positions).buffer), 0);
+  const json = {
+    asset: { version: "2.0" },
+    scene: 0,
+    scenes: [{ nodes: [0] }],
+    nodes: [{ name: nodeName, mesh: 0 }],
+    meshes: [{ primitives: [{ attributes: { POSITION: 0 } }] }],
+    accessors: [
+      {
+        bufferView: 0,
+        componentType: 5126,
+        count: positions.length / 3,
+        type: "VEC3",
+        min: [-hx, -hy, -hz],
+        max: [hx, hy, hz]
+      }
+    ],
+    bufferViews: [{ buffer: 0, byteOffset: 0, byteLength: positions.length * 4 }],
+    buffers: [{ byteLength: bin.length }]
+  };
+  const jsonChunk = pad4(Buffer.from(JSON.stringify(json)), 0x20);
+  const total = 12 + 8 + jsonChunk.length + 8 + bin.length;
+  const glb = Buffer.alloc(total);
+  glb.writeUInt32LE(0x46546c67, 0);
+  glb.writeUInt32LE(2, 4);
+  glb.writeUInt32LE(total, 8);
+  glb.writeUInt32LE(jsonChunk.length, 12);
+  glb.writeUInt32LE(0x4e4f534a, 16);
+  jsonChunk.copy(glb, 20);
+  const binAt = 20 + jsonChunk.length;
+  glb.writeUInt32LE(bin.length, binAt);
+  glb.writeUInt32LE(0x004e4942, binAt + 4);
+  bin.copy(glb, binAt + 8);
+  return glb;
+}
+
+async function api(pathname, { method = "GET", token = TOKEN, body, raw, glb } = {}) {
   const headers = {};
   if (token !== false) headers.Authorization = `Bearer ${token}`;
   let payload;
-  if (raw !== undefined) {
+  if (glb !== undefined) {
+    headers["Content-Type"] = "model/gltf-binary";
+    payload = glb;
+  } else if (raw !== undefined) {
     headers["Content-Type"] = "application/json";
     payload = raw;
   } else if (body !== undefined) {
@@ -101,9 +157,11 @@ describe("admin API", { concurrency: 1 }, () => {
     if (server) await close(server);
     delete process.env.SOS_DATA_DIR;
     delete process.env.SOS_RUNTIME_DIR;
+    delete process.env.SOS_MODELS_DIR;
     delete process.env.ADMIN_TOKEN;
     rmSync(tempData, { recursive: true, force: true });
     rmSync(tempRuntime, { recursive: true, force: true });
+    rmSync(tempModels, { recursive: true, force: true });
   });
 
   test("missing or wrong token is 401 and does not open the client API", async () => {
@@ -455,6 +513,78 @@ describe("admin API", { concurrency: 1 }, () => {
     } finally {
       writeFileSync(knobsFile, knobsOriginal);
     }
+  });
+
+  test("model upload requires a token, a known sku, and a GLB that yields parts", async () => {
+    const lines = journalEntries().length;
+    const missingToken = await api("/admin/models/DESK-TOP-1400", {
+      method: "POST",
+      token: false,
+      glb: simpleGlb("Top", 0.1, 0.1, 0.1)
+    });
+    assert.equal(missingToken.status, 401);
+    assert.deepEqual(missingToken.json, { error: "unauthorized" });
+    assert.equal(journalEntries().length, lines);
+    assert.equal(existsSync(path.join(tempModels, "DESK-TOP-1400.glb")), false);
+
+    const unknown = await api("/admin/models/NO-SUCH-SKU", {
+      method: "POST",
+      glb: simpleGlb("Top", 0.1, 0.1, 0.1)
+    });
+    assert.equal(unknown.status, 404);
+    assert.equal(existsSync(path.join(tempModels, "NO-SUCH-SKU.glb")), false);
+
+    const legsFile = path.join(tempModels, "DESK-LEGS-1400.glb");
+    const legsBefore = Buffer.from("keep-the-previous-legs");
+    writeFileSync(legsFile, legsBefore);
+    const broken = await api("/admin/models/DESK-LEGS-1400", {
+      method: "POST",
+      glb: Buffer.from("this is not a glb")
+    });
+    assert.equal(broken.status, 422);
+    assert.match(broken.json.error, /GLB/);
+    assert.deepEqual(readFileSync(legsFile), legsBefore);
+    assert.equal(journalEntries().length, lines);
+
+    const chairFile = path.join(tempModels, "CHAIR-460.glb");
+    const chairBefore = Buffer.from("keep-the-previous-chair");
+    writeFileSync(chairFile, chairBefore);
+    const chair = await api("/admin/models/CHAIR-460", {
+      method: "POST",
+      glb: simpleGlb("Wheel_0", 0.05, 0.05, 0.05)
+    });
+    assert.equal(chair.status, 422);
+    assert.match(chair.json.error, /Seat/);
+    assert.match(chair.json.error, /Wheel_0/);
+    assert.deepEqual(readFileSync(chairFile), chairBefore);
+    assert.equal(journalEntries().length, lines);
+
+    const skuFile = path.join(tempData, "catalog", "sku", "DESK-TOP-1400.json");
+    const skuBefore = readFileSync(skuFile);
+    const uploaded = await api("/admin/models/DESK-TOP-1400", {
+      method: "POST",
+      glb: simpleGlb("Top", 0.7, 0.015, 0.35)
+    });
+    assert.equal(uploaded.status, 200);
+    assert.equal(uploaded.json.sku, "DESK-TOP-1400");
+    assert.equal(uploaded.json.mismatch, false);
+    assert.equal(uploaded.json.parts.length, 1);
+    assert.equal(uploaded.json.parts[0].name, "Top");
+    assert.equal(uploaded.json.sizeMm.width, 1400);
+    assert.equal(uploaded.json.sizeMm.height, 30);
+    assert.equal(uploaded.json.sizeMm.depth, 700);
+    assert.deepEqual(uploaded.json.catalogMm, { width: 1400, height: 30, depth: 700 });
+    assert.ok(uploaded.json.parts[0].center.every((value) => Math.abs(value) < 1e-6));
+    const saved = readFileSync(path.join(tempModels, "DESK-TOP-1400.glb"));
+    assert.equal(saved.length, uploaded.json.bytes);
+    assert.equal(saved.readUInt32LE(0), 0x46546c67);
+    assert.ok(saved.includes(Buffer.from("COL_Top")));
+    assert.deepEqual(readFileSync(skuFile), skuBefore);
+    const entry = journalEntries().at(-1);
+    assert.equal(entry.action, "model");
+    assert.equal(entry.section, "catalog");
+    assert.equal(entry.detail.sku, "DESK-TOP-1400");
+    assert.equal(entry.detail.bytes, saved.length);
   });
 
   test("journal limit returns the latest lines", async () => {

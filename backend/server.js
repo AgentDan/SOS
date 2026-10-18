@@ -1,6 +1,5 @@
 import "dotenv/config";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
 import { readKnobs } from "./config/load.js";
@@ -9,6 +8,7 @@ import { validateDialogData } from "./validation/index.js";
 import { validateKnobs } from "./validation/knobs.js";
 import apiRoutes from "./api/routes.js";
 import { invalidJsonHandler } from "./api/admin.routes.js";
+import { modelsDirectory } from "./admin-api/models.js";
 
 try {
   const sections = loadSections();
@@ -21,7 +21,7 @@ try {
   process.exit(1);
 }
 
-const modelsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "models");
+const modelsDir = modelsDirectory();
 
 const app = express();
 app.use(cors());

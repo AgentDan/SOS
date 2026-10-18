@@ -1,8 +1,9 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { requireAdmin } from "../admin-api/auth.js";
 import { healthReport } from "../admin-api/health.js";
 import { readJournal } from "../admin-api/journal.js";
 import { listKnobs, updateKnob } from "../admin-api/knobs.js";
+import { uploadModel } from "../admin-api/models.js";
 import {
   getSection,
   isSection,
@@ -118,6 +119,10 @@ admin.put("/knobs/:id", (req, res, next) => {
     return;
   }
   respond(res, next, () => updateKnob(req.params.id, req.body.at, req.body.value));
+});
+
+admin.post("/models/:sku", express.raw({ type: "model/gltf-binary", limit: "25mb" }), (req, res, next) => {
+  respond(res, next, () => uploadModel(req.params.sku, req.body));
 });
 
 router.use("/admin", admin);

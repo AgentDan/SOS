@@ -18,18 +18,25 @@ function isAbort(err) {
   return Boolean(err && err.name === "AbortError");
 }
 
-async function request(path, { method = "GET", body, signal } = {}) {
+async function request(path, { method = "GET", body, rawBody, contentType, signal } = {}) {
   const headers = { Accept: "application/json" };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  let outbound;
+  if (rawBody !== undefined) {
+    headers["Content-Type"] = contentType || "application/octet-stream";
+    outbound = rawBody;
+  } else if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
+    outbound = JSON.stringify(body);
+  }
 
   let response;
   try {
     response = await fetch(`/api/admin${path}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: outbound,
       signal
     });
   } catch (err) {
@@ -106,6 +113,15 @@ function readJournal(limit, options) {
   return request(`/journal?limit=${encodeURIComponent(limit)}`, options);
 }
 
+function uploadModel(sku, data, options) {
+  return request(`/models/${encodeURIComponent(sku)}`, {
+    ...options,
+    method: "POST",
+    rawBody: data,
+    contentType: "model/gltf-binary"
+  });
+}
+
 export {
   setUnauthorizedHandler,
   isAbort,
@@ -117,5 +133,6 @@ export {
   getHealth,
   listKnobs,
   updateKnob,
-  readJournal
+  readJournal,
+  uploadModel
 };

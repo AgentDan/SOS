@@ -5,7 +5,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { framePartsForItem, mmToM } from "../client/scene/physics/bodies.js";
 import { meshColorForType } from "../client/scene/meshes.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -49,21 +48,12 @@ function encodeGlb(product) {
   const normals = [];
   const indices = [];
 
-  for (const part of framePartsForItem(product)) {
-    appendBox(positions, normals, indices, part.local, part.half);
-  }
-
-  const hx = mmToM(product.dimensions.width) / 2;
-  const hy = mmToM(product.dimensions.height) / 2;
-  const hz = mmToM(product.dimensions.depth) / 2;
-  for (const sx of [-1, 1]) {
-    for (const sy of [-1, 1]) {
-      for (const sz of [-1, 1]) {
-        positions.push(sx * hx, sy * hy, sz * hz);
-        normals.push(0, 1, 0);
-      }
-    }
-  }
+  const half = {
+    x: product.dimensions.width / 2000,
+    y: product.dimensions.height / 2000,
+    z: product.dimensions.depth / 2000
+  };
+  appendBox(positions, normals, indices, { x: 0, y: 0, z: 0 }, half);
 
   const positionBytes = Buffer.from(new Float32Array(positions).buffer);
   const normalBytes = Buffer.from(new Float32Array(normals).buffer);

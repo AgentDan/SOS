@@ -43,23 +43,62 @@ function modelUrl(model3d) {
   return `${modelsBase().replace(/\/+$/, "")}/${key}`;
 }
 
-async function loadCatalogModel(product) {
-  const url = modelUrl(product.media && product.media.model3d);
-  if (!url) return null;
+function readFittedColliderParts(root, sku) {
+  const label = sku || "model";
+  root.updateWorldMatrix(true, true);
+  const bodyPos = new THREE.Vector3();
+  const bodyQuat = new THREE.Quaternion();
+  const bodyScale = new THREE.Vector3();
+  root.matrixWorld.decompose(bodyPos, bodyQuat, bodyScale);
+  const invQuat = bodyQuat.clone().invert();
 
-  try {
-    const gltf = await loadGltf(url);
-    gltf.scene.traverse((obj) => {
-      if (obj.isMesh) {
-        obj.castShadow = false;
-        obj.receiveShadow = false;
-      }
+  const found = [];
+  root.traverse((obj) => {
+    if (obj.name && obj.name.startsWith("COL_")) found.push(obj);
+  });
+  if (found.length === 0) throw new Error(`${label}: в модели нет узлов COL_*`);
+
+  const parts = [];
+  for (const node of found) {
+    const pos = new THREE.Vector3();
+    const quat = new THREE.Quaternion();
+    const scale = new THREE.Vector3();
+    node.matrixWorld.decompose(pos, quat, scale);
+    pos.sub(bodyPos).applyQuaternion(invQuat);
+    parts.push({
+      half: {
+        x: Math.abs(scale.x) / 2,
+        y: Math.abs(scale.y) / 2,
+        z: Math.abs(scale.z) / 2
+      },
+      local: { x: pos.x, y: pos.y, z: pos.z }
     });
-    return fitToCatalogDimensions(gltf.scene, product.dimensions);
-  } catch (err) {
-    console.error(`Could not load model ${url}:`, err);
-    return null;
   }
+  for (const node of found) node.removeFromParent();
+  return parts;
 }
 
-export { loadCatalogModel };
+async function loadCatalogModel(product) {
+  const sku = product && product.sku ? product.sku : "model";
+  const url = modelUrl(product.media && product.media.model3d);
+  if (!url) throw new Error(`${sku}: нет файла модели`);
+
+  let gltf;
+  try {
+    gltf = await loadGltf(url);
+  } catch (err) {
+    const reason = err && err.message ? err.message : "не удалось загрузить";
+    throw new Error(`${sku}: ${reason}`);
+  }
+  gltf.scene.traverse((obj) => {
+    if (obj.isMesh) {
+      obj.castShadow = false;
+      obj.receiveShadow = false;
+    }
+  });
+  const object = fitToCatalogDimensions(gltf.scene, product.dimensions);
+  const parts = readFittedColliderParts(object, sku);
+  return { object, parts };
+}
+
+export { loadCatalogModel, readFittedColliderParts };

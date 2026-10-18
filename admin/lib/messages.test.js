@@ -55,6 +55,7 @@ test("journal fields are shown in Russian without secrets", () => {
   assert.equal(actionLabel("publish"), "Публикация");
   assert.equal(actionLabel("rollback"), "Откат");
   assert.equal(actionLabel("knob"), "Ручка");
+  assert.equal(actionLabel("model"), "Модель");
   assert.equal(
     formatJournalDetail({ id: "director-low", at: "low", from: 35, to: 40, draftVersion: 2 }),
     "ручка director-low, поле low, 35 → 40, черновик v2"

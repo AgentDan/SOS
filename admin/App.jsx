@@ -8,6 +8,7 @@ import { Loading } from "./components/Loading.jsx";
 import { Journal } from "./screens/Journal.jsx";
 import { Knobs } from "./screens/Knobs.jsx";
 import { Login } from "./screens/Login.jsx";
+import { Models } from "./screens/Models.jsx";
 import { Overview } from "./screens/Overview.jsx";
 import { SectionEditor } from "./screens/SectionEditor.jsx";
 import { Sections } from "./screens/Sections.jsx";
@@ -17,6 +18,7 @@ const NAV = [
   ["overview", "Обзор"],
   ["sections", "Разделы"],
   ["knobs", "Ручки"],
+  ["models", "Модели"],
   ["journal", "Журнал"]
 ];
 
@@ -35,6 +37,7 @@ function parseHash() {
   }
   if (head === "sections") return { screen: "sections" };
   if (head === "knobs") return { screen: "knobs" };
+  if (head === "models") return { screen: "models" };
   if (head === "journal") return { screen: "journal" };
   return { screen: "overview" };
 }
@@ -43,6 +46,7 @@ function hrefFor(route) {
   if (route.screen === "section") return `#/sections/${encodeURIComponent(route.name)}`;
   if (route.screen === "sections") return "#/sections";
   if (route.screen === "knobs") return "#/knobs";
+  if (route.screen === "models") return "#/models";
   if (route.screen === "journal") return "#/journal";
   return "#/overview";
 }
@@ -53,7 +57,7 @@ function sameHash(hash, next) {
 
 function titleFor(route) {
   if (route.screen === "section") return `Админка — ${sectionLabel(route.name)}`;
-  const names = { overview: "Обзор", sections: "Разделы", knobs: "Ручки", journal: "Журнал" };
+  const names = { overview: "Обзор", sections: "Разделы", knobs: "Ручки", models: "Модели", journal: "Журнал" };
   return `Админка — ${names[route.screen] || "Обзор"}`;
 }
 
@@ -207,6 +211,7 @@ function App() {
   if (route.screen === "section") screen = <SectionEditor key={screenKey} name={route.name} onDirty={markDirty} />;
   else if (route.screen === "sections") screen = <Sections key={screenKey} openSection={openSection} />;
   else if (route.screen === "knobs") screen = <Knobs key={screenKey} openSection={openSection} />;
+  else if (route.screen === "models") screen = <Models key={screenKey} />;
   else if (route.screen === "journal") screen = <Journal key={screenKey} />;
 
   return (

@@ -2,7 +2,8 @@ const ACTIONS = {
   draft: "Правка черновика",
   publish: "Публикация",
   rollback: "Откат",
-  knob: "Ручка"
+  knob: "Ручка",
+  model: "Модель"
 };
 
 const SECRET_KEY = /token|authorization|password|secret/i;

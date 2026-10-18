@@ -22,6 +22,7 @@
 | GET | `/journal?limit=50` | последние строки `{ts, action, section, detail}` |
 | GET | `/knobs` | ручки из `data/knobs.json`, у каждой `values: [{at, value, key?}]` |
 | PUT | `/knobs/:id` | тело `{at, value}`. Пишет в черновик раздела, публикации нет. Ответ `{draftVersion, id, at, value}` |
+| POST | `/models/:sku` | тело — сырой GLB, `Content-Type: model/gltf-binary`, до 25 МБ. Считает коллайдеры и сохраняет `models/<sku>.glb`. Ответ `{sku, bytes, parts:[{name,center,size}], sizeMm, catalogMm, mismatch}`. Нет SKU — `404`. Ошибка расчёта — `422 {error}`, файл не меняется |
 
 `key` в значении ручки — артикул, если путь прошёл через товар каталога.
 
