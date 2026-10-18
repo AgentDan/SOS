@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { fetchCatalog } from "../api/catalog-api.js";
 import { createDrag } from "./drag.js";
 import { createFloor } from "./floor.js";
+import { createMeasure } from "./measure.js";
 import { clear as clearRegistry } from "./physics/registry.js";
 import { syncMeshes } from "./physics/sync.js";
 import { disposeWorld, initWorld, step } from "./physics/world.js";
@@ -19,34 +20,40 @@ function exclusive(task) {
   return run;
 }
 
-function SceneView({ skus, onReady }) {
+function SceneView({ skus, onReady, distanceToken = 0 }) {
+  const hostRef = useRef(null);
   const canvasRef = useRef(null);
   const syncRef = useRef(null);
   const sceneRef = useRef(null);
+  const measureRef = useRef(null);
   const onReadyRef = useRef(onReady);
   const [booted, setBooted] = useState(false);
   onReadyRef.current = onReady;
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    const host = hostRef.current;
     let alive = true;
     let dispose = () => {};
 
     exclusive(async () => {
-      if (!alive || !canvas) return;
+      if (!alive || !canvas || !host) return;
       let worldReady = false;
       let view = null;
       let drag = null;
+      let measure = null;
       let done = false;
       dispose = () => {
         if (done) return;
         done = true;
+        if (measure) measure.dispose();
         if (drag) drag.dispose();
         if (view) view.dispose();
         if (worldReady) disposeWorld();
         clearRegistry();
         syncRef.current = null;
         sceneRef.current = null;
+        measureRef.current = null;
       };
       try {
         const catalog = await fetchCatalog();
@@ -58,22 +65,31 @@ function SceneView({ skus, onReady }) {
           dispose();
           return;
         }
-        const syncScene = createSceneSync({ world, products });
+        const sync = createSceneSync({ world, products });
         view = initScene(canvas, {
           onFrame: () => {
             if (drag) drag.apply();
             step();
             syncMeshes();
+            if (measure) measure.render();
           }
         });
         drag = createDrag({ canvas, camera: view.camera, controls: view.controls });
         createFloor(world);
+        measure = createMeasure({
+          scene: view.scene,
+          camera: view.camera,
+          host,
+          subscribeScene: sync.subscribe,
+          subscribeDrag: drag.subscribe
+        });
         if (!alive) {
           dispose();
           return;
         }
-        syncRef.current = syncScene;
+        syncRef.current = sync.syncScene;
         sceneRef.current = view.scene;
+        measureRef.current = measure;
         setBooted(true);
       } catch (err) {
         console.error("SOS failed to start:", err);
@@ -111,7 +127,27 @@ function SceneView({ skus, onReady }) {
     };
   }, [booted, skus]);
 
-  return <canvas id="scene-canvas" ref={canvasRef} className="block" />;
+  useEffect(() => {
+    if (!booted || !distanceToken) return undefined;
+    let cancelled = false;
+    exclusive(async () => {
+      if (cancelled || !measureRef.current) return;
+      try {
+        measureRef.current.distance();
+      } catch (err) {
+        if (!cancelled) console.error("Distance failed:", err);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [booted, distanceToken]);
+
+  return (
+    <div ref={hostRef} className="absolute inset-0 overflow-hidden">
+      <canvas id="scene-canvas" ref={canvasRef} className="block" />
+    </div>
+  );
 }
 
 export { SceneView };

@@ -11,6 +11,7 @@ function App() {
   const [skus, setSkus] = useState(null);
   const [panel, setPanel] = useState(false);
   const [reply, setReply] = useState("");
+  const [distanceToken, setDistanceToken] = useState(0);
 
   const showSkus = useCallback((list) => {
     setSkus(Array.isArray(list) ? list : []);
@@ -42,13 +43,16 @@ function App() {
       const text = response?.reply?.text;
       setReply(typeof text === "string" ? text : "");
       showSkus(response?.scene?.skus);
+      if (response?.result?.ok === true && response?.result?.facts?.action === "distance") {
+        setDistanceToken((value) => value + 1);
+      }
     },
     [showSkus]
   );
 
   return (
     <>
-      <SceneView skus={skus} onReady={() => setPanel(true)} />
+      <SceneView skus={skus} distanceToken={distanceToken} onReady={() => setPanel(true)} />
       {panel ? (
         <QuestionPanel clientId={clientId} onAnswered={refreshScene} />
       ) : (

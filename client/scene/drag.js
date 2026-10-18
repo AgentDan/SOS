@@ -20,14 +20,25 @@ function createDrag({ canvas, camera, controls }) {
   const pointer = new THREE.Vector2();
   const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   const hitPoint = new THREE.Vector3();
+  const listeners = new Set();
   const state = {
     entry: null,
     offsetX: 0,
     offsetZ: 0,
     y: 0,
     target: { x: 0, y: 0, z: 0 },
-    pointerId: null
+    pointerId: null,
+    notified: false
   };
+
+  function subscribe(listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  }
+
+  function notify() {
+    for (const listener of [...listeners]) listener();
+  }
 
   function setPointer(event) {
     const rect = canvas.getBoundingClientRect();
@@ -59,6 +70,7 @@ function createDrag({ canvas, camera, controls }) {
       // A synthetic pointer has no capture to release.
     }
     state.pointerId = null;
+    state.notified = false;
   }
 
   function endDrag() {
@@ -92,6 +104,7 @@ function createDrag({ canvas, camera, controls }) {
     state.target.y = pos.y;
     state.target.z = pos.z;
     state.pointerId = event.pointerId;
+    state.notified = false;
     plane.constant = -hit.point.y;
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
@@ -114,9 +127,15 @@ function createDrag({ canvas, camera, controls }) {
     if (event.pointerId !== state.pointerId) return;
     raycaster.setFromCamera(pointer, camera);
     if (!raycaster.ray.intersectPlane(plane, hitPoint)) return;
-    state.target.x = hitPoint.x + state.offsetX;
+    const nextX = hitPoint.x + state.offsetX;
+    const nextZ = hitPoint.z + state.offsetZ;
+    if (!state.notified && (nextX !== state.target.x || nextZ !== state.target.z)) {
+      state.notified = true;
+      notify();
+    }
+    state.target.x = nextX;
     state.target.y = state.y;
-    state.target.z = hitPoint.z + state.offsetZ;
+    state.target.z = nextZ;
   }
 
   function onPointerUp(event) {
@@ -150,7 +169,7 @@ function createDrag({ canvas, camera, controls }) {
   canvas.addEventListener("pointerup", onPointerUp);
   canvas.addEventListener("pointercancel", onPointerUp);
 
-  return { apply, dispose };
+  return { apply, dispose, subscribe };
 }
 
 export { createDrag };
