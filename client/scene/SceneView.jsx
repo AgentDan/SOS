@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchCatalog } from "../api/catalog-api.js";
+import { createDrag } from "./drag.js";
 import { createFloor } from "./floor.js";
 import { clear as clearRegistry } from "./physics/registry.js";
 import { syncMeshes } from "./physics/sync.js";
@@ -35,10 +36,12 @@ function SceneView({ skus, onReady }) {
       if (!alive || !canvas) return;
       let worldReady = false;
       let view = null;
+      let drag = null;
       let done = false;
       dispose = () => {
         if (done) return;
         done = true;
+        if (drag) drag.dispose();
         if (view) view.dispose();
         if (worldReady) disposeWorld();
         clearRegistry();
@@ -58,10 +61,12 @@ function SceneView({ skus, onReady }) {
         const syncScene = createSceneSync({ world, products });
         view = initScene(canvas, {
           onFrame: () => {
+            if (drag) drag.apply();
             step();
             syncMeshes();
           }
         });
+        drag = createDrag({ canvas, camera: view.camera, controls: view.controls });
         createFloor(world);
         if (!alive) {
           dispose();

@@ -42,4 +42,27 @@ function meshColorForType(type) {
   return TYPE_COLORS[type] ?? DEFAULT_COLOR;
 }
 
-export { TYPE_COLORS, DEFAULT_COLOR, boxMesh, catalogMesh, meshColorForType };
+const COLLIDER_COLOR = 0xffb020;
+
+function withColliderWire(visual, product) {
+  const mesh = new THREE.Group();
+  mesh.add(visual);
+  mesh.add(colliderWire(product));
+  return mesh;
+}
+
+function colliderWire(product) {
+  const group = new THREE.Group();
+  const material = new THREE.LineBasicMaterial({ color: COLLIDER_COLOR, depthTest: false });
+  for (const part of framePartsForItem(product)) {
+    const box = new THREE.BoxGeometry(part.half.x * 2, part.half.y * 2, part.half.z * 2);
+    const lines = new THREE.LineSegments(new THREE.EdgesGeometry(box), material);
+    box.dispose();
+    lines.position.set(part.local.x, part.local.y, part.local.z);
+    lines.renderOrder = 10;
+    group.add(lines);
+  }
+  return group;
+}
+
+export { TYPE_COLORS, DEFAULT_COLOR, boxMesh, catalogMesh, meshColorForType, withColliderWire };

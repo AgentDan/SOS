@@ -1,7 +1,7 @@
 import { loadCatalogModel } from "./renderer/load-model.js";
 import { createBodyFromCatalogItem, getWorldTopY, mmToM } from "./physics/bodies.js";
 import { get, register } from "./physics/registry.js";
-import { catalogMesh, meshColorForType } from "./meshes.js";
+import { catalogMesh, meshColorForType, withColliderWire } from "./meshes.js";
 
 const DROP_CLEARANCE_M = 0.3;
 
@@ -21,9 +21,11 @@ function placeProducts(scene, products) {
     const { rigidBody } = createBodyFromCatalogItem(product, {
       position: { x, y, z }
     });
-    const mesh =
+    const mesh = withColliderWire(
       (await loadCatalogModel(product)) ??
-      catalogMesh(product, meshColorForType(product.type));
+        catalogMesh(product, meshColorForType(product.type)),
+      product
+    );
     scene.add(mesh);
     register(product.sku, { mesh, rigidBody });
   }
