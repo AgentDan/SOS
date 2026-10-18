@@ -235,16 +235,29 @@ test("applyIntent command refusals do not write sceneEdits", () => {
     intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } },
     limits: { maxItems: 12 }
   });
-  const again = applyIntent({
+  const chairMax = catalog.types.find((type) => type.id === "chair").maxOnScene;
+  for (let copy = 1; copy < chairMax; copy += 1) {
+    const extra = applyIntent({
+      questionnaire,
+      catalog,
+      profile: added,
+      intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } },
+      limits: { maxItems: 12 }
+    });
+    acceptedResult(extra.result);
+    assert.equal(extra.result.ok, true);
+  }
+  const overType = applyIntent({
     questionnaire,
     catalog,
     profile: added,
     intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } },
     limits: { maxItems: 12 }
   });
-  acceptedResult(again.result);
-  assert.equal(again.result.reasonCode, "limit");
-  assert.deepEqual(added.sceneEdits, [{ op: "add", sku: "CHAIR-460" }]);
+  acceptedResult(overType.result);
+  assert.equal(overType.result.reasonCode, "limit");
+  assert.equal(overType.result.say.params.max, chairMax);
+  assert.equal(added.sceneEdits.length, chairMax);
 });
 
 test("interpret then applyIntent removes a chair from a test catalog", () => {
@@ -292,7 +305,9 @@ test("runMessage faq is answered from the consultant", () => {
   assert.equal(outcome.result.sceneChanged, false);
   assert.equal(outcome.result.say.code, "faq_answer");
   assert.equal(outcome.result.facts.faqId, "delivery");
-  assert.equal(outcome.result.facts.answer, "ТЕСТ: текст ответа заполняет владелец");
+  const consultant = JSON.parse(readFileSync(path.join(talkDataDir, "consultant.json"), "utf8"));
+  const delivery = consultant.published.faq.find((item) => item.id === "delivery");
+  assert.equal(outcome.result.facts.answer, delivery.answer);
   assert.notEqual(outcome.result.reasonCode, "not_implemented");
 });
 

@@ -211,4 +211,4 @@ function parseJsonText(text) {
   }
 }
 
-export { parseJsonText, spot };
+export { parseJsonText };

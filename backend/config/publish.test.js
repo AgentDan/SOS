@@ -114,7 +114,7 @@ describe("publish", { concurrency: 1 }, () => {
     const before = readEnvelope("catalog").publishedVersion;
     publish("catalog", "whole catalog");
     const envelope = readEnvelope("catalog");
-    const skus = ["DESK-LEGS-1400", "DESK-TOP-1400", "DESK-TOP-1800", "MON-613-366", "CHAIR-460"];
+    const skus = ["DESK-LEGS-1400", "DESK-TOP-1400", "DESK-TOP-1800", "MON-613-366", "MON-613-367", "CHAIR-460"];
     assert.equal(envelope.publishedVersion, before + 1);
     assert.equal(envelope.draftVersion, readEnvelope("catalog").draftVersion);
     assert.deepEqual(envelope.draft.products.map((item) => item.sku), skus);

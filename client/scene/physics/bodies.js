@@ -96,35 +96,4 @@ function bodyWorldAabb(rigidBody) {
   return { minX, minY, minZ, maxX, maxY, maxZ };
 }
 
-const REST_MAX_GAP = 0.05;
-const REST_MIN_GAP = -0.08;
-
-function colliderRestsOn(upper, lower) {
-  const overlapX = upper.minX < lower.maxX && upper.maxX > lower.minX;
-  const overlapZ = upper.minZ < lower.maxZ && upper.maxZ > lower.minZ;
-  if (!overlapX || !overlapZ) return false;
-
-  const gap = upper.minY - lower.maxY;
-  if (gap > REST_MAX_GAP || gap < REST_MIN_GAP) return false;
-
-  const supportHeight = lower.maxY - lower.minY;
-  const minRise = Math.min(0.02, supportHeight * 0.5);
-  return upper.minY > lower.minY + minRise;
-}
-
-function isRestingOn(upperBody, lowerBody) {
-  const upperCount = upperBody.numColliders();
-  const lowerCount = lowerBody.numColliders();
-
-  for (let i = 0; i < upperCount; i++) {
-    const upper = cuboidWorldAabb(upperBody.collider(i));
-    for (let j = 0; j < lowerCount; j++) {
-      const lower = cuboidWorldAabb(lowerBody.collider(j));
-      if (colliderRestsOn(upper, lower)) return true;
-    }
-  }
-
-  return false;
-}
-
-export { createBodyFromCatalogItem, mmToM, getWorldTopY, isRestingOn };
+export { createBodyFromCatalogItem, mmToM, getWorldTopY };

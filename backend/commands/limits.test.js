@@ -33,6 +33,20 @@ test("isProtected flags alwaysPresent and a host with cargo", () => {
   assert.deepEqual(hosted.hosted, ["MON-613-366"]);
 });
 
+test("a second copy of a support may be removed", () => {
+  const hosted = isProtected("DESK-TOP-1400", catalog, [
+    "DESK-TOP-1400",
+    "DESK-TOP-1400",
+    "MON-613-366"
+  ]);
+  assert.equal(hosted.blocked, false);
+  assert.deepEqual(hosted.hosted, ["MON-613-366"]);
+  assert.equal(
+    isProtected("DESK-LEGS-1400", catalog, ["DESK-LEGS-1400", "DESK-LEGS-1400"]).blocked,
+    false
+  );
+});
+
 test("typeAtMax and sceneAtMax report the cap", () => {
   assert.deepEqual(typeAtMax(["DESK-TOP-1800"], catalog, "desk_top"), {
     type: "desk_top",
@@ -43,7 +57,8 @@ test("typeAtMax and sceneAtMax report the cap", () => {
   assert.equal(sceneAtMax(["A"], { maxItems: 2 }), null);
 });
 
-test("firstReplacement skips skus already on scene", () => {
-  assert.equal(firstReplacement(catalog, "desk_top", ["DESK-TOP-1400"]).sku, "DESK-TOP-1800");
-  assert.equal(firstReplacement(catalog, "chair", ["CHAIR-460"]), undefined);
+test("firstReplacement takes another sku of the same type", () => {
+  assert.equal(firstReplacement(catalog, "desk_top", "DESK-TOP-1400").sku, "DESK-TOP-1800");
+  assert.equal(firstReplacement(catalog, "desk_top", "DESK-TOP-1800").sku, "DESK-TOP-1400");
+  assert.equal(firstReplacement(catalog, "chair", "CHAIR-460"), undefined);
 });

@@ -1,6 +1,23 @@
 // Central lookup for every physics-backed object in the scene.
-// id -> { mesh, rigidBody }
+// Instance id is `${sku}#${n}` (n starts at 1). Floor stays "floor".
+// id -> { mesh, rigidBody, product, position }
 const registry = new Map();
+
+function instanceKey(sku, n) {
+  return `${sku}#${n}`;
+}
+
+function enumerateInstances(skus) {
+  const seen = new Map();
+  const items = [];
+  const list = Array.isArray(skus) ? skus : [];
+  for (const sku of list) {
+    const n = (seen.get(sku) ?? 0) + 1;
+    seen.set(sku, n);
+    items.push({ sku, n, id: instanceKey(sku, n) });
+  }
+  return items;
+}
 
 function register(id, entry) {
   registry.set(id, entry);
@@ -24,4 +41,4 @@ function clear() {
   registry.clear();
 }
 
-export { register, get, all, unregister, clear };
+export { instanceKey, enumerateInstances, register, get, all, unregister, clear };

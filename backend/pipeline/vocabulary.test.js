@@ -38,19 +38,31 @@ test("full sources fill every vocabulary list", () => {
   });
 });
 
-test("published commands fill command words until the catalog is published", () => {
-  const vocab = buildVocabulary({
-    commands: readDraft("commands"),
-    consultant: readConsultant(),
-    catalog: readCatalog()
-  });
+test("published layers fill the vocabulary", () => {
+  const commands = readDraft("commands");
+  const consultant = readConsultant();
+  const catalog = readCatalog();
+  const vocab = buildVocabulary({ commands, consultant, catalog });
   assert.deepEqual(
     vocab.commands.map((entry) => entry.action),
-    ["add", "remove", "replace"]
+    commands.commands.map((entry) => entry.action)
   );
-  assert.deepEqual(vocab.products, []);
-  assert.deepEqual(vocab.topics, { cheaper: [], smalltalk: [] });
-  assert.deepEqual(vocab.faq, []);
+  assert.deepEqual(
+    vocab.products,
+    catalog.products
+      .filter((product) => typeof product.sku === "string" && Array.isArray(product.words))
+      .map((product) => ({ sku: product.sku, words: product.words }))
+  );
+  assert.deepEqual(vocab.topics, {
+    cheaper: consultant.topics.cheaper,
+    smalltalk: consultant.topics.smalltalk
+  });
+  assert.deepEqual(
+    vocab.faq,
+    consultant.faq
+      .filter((entry) => typeof entry.id === "string" && Array.isArray(entry.words))
+      .map((entry) => ({ id: entry.id, words: entry.words }))
+  );
 });
 
 test("missing or crooked sources do not throw", () => {

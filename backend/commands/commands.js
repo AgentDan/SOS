@@ -46,15 +46,14 @@ function fromApply(applied, facts, successCode) {
   });
 }
 
+function withoutCopy(skus, sku) {
+  const index = skus.indexOf(sku);
+  if (index === -1) return skus.slice();
+  return skus.slice(0, index).concat(skus.slice(index + 1));
+}
+
 function runAdd({ sku, product, sceneSkus, apply, catalog, limits, action }) {
   const facts = factsOf(action, sku);
-  if (sceneSkus.includes(sku)) {
-    return failCommand({
-      reasonCode: "limit",
-      facts: { ...facts, detail: "already_on_scene" },
-      say: { code: "limit", params: { sku } }
-    });
-  }
   const typeCap = typeAtMax(sceneSkus, catalog, product.type);
   if (typeCap) {
     return refused("limit", facts, { sku, type: typeCap.type, max: typeCap.max });
@@ -87,7 +86,7 @@ function runReplace({ sku, withSku, sceneSkus, apply, catalog, limits, action })
     });
   }
 
-  const remaining = sceneSkus.filter((item) => item !== target);
+  const remaining = withoutCopy(sceneSkus, target);
   let replacement = withSku;
   if (replacement !== undefined) {
     if (typeof replacement !== "string" || !findProduct(catalog, replacement)) {
@@ -95,16 +94,16 @@ function runReplace({ sku, withSku, sceneSkus, apply, catalog, limits, action })
         sku: replacement
       });
     }
-    if (sceneSkus.includes(replacement)) {
+    if (replacement === target) {
       return failCommand({
         reasonCode: "limit",
-        facts: { ...factsOf(action, target, { withSku: replacement }), detail: "already_on_scene" },
+        facts: { ...factsOf(action, target, { withSku: replacement }), detail: "same_sku" },
         say: { code: "limit", params: { sku: replacement } }
       });
     }
   } else {
     const product = findProduct(catalog, target);
-    const found = firstReplacement(catalog, product?.type, sceneSkus);
+    const found = firstReplacement(catalog, product?.type, target);
     if (!found) {
       return failCommand({
         reasonCode: "not_found",

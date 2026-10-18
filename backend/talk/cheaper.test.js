@@ -45,7 +45,7 @@ test("replaces with the nearest cheaper sku and reports the saving", () => {
 });
 
 test("nothing cheaper is nothing_cheaper", () => {
-  const board = scene(["ONLY", "LO"]);
+  const board = scene(["LO"]);
   const result = runCheaper({
     catalog: {
       products: [
@@ -62,6 +62,45 @@ test("nothing cheaper is nothing_cheaper", () => {
   assert.deepEqual(result.facts, { topic: "cheaper" });
   assert.deepEqual(result.say, { code: "nothing_cheaper", params: {} });
   assert.deepEqual(board.calls, []);
+});
+
+test("a cheaper sku already on the scene can replace one copy", () => {
+  const present = scene(["HI", "MID"]);
+  const result = runCheaper({
+    catalog: {
+      products: [
+        { sku: "HI", type: "chair", priceEur: 30 },
+        { sku: "MID", type: "chair", priceEur: 20 }
+      ]
+    },
+    scene: present
+  });
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.facts, {
+    topic: "cheaper",
+    sku: "HI",
+    withSku: "MID",
+    savedEur: 10
+  });
+  assert.deepEqual(present.calls, [{ op: "replace", sku: "HI", withSku: "MID" }]);
+
+  const copies = scene(["HI", "HI"]);
+  const once = runCheaper({
+    catalog: {
+      products: [
+        { sku: "HI", type: "chair", priceEur: 30 },
+        { sku: "MID", type: "chair", priceEur: 20 }
+      ]
+    },
+    scene: copies
+  });
+  assert.deepEqual(once.facts, {
+    topic: "cheaper",
+    sku: "HI",
+    withSku: "MID",
+    savedEur: 10
+  });
+  assert.deepEqual(copies.calls, [{ op: "replace", sku: "HI", withSku: "MID" }]);
 });
 
 test("alwaysPresent is not replaced", () => {
@@ -141,4 +180,45 @@ test("an apply refusal is returned as is", () => {
   });
   assert.equal(missing.reasonCode, "not_found");
   assert.equal(missing.say.code, "not_found");
+});
+
+test("a host that still carries cargo is left alone", () => {
+  const board = scene(["TOP", "MON", "CHAIR"]);
+  const result = runCheaper({
+    catalog: {
+      products: [
+        { sku: "TOP", type: "top", priceEur: 200 },
+        { sku: "TOP-LO", type: "top", priceEur: 20 },
+        { sku: "MON", type: "monitor", priceEur: 100, placement: { hostSku: "TOP" } },
+        { sku: "CHAIR", type: "chair", priceEur: 80 },
+        { sku: "CHAIR-LO", type: "chair", priceEur: 70 }
+      ]
+    },
+    scene: board
+  });
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.facts, {
+    topic: "cheaper",
+    sku: "CHAIR",
+    withSku: "CHAIR-LO",
+    savedEur: 10
+  });
+  assert.deepEqual(board.calls, [{ op: "replace", sku: "CHAIR", withSku: "CHAIR-LO" }]);
+});
+
+test("cargo on one copy still allows another copy of the host to get cheaper", () => {
+  const board = scene(["TOP", "TOP", "MON"]);
+  const result = runCheaper({
+    catalog: {
+      products: [
+        { sku: "TOP", type: "top", priceEur: 200 },
+        { sku: "TOP-LO", type: "top", priceEur: 150 },
+        { sku: "MON", type: "monitor", priceEur: 100, placement: { hostSku: "TOP" } }
+      ]
+    },
+    scene: board
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.facts.sku, "TOP");
+  assert.equal(result.facts.withSku, "TOP-LO");
 });

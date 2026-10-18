@@ -91,13 +91,24 @@ test("applySceneEdits skips a replace when the sku is missing", () => {
   assert.deepEqual(skus, ["DESK-LEGS-1400"]);
 });
 
-test("applySceneEdits drops repeated skus", () => {
+test("applySceneEdits keeps copies, removes the last one, and replaces the first", () => {
+  const base = ["DESK-LEGS-1400"];
+  const two = [
+    { op: "add", sku: "MON-613-366" },
+    { op: "add", sku: "MON-613-366" }
+  ];
+  assert.deepEqual(applySceneEdits(base, two), [
+    "DESK-LEGS-1400",
+    "MON-613-366",
+    "MON-613-366"
+  ]);
+  assert.deepEqual(applySceneEdits(base, [...two, { op: "remove", sku: "MON-613-366" }]), [
+    "DESK-LEGS-1400",
+    "MON-613-366"
+  ]);
   assert.deepEqual(
-    applySceneEdits(["DESK-LEGS-1400", "CHAIR-460"], [
-      { op: "add", sku: "CHAIR-460" },
-      { op: "add", sku: "CHAIR-460" }
-    ]),
-    ["DESK-LEGS-1400", "CHAIR-460"]
+    applySceneEdits(base, [...two, { op: "replace", sku: "MON-613-366", withSku: "CHAIR-460" }]),
+    ["DESK-LEGS-1400", "CHAIR-460", "MON-613-366"]
   );
 });
 

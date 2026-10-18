@@ -65,14 +65,6 @@ function readConsultant() {
   return readConfig("consultant");
 }
 
-function readDirector() {
-  return readConfig("director");
-}
-
-function readSales() {
-  return readConfig("sales");
-}
-
 function readCommands() {
   return readConfig("commands");
 }
@@ -97,8 +89,6 @@ export {
   readQuestionnaire,
   readCatalog,
   readConsultant,
-  readDirector,
-  readSales,
   readCommands,
   readAiRules
 };

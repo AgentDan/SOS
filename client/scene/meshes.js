@@ -35,4 +35,4 @@ function colliderWire(parts) {
   return group;
 }
 
-export { TYPE_COLORS, DEFAULT_COLOR, meshColorForType, withColliderWire };
+export { meshColorForType, withColliderWire };

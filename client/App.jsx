@@ -25,6 +25,7 @@ function App() {
       })
       .catch((err) => {
         console.error("SOS failed to start:", err);
+        if (alive) setPanel(true);
       });
     return () => {
       alive = false;

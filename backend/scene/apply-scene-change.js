@@ -17,6 +17,20 @@ function failed(reasonCode, skus) {
   return { ok: false, reasonCode, sceneChanged: false, skus: [...skus] };
 }
 
+function copiesOf(skus, sku) {
+  return skus.filter((item) => item === sku).length;
+}
+
+function hostsCargo(catalog, sku, skus) {
+  return skus.some((item) => findProduct(catalog, item)?.placement?.hostSku === sku);
+}
+
+function lastSupport(catalog, sku, skus) {
+  if (copiesOf(skus, sku) > 1) return false;
+  const product = findProduct(catalog, sku);
+  return product?.alwaysPresent === true || hostsCargo(catalog, sku, skus);
+}
+
 function succeed(catalog, profile, change, before) {
   if (change.op !== "refresh") {
     profile.sceneEdits ??= [];
@@ -49,18 +63,14 @@ function applySceneChange({ catalog, profile, change, before }) {
 
   if (op === "remove") {
     if (!start.includes(change.sku)) return failed("not_found", start);
-    if (findProduct(catalog, change.sku)?.alwaysPresent === true) {
-      return failed("cannot_remove_support", start);
-    }
+    if (lastSupport(catalog, change.sku, start)) return failed("cannot_remove_support", start);
     return succeed(catalog, profile, change, start);
   }
 
   if (op === "replace") {
     if (!findProduct(catalog, change.withSku)) return failed("unknown_sku", start);
     if (!start.includes(change.sku)) return failed("not_found", start);
-    if (findProduct(catalog, change.sku)?.alwaysPresent === true) {
-      return failed("cannot_remove_support", start);
-    }
+    if (lastSupport(catalog, change.sku, start)) return failed("cannot_remove_support", start);
     return succeed(catalog, profile, change, start);
   }
 

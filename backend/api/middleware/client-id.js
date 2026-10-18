@@ -10,4 +10,4 @@ function requireClientId(req, res, next) {
   next();
 }
 
-export { isSafeClientId, requireClientId };
+export { requireClientId };

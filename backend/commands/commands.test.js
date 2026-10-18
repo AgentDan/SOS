@@ -74,10 +74,21 @@ test("add of an unknown sku is unknown_sku", () => {
   assert.deepEqual(board.calls, []);
 });
 
-test("add of a sku already on scene is limit", () => {
-  const { result, board } = run(command("add", "CHAIR-460"), ["DESK-LEGS-1400", "CHAIR-460"]);
+test("add of a monitor already on scene is ok", () => {
+  const { result, board } = run(command("add", "MON-613-366"), ["DESK-LEGS-1400", "MON-613-366"]);
+  assert.equal(result.ok, true);
+  assert.equal(result.say.code, "command_added");
+  assert.deepEqual(board.calls, [{ op: "add", sku: "MON-613-366" }]);
+});
+
+test("add of a monitor stops when maxOnScene is reached", () => {
+  const { result, board } = run(command("add", "MON-613-366"), [
+    "DESK-LEGS-1400",
+    "MON-613-366",
+    "MON-613-366"
+  ]);
   assert.equal(result.reasonCode, "limit");
-  assert.equal(result.facts.detail, "already_on_scene");
+  assert.equal(result.say.params.max, 2);
   assert.deepEqual(board.calls, []);
 });
 
@@ -157,6 +168,17 @@ test("replace without an alternative is not_found", () => {
   const { result, board } = run(command("replace", "CHAIR-460"), ["DESK-LEGS-1400", "CHAIR-460"]);
   assert.equal(result.reasonCode, "not_found");
   assert.equal(result.facts.detail, "no_replacement");
+  assert.deepEqual(board.calls, []);
+});
+
+test("replace with the same sku is same_sku", () => {
+  const { result, board } = run(
+    command("replace", "CHAIR-460", { withSku: "CHAIR-460" }),
+    ["DESK-LEGS-1400", "CHAIR-460"]
+  );
+  assert.equal(result.reasonCode, "limit");
+  assert.equal(result.facts.detail, "same_sku");
+  assert.deepEqual(result.say.params, { sku: "CHAIR-460" });
   assert.deepEqual(board.calls, []);
 });
 

@@ -31,9 +31,7 @@ function loadProfile(clientId) {
     return JSON.parse(readFileSync(file, "utf-8"));
   } catch (err) {
     if (err && err.code !== "ENOENT") throw err;
-    const profile = defaultProfile(clientId);
-    saveProfile(profile);
-    return profile;
+    return defaultProfile(clientId);
   }
 }
 

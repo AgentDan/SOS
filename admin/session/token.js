@@ -9,7 +9,11 @@ function getToken() {
 }
 
 function setToken(token) {
-  sessionStorage.setItem(STORAGE_KEY, token);
+  try {
+    sessionStorage.setItem(STORAGE_KEY, token);
+  } catch {
+    /* storage can be unavailable in a private window */
+  }
 }
 
 function clearToken() {

@@ -17,12 +17,12 @@ function priceOf(product) {
   return price;
 }
 
-function nearestCheaper(products, current, price, onScene) {
+function nearestCheaper(products, current, price) {
   let replacement = null;
   for (const candidate of products) {
     if (!candidate || typeof candidate.sku !== "string" || candidate.sku.length === 0) continue;
     if (candidate.type !== current.type) continue;
-    if (onScene.has(candidate.sku)) continue;
+    if (candidate.sku === current.sku) continue;
     const candidatePrice = priceOf(candidate);
     if (candidatePrice === null || candidatePrice >= price) continue;
     if (replacement === null || candidatePrice > replacement.price) {
@@ -32,10 +32,14 @@ function nearestCheaper(products, current, price, onScene) {
   return replacement;
 }
 
+function carriesCargo(sku, bySku, sceneSkus) {
+  if (sceneSkus.filter((item) => item === sku).length > 1) return false;
+  return sceneSkus.some((item) => bySku.get(item)?.placement?.hostSku === sku);
+}
+
 function runCheaper({ catalog, scene }) {
   const products = catalogProducts(catalog);
   const sceneSkus = Array.isArray(scene?.skus) ? scene.skus : [];
-  const onScene = new Set(sceneSkus);
   const apply =
     typeof scene?.apply === "function" ? scene.apply : () => ({ ok: false, reasonCode: "not_found" });
   const bySku = new Map();
@@ -47,10 +51,11 @@ function runCheaper({ catalog, scene }) {
   for (const sku of sceneSkus) {
     const current = bySku.get(sku);
     if (!current || current.alwaysPresent === true) continue;
+    if (carriesCargo(sku, bySku, sceneSkus)) continue;
     if (typeof current.type !== "string" || current.type.length === 0) continue;
     const price = priceOf(current);
     if (price === null) continue;
-    const replacement = nearestCheaper(products, current, price, onScene);
+    const replacement = nearestCheaper(products, current, price);
     if (!replacement) continue;
     const savedEur = price - replacement.price;
     if (best === null || savedEur > best.savedEur) {

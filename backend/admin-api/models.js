@@ -100,4 +100,4 @@ function uploadModel(sku, body) {
   };
 }
 
-export { modelsDirectory, saveModel, uploadModel };
+export { modelsDirectory, uploadModel };

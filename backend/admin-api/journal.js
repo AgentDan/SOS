@@ -36,4 +36,4 @@ function readJournal(limit = 50) {
   return parsed.slice(-size);
 }
 
-export { appendJournal, readJournal, journalPath };
+export { appendJournal, readJournal };

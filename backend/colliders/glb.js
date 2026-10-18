@@ -300,6 +300,5 @@ export {
   addColliderNodes,
   listSceneColliderNames,
   modelNodeNames,
-  readVec3,
-  isColliderName
+  readVec3
 };

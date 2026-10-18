@@ -106,8 +106,6 @@ function readEnumValue(knob, raw) {
 }
 
 export {
-  LAYER_ORDER,
-  LAYER_TITLES,
   groupKnobsByLayer,
   describeKnobValues,
   boundsText,

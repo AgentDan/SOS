@@ -134,3 +134,42 @@ test("unknown question does not create a profile file", async () => {
     rmSync(path.dirname(profileFile), { recursive: true, force: true });
   }
 });
+
+test("unknown confirmation does not create a profile file", async () => {
+  const confirmClientId = "unknown-confirm-no-profile";
+  const confirmFile = path.join(
+    __dirname,
+    "..",
+    "..",
+    "runtime",
+    "clients",
+    confirmClientId,
+    "profile.json"
+  );
+  rmSync(path.dirname(confirmFile), { recursive: true, force: true });
+
+  const app = express();
+  app.use(express.json());
+  app.use(dialogRoutes);
+  const server = await listen(app);
+
+  try {
+    const { port } = server.address();
+    const res = await fetch(`http://127.0.0.1:${port}/dialog/answer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientId: confirmClientId,
+        questionId: "confirm_no_such_need",
+        optionId: "keep"
+      })
+    });
+
+    assert.equal(res.status, 404);
+    assert.deepEqual(await res.json(), { error: "unknown question" });
+    assert.equal(existsSync(confirmFile), false);
+  } finally {
+    await close(server);
+    rmSync(path.dirname(confirmFile), { recursive: true, force: true });
+  }
+});

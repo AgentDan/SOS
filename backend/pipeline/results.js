@@ -20,12 +20,4 @@ function failResult({ kind, reasonCode, facts, say }) {
   };
 }
 
-function notImplemented(kind) {
-  return failResult({
-    kind,
-    reasonCode: "not_implemented",
-    say: { code: "not_implemented", params: {} }
-  });
-}
-
-export { okResult, failResult, notImplemented };
+export { okResult, failResult };

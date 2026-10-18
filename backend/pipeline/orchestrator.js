@@ -1,6 +1,7 @@
 import { getPendingConfirmations } from "../director/confirmation-engine.js";
 import { deriveNeeds } from "../needs/derive-needs.js";
 import { applyConfirmation } from "../profile/apply-confirmation.js";
+import { loadProfile } from "../profile/profile-store.js";
 import { applyFact } from "../profile/apply-facts.js";
 import { runCommand } from "../commands/commands.js";
 import { runTalk } from "../talk/talk.js";
@@ -112,7 +113,14 @@ function applyIntent({ questionnaire, catalog, profile, intent, limits, consulta
 }
 
 function runTurn({ clientId, questionId, optionId }) {
-  if (!(typeof questionId === "string" && questionId.startsWith("confirm_"))) {
+  if (typeof questionId === "string" && questionId.startsWith("confirm_")) {
+    const checked = checkConfirmation({
+      pending: getPendingConfirmations(loadProfile(clientId)),
+      needId: questionId.slice("confirm_".length),
+      optionId
+    });
+    if (!checked.ok) return { status: checked.status, body: checked.body };
+  } else {
     const checked = checkAnswer({
       questionnaire: readQuestionnaire(),
       questionId,

@@ -41,7 +41,7 @@ test("add puts a catalog sku on the scene", () => {
   assert.deepEqual(profile.sceneEdits, [{ op: "add", sku: "CHAIR-460" }]);
 });
 
-test("add of a sku already on scene succeeds without a change", () => {
+test("add of a sku already on scene adds another copy", () => {
   const catalog = loadCatalog();
   const profile = emptyProfile();
   const result = applySceneChange({
@@ -51,9 +51,9 @@ test("add of a sku already on scene succeeds without a change", () => {
   });
 
   assert.equal(result.ok, true);
-  assert.equal(result.sceneChanged, false);
+  assert.equal(result.sceneChanged, true);
   assert.equal(result.reasonCode, null);
-  assert.deepEqual(result.skus, ["DESK-LEGS-1400"]);
+  assert.deepEqual(result.skus, ["DESK-LEGS-1400", "DESK-LEGS-1400"]);
   assert.deepEqual(profile.sceneEdits, [{ op: "add", sku: "DESK-LEGS-1400" }]);
 });
 
@@ -207,4 +207,51 @@ test("applySceneChange does not mutate the catalog", () => {
     change: { op: "add", sku: "CHAIR-460" }
   });
   assert.deepEqual(catalog, snapshot);
+});
+
+test("remove of a host that still carries cargo fails", () => {
+  const catalog = loadCatalog();
+  const profile = emptyProfile();
+  applySceneChange({ catalog, profile, change: { op: "add", sku: "DESK-TOP-1400" } });
+  applySceneChange({ catalog, profile, change: { op: "add", sku: "MON-613-366" } });
+  const result = applySceneChange({
+    catalog,
+    profile,
+    change: { op: "remove", sku: "DESK-TOP-1400" }
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.reasonCode, "cannot_remove_support");
+  assert.ok(result.skus.includes("DESK-TOP-1400"));
+  assert.ok(result.skus.includes("MON-613-366"));
+});
+
+test("replace of a host that still carries cargo fails", () => {
+  const catalog = loadCatalog();
+  const profile = emptyProfile();
+  applySceneChange({ catalog, profile, change: { op: "add", sku: "DESK-TOP-1400" } });
+  applySceneChange({ catalog, profile, change: { op: "add", sku: "MON-613-366" } });
+  const result = applySceneChange({
+    catalog,
+    profile,
+    change: { op: "replace", sku: "DESK-TOP-1400", withSku: "DESK-TOP-1800" }
+  });
+  assert.equal(result.reasonCode, "cannot_remove_support");
+  assert.ok(result.skus.includes("DESK-TOP-1400"));
+  assert.ok(!result.skus.includes("DESK-TOP-1800"));
+});
+
+test("a second copy of a host can leave while cargo stays on the first", () => {
+  const catalog = loadCatalog();
+  const profile = emptyProfile();
+  applySceneChange({ catalog, profile, change: { op: "add", sku: "DESK-TOP-1400" } });
+  applySceneChange({ catalog, profile, change: { op: "add", sku: "DESK-TOP-1400" } });
+  applySceneChange({ catalog, profile, change: { op: "add", sku: "MON-613-366" } });
+  const result = applySceneChange({
+    catalog,
+    profile,
+    change: { op: "remove", sku: "DESK-TOP-1400" }
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.skus.filter((sku) => sku === "DESK-TOP-1400").length, 1);
+  assert.ok(result.skus.includes("MON-613-366"));
 });

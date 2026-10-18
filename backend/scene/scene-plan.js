@@ -9,6 +9,12 @@ function uniqueSkus(skus) {
   return out;
 }
 
+function withoutLast(skus, sku) {
+  const index = skus.lastIndexOf(sku);
+  if (index === -1) return skus;
+  return skus.slice(0, index).concat(skus.slice(index + 1));
+}
+
 function applySceneEdits(skus, edits) {
   let next = uniqueSkus(Array.isArray(skus) ? skus : []);
   if (!Array.isArray(edits)) return next;
@@ -16,15 +22,15 @@ function applySceneEdits(skus, edits) {
   for (const edit of edits) {
     if (!edit || typeof edit !== "object") continue;
     if (edit.op === "add") {
-      next = uniqueSkus([...next, edit.sku]);
+      next = [...next, edit.sku];
     } else if (edit.op === "remove") {
-      next = next.filter((sku) => sku !== edit.sku);
+      next = withoutLast(next, edit.sku);
     } else if (edit.op === "replace") {
       const index = next.indexOf(edit.sku);
       if (index === -1) continue;
       const replaced = next.slice();
       replaced[index] = edit.withSku;
-      next = uniqueSkus(replaced);
+      next = replaced;
     }
   }
 

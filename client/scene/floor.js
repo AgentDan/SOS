@@ -12,4 +12,4 @@ function createFloor(world) {
   register("floor", { mesh: null, rigidBody });
 }
 
-export { createFloor, FLOOR_THICKNESS_M };
+export { createFloor };

@@ -46,26 +46,76 @@ const skeletonSteps = [
       replyIncludes: ["кресло"]
     }
   },
-  // Монитора на сцене нет: анкета ставит DESK-LEGS-1400 (alwaysPresent), DESK-TOP-1800 и CHAIR-460,
-  // шаг 2 снимает кресло. «второй» скелет не разбирает — amount не заполняется, слово «монитор»
-  // даёт один артикул MON-613-366. runAdd возвращает limit, только если артикул уже на сцене,
-  // тип упёрся в maxOnScene или сцена в maxItems (backend/commands/commands.js).
-  // monitor.maxOnScene = 3, мониторов 0, maxItems = 12, артикула нет → command_added, не limit.
+  // Монитора на сцене нет. «добавь монитор» ставит первый артикул со словом «монитор».
+  // Повторы разрешены, пока не достигнут monitor.maxOnScene (3) или limits.maxItems.
   {
     n: 3,
-    phrase: "добавь второй монитор",
-    text: "добавь второй монитор",
+    phrase: "добавь монитор",
+    text: "добавь монитор",
     expect: {
       intent: "command",
       ok: true,
       reasonCode: null,
       sayCode: "command_added",
       sceneChanged: true,
-      added: ["MON-613-366"]
+      added: ["MON-613-366"],
+      copies: { "MON-613-366": 1 }
     }
   },
   {
     n: 4,
+    phrase: "добавь монитор",
+    text: "добавь монитор",
+    expect: {
+      intent: "command",
+      ok: true,
+      reasonCode: null,
+      sayCode: "command_added",
+      sceneChanged: true,
+      copies: { "MON-613-366": 2 }
+    }
+  },
+  {
+    n: 5,
+    phrase: "добавь монитор",
+    text: "добавь монитор",
+    expect: {
+      intent: "command",
+      ok: true,
+      reasonCode: null,
+      sayCode: "command_added",
+      sceneChanged: true,
+      copies: { "MON-613-366": 3 }
+    }
+  },
+  {
+    n: 6,
+    phrase: "добавь монитор",
+    text: "добавь монитор",
+    expect: {
+      intent: "command",
+      ok: false,
+      reasonCode: "limit",
+      sayCode: "limit",
+      sceneChanged: false,
+      copies: { "MON-613-366": 3 }
+    }
+  },
+  {
+    n: 7,
+    phrase: "убери монитор",
+    text: "убери монитор",
+    expect: {
+      intent: "command",
+      ok: true,
+      reasonCode: null,
+      sayCode: "command_removed",
+      sceneChanged: true,
+      copies: { "MON-613-366": 2 }
+    }
+  },
+  {
+    n: 8,
     phrase: "а есть доставка?",
     text: "а есть доставка?",
     faqId: "delivery",
@@ -78,9 +128,10 @@ const skeletonSteps = [
     }
   },
   // DESK-TOP-1800 стоит 259 €, ближайший дешевле того же типа — DESK-TOP-1400 за 189 €.
-  // Монитор один, опоры alwaysPresent, кресло уже снято, поэтому замена — стол, savedEur = 70.
+  // Два монитора одной цены дешевле не предлагают, опоры alwaysPresent, кресло снято.
+  // Замена — стол, savedEur = 70.
   {
-    n: 5,
+    n: 9,
     phrase: "покажи дешевле",
     text: "покажи дешевле",
     expect: {
@@ -96,7 +147,7 @@ const skeletonSteps = [
     }
   },
   {
-    n: 6,
+    n: 10,
     phrase: "абракадабра",
     text: "абракадабра",
     expect: {
@@ -200,6 +251,14 @@ function checkScene(errors, label, before, after, expect) {
   }
   for (const sku of expect.absent ?? []) {
     if (after.includes(sku)) errors.push(`${label}: ${sku} should not be on the scene: ${shown(after)}`);
+  }
+  if (expect.copies) {
+    for (const [sku, count] of Object.entries(expect.copies)) {
+      const found = after.filter((item) => item === sku).length;
+      if (found !== count) {
+        errors.push(`${label}: ${sku} ×${count} expected, got ${found}, scene ${shown(after)}`);
+      }
+    }
   }
 }
 

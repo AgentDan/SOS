@@ -29,13 +29,6 @@ function dataVersionText(value) {
   return typeof value === "number" && Number.isFinite(value) ? `Версия данных: ${value}` : "Версия данных: нет";
 }
 
-function errorsFromBody(body) {
-  if (!body || typeof body !== "object") return [];
-  if (Array.isArray(body.errors) && body.errors.length > 0) return body.errors.map((item) => String(item));
-  if (typeof body.error === "string" && body.error.length > 0) return [body.error];
-  return [];
-}
-
 function explainFailure(line) {
   const text = String(line);
   const snapshot = /snapshot for version (\d+)/.exec(text);
@@ -148,13 +141,9 @@ export {
   errorCountText,
   healthLine,
   dataVersionText,
-  errorsFromBody,
-  explainFailure,
-  failureText,
   loginFailure,
   problemLines,
   actionLabel,
-  historyDescription,
   historyLabel,
   formatLocalTime,
   formatJournalDetail

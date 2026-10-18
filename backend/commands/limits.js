@@ -36,8 +36,9 @@ function resolveTarget(sku, sceneSkus, catalog) {
 function isProtected(sku, catalog, sceneSkus) {
   const product = findProduct(catalog, sku);
   const hosted = hostedSkus(sku, catalog, sceneSkus);
+  const copies = sceneSkus.filter((item) => item === sku).length;
   return {
-    blocked: product?.alwaysPresent === true || hosted.length > 0,
+    blocked: copies <= 1 && (product?.alwaysPresent === true || hosted.length > 0),
     hosted
   };
 }
@@ -62,17 +63,14 @@ function sceneAtMax(sceneSkus, limits) {
   return null;
 }
 
-function firstReplacement(catalog, typeId, sceneSkus) {
+function firstReplacement(catalog, typeId, target) {
   return catalogProducts(catalog).find(
-    (product) => product?.sku && product.type === typeId && !sceneSkus.includes(product.sku)
+    (product) => product?.sku && product.type === typeId && product.sku !== target
   );
 }
 
 export {
-  catalogLayer,
-  catalogProducts,
   findProduct,
-  hostedSkus,
   resolveTarget,
   isProtected,
   typeAtMax,

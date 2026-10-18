@@ -25,7 +25,8 @@ async function sendMessage(clientId, text) {
 }
 
 async function fetchScene(clientId) {
-  const res = await fetch(`/api/dialog/scene?clientId=${clientId}`);
+  const res = await fetch(`/api/dialog/scene?clientId=${encodeURIComponent(clientId)}`);
+  if (!res.ok) throw new Error(`GET /api/dialog/scene failed: ${res.status}`);
   return res.json();
 }
 
