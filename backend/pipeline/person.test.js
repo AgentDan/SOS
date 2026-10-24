@@ -60,8 +60,12 @@ test("a person stays out of skus, need matching, and the order total", () => {
   };
   const extras = {
     ergonomics: {
-      mannequin: { sku: "character", referenceHeightCm: 175 },
-      defaults: { heightCm: 175, hand: "right" }
+      mannequin: {
+        sku: "character",
+        referenceHeightCm: 180,
+        offsetMm: { x: 15, y: 0, z: -10 }
+      },
+      defaults: { heightCm: 190, hand: "right" }
     }
   };
 
@@ -70,7 +74,14 @@ test("a person stays out of skus, need matching, and the order total", () => {
 
   assert.deepEqual(after.skus, before.skus);
   assert.equal(after.skus.includes("character"), false);
-  assert.equal(after.person.sku, "character");
+  assert.deepEqual(after.person, {
+    sku: "character",
+    x: 15,
+    y: 0,
+    z: 750,
+    rotY: 180,
+    scale: 190 / 180
+  });
   assert.equal(total(withPerson, after.skus), total(goods, before.skus));
   assert.equal(total(withPerson, after.skus), 79 + 129);
 

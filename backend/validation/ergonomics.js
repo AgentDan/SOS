@@ -57,6 +57,21 @@ function validateErgonomics(ergonomics, errors) {
       if (!integerInRange(draft.mannequin.referenceHeightCm)) {
         errors.push("ergonomics: mannequin.referenceHeightCm must be an integer from 100 to 250");
       }
+      validateOffsetMm(draft.mannequin.offsetMm, errors);
+    }
+  }
+}
+
+function validateOffsetMm(offset, errors) {
+  if (offset === undefined) return;
+  if (!isPlainObject(offset)) {
+    errors.push("ergonomics: mannequin.offsetMm must be an object");
+    return;
+  }
+  for (const axis of ["x", "y", "z"]) {
+    const value = offset[axis];
+    if (typeof value !== "number" || !Number.isFinite(value) || value < -500 || value > 500) {
+      errors.push(`ergonomics: mannequin.offsetMm.${axis} must be a number from -500 to 500`);
     }
   }
 }

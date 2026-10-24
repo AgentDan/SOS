@@ -32,12 +32,20 @@ async function runPerson() {
 
     const scene = getScene(clientId);
     const reference = readErgonomics()?.mannequin?.referenceHeightCm;
-    const ratio = typeof reference === "number" && reference > 0 ? 195 / reference : null;
+    // h_190 в анкете — «выше 190 см», в данные пишется 195. Референс модели — 180.
+    const statedCm = 195;
+    const ratio = typeof reference === "number" && reference > 0 ? statedCm / reference : null;
     const expected = ratio === null ? null : Math.min(1.3, Math.max(0.7, ratio));
     const scale = scene.person && scene.person.scale;
+    if (reference !== 180) {
+      errors.push(`referenceHeightCm ${JSON.stringify(reference)} ≠ 180`);
+    }
+    if (scene.person?.y !== 0) {
+      errors.push(`person.y ${JSON.stringify(scene.person?.y)} ≠ 0`);
+    }
     if (typeof scale !== "number" || expected === null || Math.abs(scale - expected) > 0.001) {
       errors.push(
-        `person.scale ${JSON.stringify(scale)} ≠ ${expected} (195/${reference} = ${ratio})`
+        `person.scale ${JSON.stringify(scale)} ≠ ${expected} (${statedCm}/${reference} = ${ratio})`
       );
     }
     if (scene.skus.includes("character")) {

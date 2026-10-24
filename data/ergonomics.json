@@ -13,7 +13,12 @@
     },
     "mannequin": {
       "sku": "character",
-      "referenceHeightCm": 142
+      "referenceHeightCm": 180,
+      "offsetMm": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
     }
   },
   "published": {

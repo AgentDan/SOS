@@ -473,10 +473,11 @@ test("a person product may omit its price, and mannequin sku must be that type",
 
 test("seatHeightMm is an optional integer greater than or equal to zero", () => {
   const ok = loadSkeleton();
-  assert.equal(
-    ok.catalog.draft.products.find((item) => item.sku === "CHAIR-460").placement.seatHeightMm,
-    450
-  );
+  const chair = ok.catalog.draft.products.find((item) => item.sku === "CHAIR-460");
+  assert.equal(chair.placement.seatHeightMm, undefined);
+  assert.equal(validateDialogData(ok), true);
+
+  chair.placement.seatHeightMm = 450;
   assert.equal(validateDialogData(ok), true);
 
   const negative = loadSkeleton();

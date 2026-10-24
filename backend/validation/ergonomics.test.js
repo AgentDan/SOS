@@ -96,3 +96,49 @@ test("mannequin is optional and, when set, needs a string sku and a height from 
   notObject.mannequin = "character";
   assert.ok(errorsOf(envelope(notObject)).some((line) => line.includes("mannequin must be an object")));
 });
+
+test("mannequin.offsetMm is optional and, when set, is three numbers from -500 to 500", () => {
+  const omitted = goodDraft();
+  omitted.mannequin = { sku: "character", referenceHeightCm: 180 };
+  assert.deepEqual(errorsOf(envelope(omitted)), []);
+
+  const zeros = goodDraft();
+  zeros.mannequin = {
+    sku: "character",
+    referenceHeightCm: 180,
+    offsetMm: { x: 0, y: 0, z: 0 }
+  };
+  assert.deepEqual(errorsOf(envelope(zeros)), []);
+
+  const edges = goodDraft();
+  edges.mannequin = {
+    sku: "character",
+    referenceHeightCm: 180,
+    offsetMm: { x: -500, y: 500, z: 12.5 }
+  };
+  assert.deepEqual(errorsOf(envelope(edges)), []);
+
+  const text = goodDraft();
+  text.mannequin = {
+    sku: "character",
+    referenceHeightCm: 180,
+    offsetMm: { x: "0", y: 0, z: 0 }
+  };
+  assert.ok(errorsOf(envelope(text)).some((line) => line.includes("offsetMm.x")));
+
+  const high = goodDraft();
+  high.mannequin = {
+    sku: "character",
+    referenceHeightCm: 180,
+    offsetMm: { x: 0, y: 501, z: 0 }
+  };
+  assert.ok(errorsOf(envelope(high)).some((line) => line.includes("offsetMm.y")));
+
+  const low = goodDraft();
+  low.mannequin = {
+    sku: "character",
+    referenceHeightCm: 180,
+    offsetMm: { x: 0, y: 0, z: -501 }
+  };
+  assert.ok(errorsOf(envelope(low)).some((line) => line.includes("offsetMm.z")));
+});
