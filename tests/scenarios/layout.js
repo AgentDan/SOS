@@ -19,7 +19,7 @@ function respond(clientId, outcome) {
   return buildResponse({ outcome, context: buildContext(clientId) });
 }
 
-function runLayout() {
+async function runLayout() {
   const errors = [];
   const clientId = `scenario-layout-${Date.now()}-1`;
   const dir = path.join(CLIENTS_DIR, clientId);
@@ -28,7 +28,7 @@ function runLayout() {
     if (desk.status !== 200) errors.push(`desk → ${desk.body?.error ?? desk.status}`);
 
     for (const text of ["добавь монитор", "добавь второй монитор"]) {
-      const response = respond(clientId, runMessage({ clientId, text }));
+      const response = respond(clientId, await runMessage({ clientId, text }));
       if (response.result?.ok !== true) {
         errors.push(`${text}: ${response.result?.reasonCode ?? "no result"} ${response.reply?.text ?? ""}`);
       }
@@ -53,7 +53,7 @@ function runLayout() {
       }
     }
 
-    const response = respond(clientId, runMessage({ clientId, text: "расстояние между мониторами" }));
+    const response = respond(clientId, await runMessage({ clientId, text: "расстояние между мониторами" }));
     const text = response.reply?.text ?? "";
     if (!text.includes("10 см")) {
       errors.push(`distance reply ${JSON.stringify(text)} result ${JSON.stringify(response.result)}`);

@@ -161,6 +161,17 @@ test("modules honor the dependency rules", () => {
   assert.deepEqual(found, [], found.join("\n"));
 });
 
+test("llm.js does not import blocks", () => {
+  const source = readFileSync(path.join(AI, "llm.js"), "utf8");
+  assert.deepEqual(importSpecifiers(source), []);
+});
+
+test("parse-with-llm.js imports only ai", () => {
+  const file = path.join(BACKEND, "understanding", "parse-with-llm.js");
+  const specs = importSpecifiers(readFileSync(file, "utf8"));
+  assert.deepEqual(specs, ["../ai/llm.js"]);
+});
+
 test("body.js does not import other blocks", () => {
   const source = readFileSync(path.join(BACKEND, "profile", "body.js"), "utf8");
   assert.deepEqual(importSpecifiers(source), []);

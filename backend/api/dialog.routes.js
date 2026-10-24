@@ -19,12 +19,12 @@ router.post("/dialog/answer", (req, res) => {
   res.status(result.status).json(result.body);
 });
 
-router.post("/dialog/message", (req, res) => {
+router.post("/dialog/message", async (req, res) => {
   const { clientId, text } = req.body ?? {};
   if (typeof text !== "string") {
     return res.status(400).json({ error: "text must be a string" });
   }
-  const outcome = runMessage({ clientId, text });
+  const outcome = await runMessage({ clientId, text });
   const context = buildContext(clientId);
   res.status(200).json(buildResponse({ outcome, context }));
 });

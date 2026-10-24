@@ -22,7 +22,7 @@ data/ → backend/config → backend/pipeline → backend/api → client/api →
 - `backend/profile/body.js` не импортирует другие блоки и не читает файлы.
 - `commands` получает сцену как переданную функцию, `scene` не импортирует. Исключение: `commands` может импортировать только `backend/scene/distance.js`. `layout.js` туда не импортируется — положения считает pipeline и передаёт в команду.
 - `talk` получает сцену как переданную функцию, `scene` не импортирует.
-- `backend/ai/**` не импортирует `api`, `pipeline`, блоки, `client`, `admin`.
+- `backend/ai/**` не импортирует `api`, `pipeline`, блоки, `client`, `admin`. `backend/ai/llm.js` ничего не импортирует из блоков. `backend/understanding/parse-with-llm.js` импортирует только `backend/ai`.
 - `backend/pipeline/**` может импортировать блоки и `config`, но не `api`.
 - `client/**` не импортирует `backend/**` и `admin/**`. `admin/**` не импортирует `backend/**` и `client/**`.
 - Части клиента `chat`, `summary`, `order`, `scene` не импортируют друг друга. Общее разрешено только из `client/api/` и `client/session/`.

@@ -159,13 +159,13 @@ function report(slug, steps, errors) {
   for (const error of errors) console.log(`      ${error}`);
 }
 
-function withDraftData(run) {
+async function withDraftData(run) {
   const previous = process.env.SOS_DATA_DIR;
   let draftDir;
   try {
     draftDir = prepareDraftData();
     process.env.SOS_DATA_DIR = draftDir;
-    return run();
+    return await run();
   } finally {
     if (previous === undefined) delete process.env.SOS_DATA_DIR;
     else process.env.SOS_DATA_DIR = previous;
@@ -185,7 +185,7 @@ function runLayoutScenario() {
   return withDraftData(() => runLayout());
 }
 
-function main() {
+async function main() {
   let failed = 0;
 
   for (const { slug, data } of loadScenarios()) {
@@ -202,7 +202,7 @@ function main() {
 
   let skeletonErrors;
   try {
-    skeletonErrors = runSkeletonScenario().errors;
+    skeletonErrors = (await runSkeletonScenario()).errors;
   } catch (err) {
     skeletonErrors = [err instanceof Error ? err.message : String(err)];
   }
@@ -211,7 +211,7 @@ function main() {
 
   let bodyErrors;
   try {
-    bodyErrors = runBodyScenario().errors;
+    bodyErrors = (await runBodyScenario()).errors;
   } catch (err) {
     bodyErrors = [err instanceof Error ? err.message : String(err)];
   }
@@ -220,7 +220,7 @@ function main() {
 
   let layoutErrors;
   try {
-    layoutErrors = runLayoutScenario().errors;
+    layoutErrors = (await runLayoutScenario()).errors;
   } catch (err) {
     layoutErrors = [err instanceof Error ? err.message : String(err)];
   }
@@ -230,4 +230,7 @@ function main() {
   if (failed > 0) process.exit(1);
 }
 
-main();
+main().catch((err) => {
+  console.error(err instanceof Error ? err.message : String(err));
+  process.exit(1);
+});

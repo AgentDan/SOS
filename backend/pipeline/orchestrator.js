@@ -11,6 +11,7 @@ import { computeScenePlan } from "../scene/scene-plan.js";
 import { assembleScene } from "./reads.js";
 import { checkAnswer, checkConfirmation } from "../understanding/check-answer.js";
 import { interpret } from "../understanding/interpret.js";
+import { parseWithLlm } from "../understanding/parse-with-llm.js";
 import { readQuestionnaire } from "../config/load.js";
 import { buildContext } from "./context.js";
 import { persistTurn } from "./persist.js";
@@ -145,9 +146,22 @@ function runTurn({ clientId, questionId, optionId }) {
   return outcome;
 }
 
-function runMessage({ clientId, text }) {
+async function runMessage({ clientId, text, llm, fetchImpl } = {}) {
   const context = buildContext(clientId);
-  const intent = interpret({ source: "text", text }, context.vocabulary);
+  let intent = interpret({ source: "text", text }, context.vocabulary);
+  if (intent?.type === "unclear" && intent.payload?.reason === "no_match") {
+    try {
+      const parsed = await parseWithLlm({
+        text,
+        vocabulary: context.vocabulary,
+        ...(typeof llm === "function" ? { llm } : {}),
+        ...(typeof fetchImpl === "function" ? { fetchImpl } : {})
+      });
+      if (parsed) intent = parsed;
+    } catch {
+      // сбой AI оставляет словарный unclear
+    }
+  }
   const outcome = applyIntent({ ...context, intent });
   persistTurn(outcome);
   return outcome;

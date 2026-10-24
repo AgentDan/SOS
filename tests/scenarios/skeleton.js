@@ -283,7 +283,7 @@ function respond(clientId, outcome) {
   return buildResponse({ outcome, context });
 }
 
-function play(clientId, errors, trace) {
+async function play(clientId, errors, trace) {
   const maxWords = readMaxWords();
   if (maxWords === null) errors.push("ai-rules output.maxWords is missing");
 
@@ -310,7 +310,7 @@ function play(clientId, errors, trace) {
           checkReply(errors, `${label} ${button.questionId}`, response.reply, response.result, maxWords);
         }
       } else {
-        response = respond(clientId, runMessage({ clientId, text: step.text }));
+        response = respond(clientId, await runMessage({ clientId, text: step.text }));
         checkResult(errors, label, response.result, step.expect);
         checkReply(errors, label, response.reply, response.result, maxWords);
       }
@@ -350,13 +350,13 @@ function play(clientId, errors, trace) {
   }
 }
 
-function runSkeleton() {
+async function runSkeleton() {
   const errors = [];
   const trace = [];
   const clientId = `scenario-skeleton-${Date.now()}-1`;
   const dir = path.join(CLIENTS_DIR, clientId);
   try {
-    play(clientId, errors, trace);
+    await play(clientId, errors, trace);
   } catch (err) {
     errors.push(err instanceof Error ? err.message : String(err));
   } finally {

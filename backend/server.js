@@ -1,4 +1,3 @@
-import "dotenv/config";
 import path from "node:path";
 import express from "express";
 import cors from "cors";
@@ -9,6 +8,18 @@ import { validateKnobs } from "./validation/knobs.js";
 import apiRoutes from "./api/routes.js";
 import { invalidJsonHandler } from "./api/admin.routes.js";
 import { modelsDirectory } from "./admin-api/models.js";
+
+try {
+  process.loadEnvFile();
+} catch {}
+
+if (process.env.AI_ENABLED === "true") {
+  const aiKey = typeof process.env.OPENAI_API_KEY === "string" ? process.env.OPENAI_API_KEY.trim() : "";
+  const aiModel = typeof process.env.OPENAI_MODEL === "string" ? process.env.OPENAI_MODEL.trim() : "";
+  if (!aiKey || !aiModel) {
+    console.warn("AI включён, но нет ключа или модели: работает словарь");
+  }
+}
 
 try {
   const sections = loadSections();

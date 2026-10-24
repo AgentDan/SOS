@@ -288,10 +288,10 @@ test("interpret then applyIntent removes a chair from a test catalog", () => {
   assert.equal(computeScenePlan(localCatalog, outcome.profile).includes("CHAIR-460"), false);
 });
 
-test("runMessage faq is answered from the consultant", () => {
+test("runMessage faq is answered from the consultant", async () => {
   const clientId = "intent-talk-faq";
   forgetClient(clientId);
-  const outcome = runMessage({ clientId, text: "а доставка есть?" });
+  const outcome = await runMessage({ clientId, text: "а доставка есть?" });
   assert.equal(outcome.status, 200);
   assert.deepEqual(outcome.body, { ok: true });
   acceptedResult(outcome.result);
@@ -306,7 +306,7 @@ test("runMessage faq is answered from the consultant", () => {
   assert.notEqual(outcome.result.reasonCode, "not_implemented");
 });
 
-test("runMessage cheaper replaces a dearer desk already on the scene", () => {
+test("runMessage cheaper replaces a dearer desk already on the scene", async () => {
   const clientId = "intent-talk-cheaper";
   forgetClient(clientId);
   saveProfile({
@@ -319,7 +319,7 @@ test("runMessage cheaper replaces a dearer desk already on the scene", () => {
     rejectedNeeds: [],
     sceneEdits: [{ op: "add", sku: "DESK-TOP-1800" }]
   });
-  const outcome = runMessage({ clientId, text: "покажи дешевле" });
+  const outcome = await runMessage({ clientId, text: "покажи дешевле" });
   const products = readCatalog().products;
   const price = (sku) => products.find((item) => item.sku === sku).priceEur;
   assert.equal(outcome.status, 200);
@@ -339,10 +339,10 @@ test("runMessage cheaper replaces a dearer desk already on the scene", () => {
   assert.notEqual(outcome.result.reasonCode, "not_implemented");
 });
 
-test("runMessage smalltalk is not a stub", () => {
+test("runMessage smalltalk is not a stub", async () => {
   const clientId = "intent-talk-smalltalk";
   forgetClient(clientId);
-  const outcome = runMessage({ clientId, text: "привет" });
+  const outcome = await runMessage({ clientId, text: "привет" });
   assert.equal(outcome.status, 200);
   assert.deepEqual(outcome.body, { ok: true });
   acceptedResult(outcome.result);
