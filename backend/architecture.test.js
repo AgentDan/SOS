@@ -24,7 +24,8 @@ const BLOCK_NAMES = [
   "director",
   "voice",
   "commands",
-  "talk"
+  "talk",
+  "ergonomics"
 ];
 const BLOCK_DIRS = BLOCK_NAMES.map((name) => path.join(BACKEND, name));
 const CLIENT_PARTS = ["chat", "summary", "order", "scene"].map((name) => path.join(CLIENT, name));
@@ -175,6 +176,25 @@ test("parse-with-llm.js imports only ai", () => {
 test("body.js does not import other blocks", () => {
   const source = readFileSync(path.join(BACKEND, "profile", "body.js"), "utf8");
   assert.deepEqual(importSpecifiers(source), []);
+});
+
+test("ergonomics.js imports nothing", () => {
+  const source = readFileSync(path.join(BACKEND, "ergonomics", "ergonomics.js"), "utf8");
+  assert.deepEqual(importSpecifiers(source), []);
+});
+
+test("only pipeline imports the ergonomics block", () => {
+  const ergoDir = path.join(BACKEND, "ergonomics");
+  const found = [];
+  const files = [...walkIfExists(BACKEND), ...walkIfExists(CLIENT), ...walkIfExists(ADMIN)];
+  for (const file of files) {
+    if (isInside(file, ergoDir) || isInside(file, PIPELINE)) continue;
+    for (const spec of importSpecifiers(readFileSync(file, "utf8"))) {
+      const resolved = resolveSpecifier(file, spec);
+      if (resolved && isInside(resolved, ergoDir)) found.push(`${file} imports ${spec}`);
+    }
+  }
+  assert.deepEqual(found, [], found.join("\n"));
 });
 
 test("layout.js, distance.js and person.js import nothing", () => {

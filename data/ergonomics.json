@@ -1,7 +1,7 @@
 {
   "section": "ergonomics",
-  "draftVersion": 4,
-  "publishedVersion": 2,
+  "draftVersion": 6,
+  "publishedVersion": 3,
   "draft": {
     "bounds": {
       "heightMinCm": 140,
@@ -19,6 +19,20 @@
         "y": 0,
         "z": 0
       }
+    },
+    "table": {
+      "seatHeightFactor": 2.6,
+      "deskHeightFactor": 4.15,
+      "eyeAboveSeatFactor": 4.57,
+      "monitorDistanceFactor": 3.4,
+      "monitorDistanceMinMm": 500,
+      "monitorDistanceMaxMm": 700,
+      "eyeForwardMm": 150,
+      "tolerance": {
+        "deskHeightMm": 60,
+        "monitorDistanceMm": 100,
+        "monitorTopMm": 80
+      }
     }
   },
   "published": {
@@ -32,7 +46,12 @@
     },
     "mannequin": {
       "sku": "character",
-      "referenceHeightCm": 142
+      "referenceHeightCm": 180,
+      "offsetMm": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
     }
   },
   "history": [
@@ -52,6 +71,30 @@
         "mannequin": {
           "sku": "character",
           "referenceHeightCm": 142
+        }
+      }
+    },
+    {
+      "version": 3,
+      "date": "2026-10-24T22:13:29.316Z",
+      "description": "3",
+      "snapshot": {
+        "bounds": {
+          "heightMinCm": 140,
+          "heightMaxCm": 210
+        },
+        "defaults": {
+          "heightCm": 175,
+          "hand": "right"
+        },
+        "mannequin": {
+          "sku": "character",
+          "referenceHeightCm": 180,
+          "offsetMm": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
         }
       }
     }

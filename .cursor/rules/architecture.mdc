@@ -12,15 +12,16 @@ alwaysApply: true
 ```
 data/ → backend/config → backend/pipeline → backend/api → client/api → client
                               ↑
-        understanding, profile, scene, needs, sales, director, voice, commands, talk
+        understanding, profile, scene, needs, sales, director, voice, commands, talk, ergonomics
                               ↑
                     backend/ai (только understanding и voice)
 ```
 
 - `backend/api/**` импортирует только `backend/pipeline`, `backend/orders`, `backend/sessions`, `backend/admin-api`, `backend/config` и свои файлы.
-- Блоки `understanding`, `profile`, `scene`, `needs`, `sales`, `director`, `voice`, `commands`, `talk` не импортируют друг друга, а также `api`, `pipeline`, `config`, `orders`, `sessions`, `analytics`, `admin-api`. Только свои файлы, `node:*` и сторонние пакеты. К `ai` обращаются только `understanding` и `voice`.
+- Блоки `understanding`, `profile`, `scene`, `needs`, `sales`, `director`, `voice`, `commands`, `talk`, `ergonomics` не импортируют друг друга, а также `api`, `pipeline`, `config`, `orders`, `sessions`, `analytics`, `admin-api`. Только свои файлы, `node:*` и сторонние пакеты. К `ai` обращаются только `understanding` и `voice`.
 - `backend/profile/body.js` не импортирует другие блоки и не читает файлы.
 - `backend/scene/person.js` ничего не импортирует.
+- Блок `ergonomics/` ничего не импортирует из других блоков. Импортирует его только `pipeline/`.
 - `commands` получает сцену как переданную функцию, `scene` не импортирует. Исключение: `commands` может импортировать только `backend/scene/distance.js`. `layout.js` туда не импортируется — положения считает pipeline и передаёт в команду.
 - `talk` получает сцену как переданную функцию, `scene` не импортирует.
 - `backend/ai/**` не импортирует `api`, `pipeline`, блоки, `client`, `admin`. `backend/ai/llm.js` ничего не импортирует из блоков. `backend/understanding/parse-with-llm.js` импортирует только `backend/ai`.

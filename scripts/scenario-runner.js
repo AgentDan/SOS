@@ -6,6 +6,7 @@ import { getProfile } from "../backend/pipeline/reads.js";
 import { prepareDraftData, removeDraftData } from "../tests/scenarios/prepare-draft-data.js";
 import { bodySteps, runBody } from "../tests/scenarios/body.js";
 import { layoutSteps, runLayout } from "../tests/scenarios/layout.js";
+import { ergoSteps, runErgo } from "../tests/scenarios/ergo.js";
 import { personSteps, runPerson } from "../tests/scenarios/person.js";
 import { runSkeleton, skeletonSteps } from "../tests/scenarios/skeleton.js";
 
@@ -190,6 +191,10 @@ function runPersonScenario() {
   return withDraftData(() => runPerson());
 }
 
+function runErgoScenario() {
+  return withDraftData(() => runErgo());
+}
+
 async function main() {
   let failed = 0;
 
@@ -240,6 +245,15 @@ async function main() {
   }
   report("person", personSteps.length, personErrors);
   if (personErrors.length > 0) failed += 1;
+
+  let ergoErrors;
+  try {
+    ergoErrors = (await runErgoScenario()).errors;
+  } catch (err) {
+    ergoErrors = [err instanceof Error ? err.message : String(err)];
+  }
+  report("ergo", ergoSteps.length, ergoErrors);
+  if (ergoErrors.length > 0) failed += 1;
 
   if (failed > 0) process.exit(1);
 }

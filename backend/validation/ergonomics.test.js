@@ -97,6 +97,81 @@ test("mannequin is optional and, when set, needs a string sku and a height from 
   assert.ok(errorsOf(envelope(notObject)).some((line) => line.includes("mannequin must be an object")));
 });
 
+function table(overrides = {}) {
+  return {
+    seatHeightFactor: 2.6,
+    deskHeightFactor: 4.15,
+    eyeAboveSeatFactor: 4.57,
+    monitorDistanceFactor: 3.4,
+    monitorDistanceMinMm: 500,
+    monitorDistanceMaxMm: 700,
+    tolerance: { deskHeightMm: 60, monitorDistanceMm: 100, monitorTopMm: 80 },
+    ...overrides
+  };
+}
+
+test("table is optional and, when set, uses positive factors, min below max, and a non-negative tolerance", () => {
+  const withTable = goodDraft();
+  withTable.table = table();
+  assert.deepEqual(errorsOf(envelope(withTable)), []);
+
+  const forward = goodDraft();
+  forward.table = table({ eyeForwardMm: 150 });
+  assert.deepEqual(errorsOf(envelope(forward)), []);
+
+  const zeros = goodDraft();
+  zeros.table = table({
+    tolerance: { deskHeightMm: 0, monitorDistanceMm: 0, monitorTopMm: 0 }
+  });
+  assert.deepEqual(errorsOf(envelope(zeros)), []);
+});
+
+test("table rejects a non-object, non-positive numbers, a reversed range, and a bad tolerance", () => {
+  const missing = goodDraft();
+  missing.table = table();
+  delete missing.table.seatHeightFactor;
+  assert.ok(errorsOf(envelope(missing)).some((line) => line.includes("table.seatHeightFactor")));
+
+  const zero = goodDraft();
+  zero.table = table({ deskHeightFactor: 0 });
+  assert.ok(errorsOf(envelope(zero)).some((line) => line.includes("table.deskHeightFactor")));
+
+  const text = goodDraft();
+  text.table = table({ monitorDistanceFactor: "3.4" });
+  assert.ok(errorsOf(envelope(text)).some((line) => line.includes("table.monitorDistanceFactor")));
+
+  const reversed = goodDraft();
+  reversed.table = table({ monitorDistanceMinMm: 700, monitorDistanceMaxMm: 500 });
+  assert.ok(errorsOf(envelope(reversed)).some((line) => line.includes("less than")));
+
+  const equal = goodDraft();
+  equal.table = table({ monitorDistanceMinMm: 500, monitorDistanceMaxMm: 500 });
+  assert.ok(errorsOf(envelope(equal)).some((line) => line.includes("less than")));
+
+  const forward = goodDraft();
+  forward.table = table({ eyeForwardMm: 0 });
+  assert.ok(errorsOf(envelope(forward)).some((line) => line.includes("table.eyeForwardMm")));
+
+  const negative = goodDraft();
+  negative.table = table({
+    tolerance: { deskHeightMm: -1, monitorDistanceMm: 100, monitorTopMm: 80 }
+  });
+  assert.ok(errorsOf(envelope(negative)).some((line) => line.includes("tolerance.deskHeightMm")));
+
+  const gap = goodDraft();
+  gap.table = table();
+  delete gap.table.tolerance.monitorTopMm;
+  assert.ok(errorsOf(envelope(gap)).some((line) => line.includes("tolerance.monitorTopMm")));
+
+  const noTolerance = goodDraft();
+  noTolerance.table = table({ tolerance: null });
+  assert.ok(errorsOf(envelope(noTolerance)).some((line) => line.includes("table.tolerance must be an object")));
+
+  const list = goodDraft();
+  list.table = [];
+  assert.ok(errorsOf(envelope(list)).some((line) => line.includes("table must be an object")));
+});
+
 test("mannequin.offsetMm is optional and, when set, is three numbers from -500 to 500", () => {
   const omitted = goodDraft();
   omitted.mannequin = { sku: "character", referenceHeightCm: 180 };

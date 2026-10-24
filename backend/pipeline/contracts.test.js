@@ -375,7 +375,8 @@ test("validators do not change a frozen input", () => {
       {
         skus: ["DESK-LEGS-1400"],
         placements: [{ sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0, rotY: 0 }],
-        person: null
+        person: null,
+        ergo: null
       }
     ]
   ];
@@ -393,22 +394,57 @@ test("validators do not change a frozen input", () => {
   assert.deepEqual(bad, beforeBad);
 });
 
-test("validateScene requires placements and person beside skus", () => {
+function ergoTargets(hand = "right") {
+  return {
+    seatHeightMm: 455,
+    deskHeightMm: 726,
+    eyeHeightMm: 1255,
+    monitorDistanceMm: 595,
+    monitorTopMm: 1255,
+    hand
+  };
+}
+
+test("validateScene requires placements, person and ergo beside skus", () => {
   accepted(
     validateScene({
       skus: [],
       placements: [],
-      person: null
+      person: null,
+      ergo: null
     })
   );
   accepted(
     validateScene({
       skus: [],
       placements: [],
-      person: { sku: "character", x: 0, y: 450, z: 760, rotY: 180, scale: 1 }
+      person: { sku: "character", x: 0, y: 450, z: 760, rotY: 180, scale: 1 },
+      ergo: {
+        targets: ergoTargets("left"),
+        issues: [
+          {
+            code: "desk_too_high",
+            sku: "DESK-TOP-1800",
+            actualMm: 1030,
+            targetMm: 726,
+            deltaMm: 304
+          }
+        ]
+      }
     })
   );
-  assert.deepEqual(rejected(validateScene({ skus: ["DESK-LEGS-1400"], person: null })), [
+  accepted(
+    validateScene({
+      skus: [],
+      placements: [],
+      person: null,
+      ergo: {
+        targets: ergoTargets(),
+        issues: [{ code: "monitor_too_close", actualMm: 200, targetMm: 595, deltaMm: -395 }]
+      }
+    })
+  );
+  assert.deepEqual(rejected(validateScene({ skus: ["DESK-LEGS-1400"], person: null, ergo: null })), [
     "placements is required"
   ]);
   assert.deepEqual(
@@ -416,7 +452,8 @@ test("validateScene requires placements and person beside skus", () => {
       validateScene({
         skus: ["DESK-LEGS-1400"],
         placements: [{ sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0 }],
-        person: null
+        person: null,
+        ergo: null
       })
     ),
     ["placements[0].rotY must be a number"]
@@ -425,7 +462,8 @@ test("validateScene requires placements and person beside skus", () => {
     rejected(
       validateScene({
         skus: [],
-        placements: []
+        placements: [],
+        ergo: null
       })
     ),
     ["person is required"]
@@ -435,9 +473,42 @@ test("validateScene requires placements and person beside skus", () => {
       validateScene({
         skus: [],
         placements: [],
-        person: { sku: "character", x: 0, y: 450, z: 760, rotY: 180 }
+        person: { sku: "character", x: 0, y: 450, z: 760, rotY: 180 },
+        ergo: null
       })
     ),
     ["person.scale must be a number"]
+  );
+  assert.deepEqual(
+    rejected(
+      validateScene({
+        skus: [],
+        placements: [],
+        person: null
+      })
+    ),
+    ["ergo is required"]
+  );
+  assert.deepEqual(
+    rejected(
+      validateScene({
+        skus: [],
+        placements: [],
+        person: null,
+        ergo: { targets: ergoTargets(), issues: [{ code: "desk_ok", actualMm: 1, targetMm: 1, deltaMm: 0 }] }
+      })
+    ),
+    ["ergo.issues[0].code must be one of: desk_too_high, desk_too_low, monitor_too_close, monitor_too_far, monitor_too_high, monitor_too_low"]
+  );
+  assert.deepEqual(
+    rejected(
+      validateScene({
+        skus: [],
+        placements: [],
+        person: null,
+        ergo: { targets: { ...ergoTargets(), hand: "both" }, issues: [] }
+      })
+    ),
+    ['ergo.targets.hand must be "right" or "left"']
   );
 });

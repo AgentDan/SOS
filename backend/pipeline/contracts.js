@@ -17,6 +17,21 @@ const REASON_CODES = Object.freeze([
   "distance_no_position"
 ]);
 const REPLY_VIA = Object.freeze(["template", "ai"]);
+const ERGO_ISSUE_CODES = Object.freeze([
+  "desk_too_high",
+  "desk_too_low",
+  "monitor_too_close",
+  "monitor_too_far",
+  "monitor_too_high",
+  "monitor_too_low"
+]);
+const ERGO_TARGET_KEYS = Object.freeze([
+  "seatHeightMm",
+  "deskHeightMm",
+  "eyeHeightMm",
+  "monitorDistanceMm",
+  "monitorTopMm"
+]);
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -213,6 +228,54 @@ function validatePerson(item, errors) {
   }
 }
 
+function validateErgoIssue(item, index, errors) {
+  const path = `ergo.issues[${index}]`;
+  if (!isPlainObject(item)) {
+    errors.push(`${path} must be an object`);
+    return;
+  }
+  requireOneOf(item, "code", ERGO_ISSUE_CODES, `${path}.code`, errors);
+  if (item.sku !== undefined && typeof item.sku !== "string") {
+    errors.push(`${path}.sku must be a string`);
+  }
+  for (const key of ["actualMm", "targetMm", "deltaMm"]) {
+    if (typeof item[key] !== "number" || !Number.isFinite(item[key])) {
+      errors.push(`${path}.${key} must be a number`);
+    }
+  }
+}
+
+function validateErgo(value, errors) {
+  if (value === undefined) {
+    errors.push("ergo is required");
+    return;
+  }
+  if (value === null) return;
+  if (!isPlainObject(value)) {
+    errors.push("ergo must be an object or null");
+    return;
+  }
+
+  if (!isPlainObject(value.targets)) {
+    errors.push("ergo.targets must be an object");
+  } else {
+    for (const key of ERGO_TARGET_KEYS) {
+      if (typeof value.targets[key] !== "number" || !Number.isFinite(value.targets[key])) {
+        errors.push(`ergo.targets.${key} must be a number`);
+      }
+    }
+    if (value.targets.hand !== "right" && value.targets.hand !== "left") {
+      errors.push('ergo.targets.hand must be "right" or "left"');
+    }
+  }
+
+  if (!Array.isArray(value.issues)) {
+    errors.push("ergo.issues must be an array");
+    return;
+  }
+  value.issues.forEach((item, index) => validateErgoIssue(item, index, errors));
+}
+
 function validateScene(value) {
   if (!isPlainObject(value)) return rejectObject();
   const errors = [];
@@ -226,6 +289,7 @@ function validateScene(value) {
   }
   if (value.person === undefined) errors.push("person is required");
   else validatePerson(value.person, errors);
+  validateErgo(value.ergo, errors);
   return done(errors);
 }
 

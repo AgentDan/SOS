@@ -1,4 +1,5 @@
 import { getNextQuestion } from "../director/question-engine.js";
+import { ergo } from "../ergonomics/ergonomics.js";
 import { getBody } from "../profile/body.js";
 import { layout } from "../scene/layout.js";
 import { placePerson } from "../scene/person.js";
@@ -8,7 +9,7 @@ import { buildContext } from "./context.js";
 function assembleScene(catalog, profile, extras) {
   const skus = computeScenePlan(catalog, profile);
   const placements = layout({ catalog, skus }).placements;
-  if (!extras) return { skus, placements, person: null };
+  if (!extras) return { skus, placements, person: null, ergo: null };
   const body = getBody({
     profile,
     questionnaire: extras.questionnaire,
@@ -20,7 +21,13 @@ function assembleScene(catalog, profile, extras) {
     body,
     placements
   });
-  return { skus, placements, person };
+  const measured = ergo({
+    catalog,
+    ergonomics: extras.ergonomics,
+    body,
+    placements
+  });
+  return { skus, placements, person, ergo: measured };
 }
 
 function getNext(clientId) {

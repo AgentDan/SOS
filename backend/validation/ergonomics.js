@@ -60,6 +60,64 @@ function validateErgonomics(ergonomics, errors) {
       validateOffsetMm(draft.mannequin.offsetMm, errors);
     }
   }
+
+  validateTable(draft.table, errors);
+}
+
+function positiveNumber(value) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function nonNegativeNumber(value) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function validateTable(table, errors) {
+  if (table === undefined) return;
+  if (!isPlainObject(table)) {
+    errors.push("ergonomics: table must be an object");
+    return;
+  }
+
+  for (const field of [
+    "seatHeightFactor",
+    "deskHeightFactor",
+    "eyeAboveSeatFactor",
+    "monitorDistanceFactor",
+    "monitorDistanceMinMm",
+    "monitorDistanceMaxMm"
+  ]) {
+    if (!positiveNumber(table[field])) {
+      errors.push(`ergonomics: table.${field} must be a number greater than 0`);
+    }
+  }
+
+  if (table.eyeForwardMm !== undefined && !positiveNumber(table.eyeForwardMm)) {
+    errors.push("ergonomics: table.eyeForwardMm must be a number greater than 0");
+  }
+
+  if (
+    positiveNumber(table.monitorDistanceMinMm) &&
+    positiveNumber(table.monitorDistanceMaxMm) &&
+    table.monitorDistanceMinMm >= table.monitorDistanceMaxMm
+  ) {
+    errors.push(
+      "ergonomics: table.monitorDistanceMinMm must be less than table.monitorDistanceMaxMm"
+    );
+  }
+
+  if (!isPlainObject(table.tolerance)) {
+    errors.push("ergonomics: table.tolerance must be an object");
+    return;
+  }
+
+  for (const field of ["deskHeightMm", "monitorDistanceMm", "monitorTopMm"]) {
+    if (!nonNegativeNumber(table.tolerance[field])) {
+      errors.push(
+        `ergonomics: table.tolerance.${field} must be a number greater than or equal to 0`
+      );
+    }
+  }
 }
 
 function validateOffsetMm(offset, errors) {
