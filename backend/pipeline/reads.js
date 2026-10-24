@@ -1,5 +1,5 @@
 import { getNextQuestion } from "../director/question-engine.js";
-import { loadProfile } from "../profile/profile-store.js";
+import { getBody } from "../profile/body.js";
 import { computeScenePlan } from "../scene/scene-plan.js";
 import { buildContext } from "./context.js";
 
@@ -15,7 +15,11 @@ function getScene(clientId) {
 }
 
 function getProfile(clientId) {
-  return loadProfile(clientId);
+  const { profile, questionnaire, ergonomics } = buildContext(clientId);
+  return {
+    ...profile,
+    body: getBody({ profile, questionnaire, ergonomics })
+  };
 }
 
 export { getNext, getScene, getProfile };

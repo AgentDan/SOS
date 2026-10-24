@@ -143,6 +143,14 @@ function validateQuestionnaire(questionnaire, errors) {
               }
               seenOptionIds.add(option.id);
             }
+            if (option && option.heightCm !== undefined) {
+              const height = option.heightCm;
+              if (!Number.isInteger(height) || height < 100 || height > 250) {
+                errors.push(
+                  `questionnaire: question "${label}" option "${optionLabel}" heightCm must be an integer from 100 to 250`
+                );
+              }
+            }
           }
         }
       }

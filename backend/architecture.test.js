@@ -158,6 +158,11 @@ test("modules honor the dependency rules", () => {
   assert.deepEqual(found, [], found.join("\n"));
 });
 
+test("body.js does not import other blocks", () => {
+  const source = readFileSync(path.join(BACKEND, "profile", "body.js"), "utf8");
+  assert.deepEqual(importSpecifiers(source), []);
+});
+
 test("only applySceneChange writes sceneEdits", () => {
   const allowed = path.normalize(path.join(BACKEND, "scene", "apply-scene-change.js"));
   const writePattern =

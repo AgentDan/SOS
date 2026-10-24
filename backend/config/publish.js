@@ -10,7 +10,8 @@ const SECTIONS = [
   ["director", "director"],
   ["sales", "sales"],
   ["commands", "commands"],
-  ["ai-rules", "aiRules"]
+  ["ai-rules", "aiRules"],
+  ["ergonomics", "ergonomics"]
 ];
 
 const SECTION_KEY = Object.fromEntries(SECTIONS);

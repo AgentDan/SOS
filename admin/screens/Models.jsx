@@ -144,14 +144,7 @@ function Models() {
       {error ? <ErrorBlock lines={error} /> : null}
       {result ? (
         <>
-          {result.mismatch ? (
-            <Banner
-              kind="warn"
-              text="Размеры GLB и каталога расходятся больше чем на 2%. Размеры в каталоге не изменены."
-            />
-          ) : (
-            <Banner kind="ok" text={`Модель ${result.sku} сохранена, ${result.bytes} байт.`} />
-          )}
+          <Banner kind="ok" text={`Модель ${result.sku} сохранена, ${result.bytes} байт.`} />
           <h2 className="mt-0 mb-2 text-[1.15rem] font-[650]">Размеры, мм</h2>
           <div className="mb-4 overflow-x-auto">
             <DataTable

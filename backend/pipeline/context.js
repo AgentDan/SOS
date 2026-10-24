@@ -1,4 +1,4 @@
-import { readCatalog, readCommands, readConsultant, readQuestionnaire } from "../config/load.js";
+import { readCatalog, readCommands, readConsultant, readErgonomics, readQuestionnaire } from "../config/load.js";
 import { loadProfile } from "../profile/profile-store.js";
 import { buildVocabulary } from "./vocabulary.js";
 
@@ -9,6 +9,7 @@ function buildContext(clientId) {
   return {
     clientId,
     questionnaire: readQuestionnaire(),
+    ergonomics: readErgonomics(),
     catalog,
     consultant,
     profile: loadProfile(clientId),

@@ -5,7 +5,8 @@ const SECTIONS = [
   ["director", "Режиссёр"],
   ["sales", "Продажа"],
   ["commands", "Команды сцены"],
-  ["ai-rules", "Правила AI"]
+  ["ai-rules", "Правила AI"],
+  ["ergonomics", "Эргономика"]
 ];
 
 const SECTION_LABELS = Object.fromEntries(SECTIONS);

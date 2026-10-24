@@ -27,7 +27,8 @@ function toDialogData(sections) {
     director: sections.director,
     sales: sections.sales,
     commands: sections.commands,
-    aiRules: sections["ai-rules"]
+    aiRules: sections["ai-rules"],
+    ergonomics: sections.ergonomics
   };
 }
 

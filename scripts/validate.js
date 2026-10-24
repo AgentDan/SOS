@@ -5,7 +5,7 @@ import { readKnobs } from "../backend/config/load.js";
 import { loadSections, toDialogData } from "../backend/admin-api/sections.js";
 import { validateDialogData } from "../backend/validation/index.js";
 import { validateKnobs } from "../backend/validation/knobs.js";
-import { ColliderError, dimensionsMismatch, summarizeGlb } from "../backend/colliders/index.js";
+import { ColliderError, summarizeGlb } from "../backend/colliders/index.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -13,7 +13,6 @@ function checkModels(sections) {
   const published = sections.catalog && sections.catalog.published;
   const products = published && Array.isArray(published.products) ? published.products : [];
   const errors = [];
-  const warnings = [];
   for (const product of products) {
     const model3d = product && product.media && product.media.model3d;
     if (typeof model3d !== "string" || model3d.trim() === "") continue;
@@ -34,19 +33,8 @@ function checkModels(sections) {
     const count = summary.colliderNames.length;
     if (count < 1) errors.push(`${sku}: в models/${sku}.glb нет узлов COL_*`);
     else if (count > 12) errors.push(`${sku}: в models/${sku}.glb узлов COL_* ${count}, максимум 12`);
-    const catalogMm = {
-      width: product.dimensions && product.dimensions.width,
-      height: product.dimensions && product.dimensions.height,
-      depth: product.dimensions && product.dimensions.depth
-    };
-    if (summary.sizeMm && dimensionsMismatch(summary.sizeMm, catalogMm)) {
-      const glb = summary.sizeMm;
-      warnings.push(
-        `${sku}: размеры GLB ${glb.width}×${glb.depth}×${glb.height} мм и каталога ${catalogMm.width}×${catalogMm.depth}×${catalogMm.height} мм расходятся больше чем на 2%`
-      );
-    }
   }
-  return { errors, warnings };
+  return errors;
 }
 
 try {
@@ -54,9 +42,8 @@ try {
   validateDialogData(toDialogData(sections));
   validateKnobs(readKnobs(), sections);
   const models = checkModels(sections);
-  for (const warning of models.warnings) console.warn(`warning: ${warning}`);
-  if (models.errors.length > 0) {
-    console.error(models.errors.join("\n"));
+  if (models.length > 0) {
+    console.error(models.join("\n"));
     process.exit(1);
   }
   console.log("OK");

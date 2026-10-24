@@ -567,7 +567,7 @@ describe("admin API", { concurrency: 1 }, () => {
     });
     assert.equal(uploaded.status, 200);
     assert.equal(uploaded.json.sku, "DESK-TOP-1400");
-    assert.equal(uploaded.json.mismatch, false);
+    assert.equal(Object.hasOwn(uploaded.json, "mismatch"), false);
     assert.equal(uploaded.json.parts.length, 1);
     assert.equal(uploaded.json.parts[0].name, "Top");
     assert.equal(uploaded.json.sizeMm.width, 1400);

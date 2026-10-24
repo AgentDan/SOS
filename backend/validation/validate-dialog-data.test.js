@@ -74,7 +74,8 @@ function loadSkeleton() {
     director: structuredClone(loadJson("director.json")),
     sales: structuredClone(loadJson("sales.json")),
     commands: structuredClone(loadJson("commands.json")),
-    aiRules: structuredClone(loadJson("ai-rules.json"))
+    aiRules: structuredClone(loadJson("ai-rules.json")),
+    ergonomics: structuredClone(loadJson("ergonomics.json"))
   };
 }
 
@@ -388,6 +389,60 @@ test("consultant replies are an optional map of templates", () => {
     (err) =>
       err instanceof Error &&
       /consultant: replies "cheaper_done" has unknown placeholder "\{price\}"/.test(err.message)
+  );
+});
+
+test("questionnaire option heightCm is an optional integer from 100 to 250", () => {
+  const accepted = validPair();
+  accepted.questionnaire.draft.questions[0].options[0].heightCm = 175;
+  assert.equal(validateDialogData(accepted), true);
+
+  const fractional = validPair();
+  fractional.questionnaire.draft.questions[0].options[0].heightCm = 175.5;
+  assert.throws(
+    () => validateDialogData(fractional),
+    (err) =>
+      err instanceof Error &&
+      /option "coding" heightCm must be an integer from 100 to 250/.test(err.message)
+  );
+});
+
+test("height and hand questions are in the questionnaire draft", () => {
+  const data = validPair();
+  const draft = data.questionnaire.draft.questions;
+  const published = data.questionnaire.published.questions;
+  const height = draft.find((question) => question.id === "q_height");
+  const hand = draft.find((question) => question.id === "q_hand");
+  const others = draft.filter((question) => question.id !== "q_height" && question.id !== "q_hand");
+  assert.equal(height.textFallback, "Какой у вас рост?");
+  assert.equal(hand.textFallback, "Какой рукой вы работаете за столом?");
+  assert.ok(height.priority > Math.max(...others.map((question) => question.priority)));
+  assert.ok(hand.priority > Math.max(...others.map((question) => question.priority)));
+  assert.deepEqual(
+    height.options.map((option) => option.heightCm),
+    [155, 165, 175, 185, 195]
+  );
+  assert.equal(published.some((question) => question.id === "q_height"), false);
+  assert.equal(published.some((question) => question.id === "q_hand"), false);
+});
+
+test("ergonomics bounds and defaults are checked", () => {
+  assert.equal(validateDialogData(loadSkeleton()), true);
+
+  const bad = loadSkeleton();
+  bad.ergonomics.draft.defaults.hand = "both";
+  assert.throws(
+    () => validateDialogData(bad),
+    (err) => err instanceof Error && /ergonomics: defaults\.hand must be "right" or "left"/.test(err.message)
+  );
+
+  const low = loadSkeleton();
+  low.ergonomics.draft.bounds.heightMinCm = 90;
+  assert.throws(
+    () => validateDialogData(low),
+    (err) =>
+      err instanceof Error &&
+      /ergonomics: bounds\.heightMinCm must be an integer from 100 to 250/.test(err.message)
   );
 });
 

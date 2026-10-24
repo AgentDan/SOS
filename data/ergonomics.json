@@ -1,0 +1,26 @@
+{
+  "section": "ergonomics",
+  "draftVersion": 1,
+  "publishedVersion": 1,
+  "draft": {
+    "bounds": {
+      "heightMinCm": 140,
+      "heightMaxCm": 210
+    },
+    "defaults": {
+      "heightCm": 175,
+      "hand": "right"
+    }
+  },
+  "published": {
+    "bounds": {
+      "heightMinCm": 140,
+      "heightMaxCm": 210
+    },
+    "defaults": {
+      "heightCm": 175,
+      "hand": "right"
+    }
+  },
+  "history": []
+}

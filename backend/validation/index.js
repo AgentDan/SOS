@@ -1,5 +1,6 @@
 import { validateAiRules } from "./ai-rules.js";
 import { validateCatalogDraft, validateInferenceNeeds } from "./catalog.js";
+import { validateErgonomics } from "./ergonomics.js";
 import { validateCommands } from "./commands.js";
 import { validateConsultant } from "./consultant.js";
 import { validateDirector } from "./director.js";
@@ -13,7 +14,8 @@ function validateDialogData({
   director,
   sales,
   commands,
-  aiRules
+  aiRules,
+  ergonomics
 }) {
   const errors = [];
 
@@ -25,6 +27,7 @@ function validateDialogData({
   validateSales(sales, errors);
   validateCommands(commands, errors);
   validateAiRules(aiRules, errors);
+  validateErgonomics(ergonomics, errors);
 
   if (errors.length > 0) {
     throw new Error(`Dialog data validation failed:\n  - ${errors.join("\n  - ")}`);

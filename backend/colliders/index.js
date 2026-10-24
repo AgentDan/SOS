@@ -1,5 +1,5 @@
 import { addColliderNodes, ColliderError, encodeGlb, listSceneColliderNames, parseGlb, removeColliderNodes } from "./glb.js";
-import { computeParts, dimensionsMismatch, geometrySizeMm } from "./compute.js";
+import { computeParts, geometrySizeMm } from "./compute.js";
 
 function addCollidersToGlb(buffer, options = {}) {
   const type = options && typeof options.type === "string" ? options.type : "";
@@ -23,4 +23,4 @@ function summarizeGlb(buffer) {
   };
 }
 
-export { addCollidersToGlb, summarizeGlb, dimensionsMismatch, ColliderError, parseGlb };
+export { addCollidersToGlb, summarizeGlb, ColliderError, parseGlb };

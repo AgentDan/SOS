@@ -350,19 +350,4 @@ function geometrySizeMm(json, bin) {
   return inspectGeometry(json, bin).sizeMm;
 }
 
-function dimensionsMismatch(sizeMm, catalogMm) {
-  if (!sizeMm || !catalogMm) return true;
-  for (const axis of ["width", "height", "depth"]) {
-    const glb = Number(sizeMm[axis]);
-    const catalog = Number(catalogMm[axis]);
-    if (!Number.isFinite(glb) || !Number.isFinite(catalog)) return true;
-    if (catalog === 0) {
-      if (glb !== 0) return true;
-      continue;
-    }
-    if (Math.abs(glb - catalog) / Math.abs(catalog) > 0.02) return true;
-  }
-  return false;
-}
-
-export { computeParts, geometrySizeMm, dimensionsMismatch };
+export { computeParts, geometrySizeMm };

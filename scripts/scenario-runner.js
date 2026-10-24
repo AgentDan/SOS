@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { runTurn } from "../backend/pipeline/orchestrator.js";
 import { getProfile } from "../backend/pipeline/reads.js";
 import { prepareDraftData, removeDraftData } from "../tests/scenarios/prepare-draft-data.js";
+import { bodySteps, runBody } from "../tests/scenarios/body.js";
 import { runSkeleton, skeletonSteps } from "../tests/scenarios/skeleton.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -157,18 +158,26 @@ function report(slug, steps, errors) {
   for (const error of errors) console.log(`      ${error}`);
 }
 
-function runSkeletonScenario() {
+function withDraftData(run) {
   const previous = process.env.SOS_DATA_DIR;
   let draftDir;
   try {
     draftDir = prepareDraftData();
     process.env.SOS_DATA_DIR = draftDir;
-    return runSkeleton();
+    return run();
   } finally {
     if (previous === undefined) delete process.env.SOS_DATA_DIR;
     else process.env.SOS_DATA_DIR = previous;
     if (draftDir) removeDraftData(draftDir);
   }
+}
+
+function runSkeletonScenario() {
+  return withDraftData(() => runSkeleton());
+}
+
+function runBodyScenario() {
+  return withDraftData(() => runBody());
 }
 
 function main() {
@@ -194,6 +203,15 @@ function main() {
   }
   report("skeleton", skeletonSteps.length, skeletonErrors);
   if (skeletonErrors.length > 0) failed += 1;
+
+  let bodyErrors;
+  try {
+    bodyErrors = runBodyScenario().errors;
+  } catch (err) {
+    bodyErrors = [err instanceof Error ? err.message : String(err)];
+  }
+  report("body", bodySteps.length, bodyErrors);
+  if (bodyErrors.length > 0) failed += 1;
 
   if (failed > 0) process.exit(1);
 }

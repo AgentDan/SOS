@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addCollidersToGlb, ColliderError, dimensionsMismatch, parseGlb, summarizeGlb } from "./index.js";
+import { addCollidersToGlb, ColliderError, parseGlb, summarizeGlb } from "./index.js";
 import { encodeGlb } from "./glb.js";
 
 function pad4(bytes, fill) {
@@ -303,9 +303,7 @@ test("a chair keeps Seat, Back and Base and drops wheels", () => {
   );
 });
 
-test("dimensions match within 2 percent", () => {
-  assert.equal(dimensionsMismatch({ width: 100, height: 50, depth: 20 }, { width: 102, height: 50, depth: 20 }), false);
-  assert.equal(dimensionsMismatch({ width: 100, height: 50, depth: 20 }, { width: 103, height: 50, depth: 20 }), true);
+test("summarizeGlb reports size and collider names", () => {
   const { glb } = meshGlb([{ name: "Top", corners: corners(0.5, 0.5, 0.5) }]);
   const summary = summarizeGlb(glb);
   assert.deepEqual(summary.colliderNames, []);

@@ -17,7 +17,8 @@ const SECTION_NAMES = [
   "director",
   "sales",
   "commands",
-  "ai-rules"
+  "ai-rules",
+  "ergonomics"
 ];
 
 function configPath(name) {
@@ -73,6 +74,10 @@ function readAiRules() {
   return readConfig("ai-rules");
 }
 
+function readErgonomics() {
+  return readConfig("ergonomics");
+}
+
 function readKnobs() {
   return JSON.parse(readFileSync(path.join(dataDir(), "knobs.json"), "utf-8"));
 }
@@ -90,5 +95,6 @@ export {
   readCatalog,
   readConsultant,
   readCommands,
-  readAiRules
+  readAiRules,
+  readErgonomics
 };

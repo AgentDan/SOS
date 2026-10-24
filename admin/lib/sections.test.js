@@ -10,6 +10,7 @@ test("section names are shown in Russian", () => {
   assert.equal(sectionLabel("sales"), "Продажа");
   assert.equal(sectionLabel("commands"), "Команды сцены");
   assert.equal(sectionLabel("ai-rules"), "Правила AI");
+  assert.equal(sectionLabel("ergonomics"), "Эргономика");
   assert.equal(sectionLabel("custom"), "custom");
   assert.equal(sectionLabel(""), "Раздел");
 });

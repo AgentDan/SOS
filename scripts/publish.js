@@ -7,7 +7,8 @@ const SECTIONS = [
   "director",
   "sales",
   "commands",
-  "ai-rules"
+  "ai-rules",
+  "ergonomics"
 ];
 
 const args = process.argv.slice(2);

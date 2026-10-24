@@ -3,7 +3,7 @@ import { mkdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readEnvelope } from "../config/load.js";
-import { addCollidersToGlb, ColliderError, dimensionsMismatch } from "../colliders/index.js";
+import { addCollidersToGlb, ColliderError } from "../colliders/index.js";
 import { adminError } from "./auth.js";
 import { appendJournal } from "./journal.js";
 
@@ -95,8 +95,7 @@ function uploadModel(sku, body) {
     bytes: built.glb.length,
     parts,
     sizeMm: built.sizeMm,
-    catalogMm,
-    mismatch: dimensionsMismatch(built.sizeMm, catalogMm)
+    catalogMm
   };
 }
 
