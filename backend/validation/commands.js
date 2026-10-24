@@ -38,7 +38,10 @@ function validateCommands(commands, errors) {
   if (draft.limits !== undefined) {
     if (!isPlainObject(draft.limits)) {
       errors.push("commands: limits must be an object");
-    } else if (!Number.isInteger(draft.limits.maxItems) || draft.limits.maxItems < 1) {
+    } else if (
+      draft.limits.maxItems !== undefined &&
+      (!Number.isInteger(draft.limits.maxItems) || draft.limits.maxItems < 1)
+    ) {
       errors.push("commands: limits.maxItems must be an integer >= 1");
     }
   }

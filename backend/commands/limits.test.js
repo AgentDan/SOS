@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { firstReplacement, isProtected, resolveTarget, sceneAtMax, typeAtMax } from "./limits.js";
+import { firstReplacement, isProtected, resolveTarget, typeAtMax } from "./limits.js";
 
 const catalog = {
   types: [
@@ -47,14 +47,42 @@ test("a second copy of a support may be removed", () => {
   );
 });
 
-test("typeAtMax and sceneAtMax report the cap", () => {
+test("typeAtMax reports the cap and ignores a type without maxOnScene", () => {
   assert.deepEqual(typeAtMax(["DESK-TOP-1800"], catalog, "desk_top"), {
     type: "desk_top",
     max: 1
   });
   assert.equal(typeAtMax(["CHAIR-460"], catalog, "chair"), null);
-  assert.deepEqual(sceneAtMax(["A", "B"], { maxItems: 2 }), { max: 2 });
-  assert.equal(sceneAtMax(["A"], { maxItems: 2 }), null);
+  const open = {
+    types: [{ id: "monitor" }],
+    products: [{ sku: "MON-613-366", type: "monitor" }]
+  };
+  assert.equal(typeAtMax(["MON-613-366", "MON-613-366", "MON-613-366"], open, "monitor"), null);
+});
+
+test("the last desk is protected when a monitor depends on its type", () => {
+  const typed = {
+    types: [
+      { id: "desk_top", canHostOn: ["desk_legs"] },
+      { id: "monitor", canHostOn: ["desk_top"] }
+    ],
+    products: [
+      { sku: "DESK-TOP-1800", type: "desk_top" },
+      { sku: "DESK-TOP-1400", type: "desk_top" },
+      { sku: "MON-613-366", type: "monitor", placement: { hostSku: "DESK-TOP-1400" } }
+    ]
+  };
+  const last = isProtected("DESK-TOP-1800", typed, ["DESK-TOP-1800", "MON-613-366"]);
+  assert.equal(last.blocked, true);
+  assert.deepEqual(last.hosted, ["MON-613-366"]);
+
+  const earlier = isProtected("DESK-TOP-1800", typed, [
+    "DESK-TOP-1800",
+    "DESK-TOP-1400",
+    "MON-613-366"
+  ]);
+  assert.equal(earlier.blocked, false);
+  assert.deepEqual(earlier.hosted, []);
 });
 
 test("firstReplacement takes another sku of the same type", () => {

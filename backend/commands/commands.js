@@ -3,9 +3,9 @@ import {
   firstReplacement,
   isProtected,
   resolveTarget,
-  sceneAtMax,
   typeAtMax
 } from "./limits.js";
+import { canPlace, canReplace } from "./placement.js";
 import { failCommand, okCommand } from "./result.js";
 
 const SAY = {
@@ -52,14 +52,16 @@ function withoutCopy(skus, sku) {
   return skus.slice(0, index).concat(skus.slice(index + 1));
 }
 
-function runAdd({ sku, product, sceneSkus, apply, catalog, limits, action }) {
+function runAdd({ sku, product, sceneSkus, apply, catalog, action }) {
   const facts = factsOf(action, sku);
+  const placement = canPlace({ catalog, sceneSkus, sku });
+  if (!placement.ok) {
+    return refused(placement.reasonCode, { ...facts, ...placement.facts }, { sku });
+  }
   const typeCap = typeAtMax(sceneSkus, catalog, product.type);
   if (typeCap) {
     return refused("limit", facts, { sku, type: typeCap.type, max: typeCap.max });
   }
-  const cap = sceneAtMax(sceneSkus, limits);
-  if (cap) return refused("limit", facts, { max: cap.max });
   return fromApply(apply({ op: "add", sku }), facts, SAY.add);
 }
 
@@ -74,11 +76,11 @@ function runRemove({ sku, sceneSkus, apply, catalog, action }) {
   return fromApply(apply({ op: "remove", sku: target }), factsOf(action, target), SAY.remove);
 }
 
-function runReplace({ sku, withSku, sceneSkus, apply, catalog, limits, action }) {
+function runReplace({ sku, withSku, sceneSkus, apply, catalog, action }) {
   const target = resolveTarget(sku, sceneSkus, catalog);
   if (!target) return refused("not_found", factsOf(action, sku), { sku });
 
-  const protection = isProtected(target, catalog, sceneSkus);
+  const protection = isProtected(target, catalog, sceneSkus, { types: false });
   if (protection.blocked) {
     return refused("cannot_remove_support", factsOf(action, target), {
       sku: target,
@@ -115,6 +117,12 @@ function runReplace({ sku, withSku, sceneSkus, apply, catalog, limits, action })
   }
 
   const replacementProduct = findProduct(catalog, replacement);
+  const swap = canReplace({ catalog, sceneSkus, sku: target, withSku: replacement });
+  if (!swap.ok) {
+    return refused(swap.reasonCode, { ...factsOf(action, target, { withSku: replacement }), ...swap.facts }, {
+      sku: swap.sku ?? replacement
+    });
+  }
   const typeCap = typeAtMax(remaining, catalog, replacementProduct?.type);
   if (typeCap) {
     return refused("limit", factsOf(action, target, { withSku: replacement }), {
@@ -122,10 +130,6 @@ function runReplace({ sku, withSku, sceneSkus, apply, catalog, limits, action })
       type: typeCap.type,
       max: typeCap.max
     });
-  }
-  const cap = sceneAtMax(remaining, limits);
-  if (cap) {
-    return refused("limit", factsOf(action, target, { withSku: replacement }), { max: cap.max });
   }
 
   const facts = factsOf(action, target, { withSku: replacement });
@@ -169,7 +173,7 @@ function runDistance({ skus, sceneSkus, catalog, action }) {
   });
 }
 
-function runCommand({ intent, catalog, scene, limits }) {
+function runCommand({ intent, catalog, scene }) {
   const action = intent?.payload?.action;
   const sku = intent?.payload?.sku;
   const withSku = intent?.payload?.withSku;
@@ -194,12 +198,12 @@ function runCommand({ intent, catalog, scene, limits }) {
   }
 
   if (action === "add") {
-    return runAdd({ sku, product, sceneSkus, apply, catalog, limits, action });
+    return runAdd({ sku, product, sceneSkus, apply, catalog, action });
   }
   if (action === "remove") {
     return runRemove({ sku, sceneSkus, apply, catalog, action });
   }
-  return runReplace({ sku, withSku, sceneSkus, apply, catalog, limits, action });
+  return runReplace({ sku, withSku, sceneSkus, apply, catalog, action });
 }
 
 export { runCommand };

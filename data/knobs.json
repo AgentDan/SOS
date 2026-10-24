@@ -88,17 +88,6 @@
       "description": "Сколько предметов этого типа можно поставить на сцену."
     },
     {
-      "id": "commands-max-items",
-      "layer": "dialog",
-      "section": "commands",
-      "path": "limits.maxItems",
-      "label": "Максимум предметов на сцене",
-      "type": "number",
-      "min": 1,
-      "max": 50,
-      "description": "Сколько предметов можно поставить на сцену целиком."
-    },
-    {
       "id": "reply-max-words",
       "layer": "dialog",
       "section": "ai-rules",

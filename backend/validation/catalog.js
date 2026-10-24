@@ -43,19 +43,50 @@ function validateCatalogDraft(catalog, errors) {
         errors.push(`catalog: type "${label}" is missing required field "canBeHost"`);
       }
 
-      if (type && (type.maxOnScene === undefined || type.maxOnScene === null || type.maxOnScene === "")) {
-        errors.push(`catalog: type "${label}" is missing required field "maxOnScene"`);
+      if (type && !isBlank(type.maxOnScene)) {
+        if (!Number.isInteger(type.maxOnScene) || type.maxOnScene < 1) {
+          errors.push(`catalog: type "${label}" maxOnScene must be an integer >= 1`);
+        }
+      }
+
+      if (type && type.rowTypes !== undefined && !Array.isArray(type.rowTypes)) {
+        errors.push(`catalog: type "${label}" rowTypes must be an array of type ids`);
+      }
+
+      const needsRowNumbers = type && Array.isArray(type.rowTypes) && type.rowTypes.length > 0;
+      if (type && (type.rowGapMm !== undefined || needsRowNumbers)) {
+        if (!Number.isInteger(type.rowGapMm) || type.rowGapMm < 0) {
+          errors.push(`catalog: type "${label}" rowGapMm must be an integer >= 0`);
+        }
+      }
+      if (type && (type.edgeMarginMm !== undefined || needsRowNumbers)) {
+        if (!Number.isInteger(type.edgeMarginMm) || type.edgeMarginMm < 0) {
+          errors.push(`catalog: type "${label}" edgeMarginMm must be an integer >= 0`);
+        }
       }
     }
 
     for (const type of types) {
-      if (!type || !Array.isArray(type.canHostOn)) continue;
+      if (!type) continue;
       const label = type.id ? type.id : "<unknown type>";
-      for (const hostTypeId of type.canHostOn) {
-        if (!typeIds.has(hostTypeId)) {
-          errors.push(
-            `catalog: type "${label}" canHostOn references unknown type "${hostTypeId}"`
-          );
+      if (Array.isArray(type.canHostOn)) {
+        for (const hostTypeId of type.canHostOn) {
+          if (!typeIds.has(hostTypeId)) {
+            errors.push(
+              `catalog: type "${label}" canHostOn references unknown type "${hostTypeId}"`
+            );
+          }
+        }
+      }
+      if (Array.isArray(type.rowTypes)) {
+        for (const rowTypeId of type.rowTypes) {
+          if (typeof rowTypeId !== "string" || rowTypeId.length === 0) {
+            errors.push(`catalog: type "${label}" rowTypes must be an array of type ids`);
+          } else if (!typeIds.has(rowTypeId)) {
+            errors.push(
+              `catalog: type "${label}" rowTypes references unknown type "${rowTypeId}"`
+            );
+          }
         }
       }
     }

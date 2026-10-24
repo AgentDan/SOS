@@ -5,14 +5,23 @@ import { validateExecutorResult } from "./contracts.js";
 
 const catalog = {
   types: [
-    { id: "desk_legs", maxOnScene: 1 },
-    { id: "desk_top", maxOnScene: 1 },
-    { id: "chair", maxOnScene: 1 }
+    { id: "desk_legs", maxOnScene: 1, canHostOn: [] },
+    {
+      id: "desk_top",
+      maxOnScene: 1,
+      canHostOn: ["desk_legs"],
+      rowTypes: ["monitor"],
+      rowGapMm: 100,
+      edgeMarginMm: 50
+    },
+    { id: "monitor", canHostOn: ["desk_top"] },
+    { id: "chair", maxOnScene: 1, canHostOn: [] }
   ],
   products: [
-    { sku: "DESK-LEGS-1400", type: "desk_legs", alwaysPresent: true },
-    { sku: "DESK-TOP-1400", type: "desk_top" },
-    { sku: "DESK-TOP-1800", type: "desk_top" },
+    { sku: "DESK-LEGS-1400", type: "desk_legs", alwaysPresent: true, dimensions: { width: 1400 } },
+    { sku: "DESK-TOP-1400", type: "desk_top", dimensions: { width: 1400 } },
+    { sku: "DESK-TOP-1800", type: "desk_top", dimensions: { width: 1800 } },
+    { sku: "MON-613-366", type: "monitor", dimensions: { width: 613 } },
     { sku: "CHAIR-460", type: "chair" }
   ]
 };
@@ -43,10 +52,14 @@ const cases = [
     skus: ["DESK-LEGS-1400", "DESK-TOP-1400"]
   },
   {
-    name: "maxItems",
-    intent: intent("add", "CHAIR-460"),
-    skus: ["DESK-LEGS-1400", "DESK-TOP-1400"],
-    limits: { maxItems: 2 }
+    name: "no host",
+    intent: intent("add", "MON-613-366"),
+    skus: ["DESK-LEGS-1400"]
+  },
+  {
+    name: "host full",
+    intent: intent("add", "MON-613-366"),
+    skus: ["DESK-LEGS-1400", "DESK-TOP-1400", "MON-613-366"]
   },
   {
     name: "remove ok",
@@ -94,8 +107,7 @@ test("runCommand results satisfy the executor contract", () => {
     const result = runCommand({
       intent: row.intent,
       catalog,
-      scene: scene(row.skus),
-      limits: row.limits ?? { maxItems: 12 }
+      scene: scene(row.skus)
     });
     assert.deepEqual(validateExecutorResult(result), { ok: true, errors: [] }, row.name);
   }

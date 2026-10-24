@@ -46,8 +46,7 @@ const skeletonSteps = [
       replyIncludes: ["кресло"]
     }
   },
-  // Монитора на сцене нет. «добавь монитор» ставит первый артикул со словом «монитор».
-  // Повторы разрешены, пока не достигнут monitor.maxOnScene (3) или limits.maxItems.
+  // Стол из кнопок — DESK-TOP-1800. Два монитора 613 мм на нём помещаются, третий нет.
   {
     n: 3,
     phrase: "добавь монитор",
@@ -64,8 +63,8 @@ const skeletonSteps = [
   },
   {
     n: 4,
-    phrase: "добавь монитор",
-    text: "добавь монитор",
+    phrase: "добавь второй монитор",
+    text: "добавь второй монитор",
     expect: {
       intent: "command",
       ok: true,
@@ -77,32 +76,19 @@ const skeletonSteps = [
   },
   {
     n: 5,
-    phrase: "добавь монитор",
-    text: "добавь монитор",
+    phrase: "добавь третий монитор",
+    text: "добавь третий монитор",
     expect: {
       intent: "command",
-      ok: true,
-      reasonCode: null,
-      sayCode: "command_added",
-      sceneChanged: true,
-      copies: { "MON-613-366": 3 }
+      ok: false,
+      reasonCode: "host_full",
+      sayCode: "host_full",
+      sceneChanged: false,
+      copies: { "MON-613-366": 2 }
     }
   },
   {
     n: 6,
-    phrase: "добавь монитор",
-    text: "добавь монитор",
-    expect: {
-      intent: "command",
-      ok: false,
-      reasonCode: "limit",
-      sayCode: "limit",
-      sceneChanged: false,
-      copies: { "MON-613-366": 3 }
-    }
-  },
-  {
-    n: 7,
     phrase: "убери монитор",
     text: "убери монитор",
     expect: {
@@ -111,11 +97,11 @@ const skeletonSteps = [
       reasonCode: null,
       sayCode: "command_removed",
       sceneChanged: true,
-      copies: { "MON-613-366": 2 }
+      copies: { "MON-613-366": 1 }
     }
   },
   {
-    n: 8,
+    n: 7,
     phrase: "а есть доставка?",
     text: "а есть доставка?",
     faqId: "delivery",
@@ -127,11 +113,11 @@ const skeletonSteps = [
       sceneChanged: false
     }
   },
-  // DESK-TOP-1800 стоит 259 €, ближайший дешевле того же типа — DESK-TOP-1400 за 189 €.
-  // Два монитора одной цены дешевле не предлагают, опоры alwaysPresent, кресло снято.
-  // Замена — стол, savedEur = 70.
+  // Один монитор помещается и на столе 1400. DESK-TOP-1800 стоит 259 €,
+  // ближайший дешевле того же типа — DESK-TOP-1400 за 189 €, savedEur = 70.
+  // Два монитора эту замену уже не пропустили бы.
   {
-    n: 9,
+    n: 8,
     phrase: "покажи дешевле",
     text: "покажи дешевле",
     expect: {
@@ -144,6 +130,19 @@ const skeletonSteps = [
       added: ["DESK-TOP-1400"],
       savedEur: 70,
       replyIncludes: ["70"]
+    }
+  },
+  {
+    n: 9,
+    phrase: "добавь второй монитор",
+    text: "добавь второй монитор",
+    expect: {
+      intent: "command",
+      ok: false,
+      reasonCode: "host_full",
+      sayCode: "host_full",
+      sceneChanged: false,
+      copies: { "MON-613-366": 1 }
     }
   },
   {

@@ -5,6 +5,8 @@ const REASON_CODES = Object.freeze([
   "unclear",
   "unknown_sku",
   "limit",
+  "no_host",
+  "host_full",
   "cannot_remove_support",
   "nothing_cheaper",
   "not_found",

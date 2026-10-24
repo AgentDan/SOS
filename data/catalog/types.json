@@ -13,7 +13,12 @@
     "canHostOn": [
       "desk_legs"
     ],
-    "maxOnScene": 2
+    "maxOnScene": 2,
+    "rowTypes": [
+      "monitor"
+    ],
+    "rowGapMm": 100,
+    "edgeMarginMm": 50
   },
   {
     "id": "monitor",
@@ -21,8 +26,7 @@
     "canBeHost": false,
     "canHostOn": [
       "desk_top"
-    ],
-    "maxOnScene": 3
+    ]
   },
   {
     "id": "chair",

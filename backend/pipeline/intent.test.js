@@ -181,8 +181,7 @@ test("applyIntent command adds a sku and writes sceneEdits only on success", () 
     questionnaire,
     catalog,
     profile,
-    intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } },
-    limits: { maxItems: 12 }
+    intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } }
   });
 
   assert.equal(outcome.status, 200);
@@ -232,8 +231,7 @@ test("applyIntent command refusals do not write sceneEdits", () => {
     questionnaire,
     catalog,
     profile: added,
-    intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } },
-    limits: { maxItems: 12 }
+    intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } }
   });
   const chairMax = catalog.types.find((type) => type.id === "chair").maxOnScene;
   for (let copy = 1; copy < chairMax; copy += 1) {
@@ -241,8 +239,7 @@ test("applyIntent command refusals do not write sceneEdits", () => {
       questionnaire,
       catalog,
       profile: added,
-      intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } },
-      limits: { maxItems: 12 }
+      intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } }
     });
     acceptedResult(extra.result);
     assert.equal(extra.result.ok, true);
@@ -251,8 +248,7 @@ test("applyIntent command refusals do not write sceneEdits", () => {
     questionnaire,
     catalog,
     profile: added,
-    intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } },
-    limits: { maxItems: 12 }
+    intent: { type: "command", source: "text", payload: { action: "add", sku: "CHAIR-460" } }
   });
   acceptedResult(overType.result);
   assert.equal(overType.result.reasonCode, "limit");
@@ -284,8 +280,7 @@ test("interpret then applyIntent removes a chair from a test catalog", () => {
     questionnaire,
     catalog: localCatalog,
     profile,
-    intent,
-    limits: { maxItems: 12 }
+    intent
   });
   acceptedResult(outcome.result);
   assert.equal(outcome.result.ok, true);

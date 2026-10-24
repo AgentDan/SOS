@@ -18,6 +18,8 @@ const SAY_CODES = [
   "not_found",
   "unknown_sku",
   "limit",
+  "no_host",
+  "host_full",
   "cannot_remove_support",
   "nothing_cheaper",
   "command_added",
@@ -79,6 +81,8 @@ test("every known say code produces a non-empty template line", () => {
     not_found: { ok: false, kind: "command", params: { sku: "CHAIR-460" } },
     unknown_sku: { ok: false, kind: "command", params: { sku: "NOPE" } },
     limit: { ok: false, kind: "command", params: { sku: "CHAIR-460" } },
+    no_host: { ok: false, kind: "command", params: { sku: "MON-613-366" } },
+    host_full: { ok: false, kind: "command", params: { sku: "MON-613-366" } },
     cannot_remove_support: { ok: false, kind: "command", params: { sku: "DESK-LEGS-1400" } },
     nothing_cheaper: { ok: false, kind: "talk" },
     command_added: { ok: true, kind: "command", params: { sku: "CHAIR-460" } },
@@ -113,6 +117,18 @@ test("every known say code produces a non-empty template line", () => {
     assert.ok(spoken.text.length > 0, code);
     assert.equal(spoken.text.includes(code), false, code);
   }
+});
+
+test("no_host and host_full use the consultant lines, and {item} is the product name", () => {
+  const missing = speak(
+    sayResult({ ok: false, kind: "command", code: "no_host", params: { sku: "MON-613-366" } })
+  );
+  assert.equal(missing.text, "Сначала нужен стол: монитору не на что встать.");
+
+  const full = speak(
+    sayResult({ ok: false, kind: "command", code: "host_full", params: { sku: "MON-613-366" } })
+  );
+  assert.equal(full.text, "На этом столе места под ещё один монитор нет. Можно взять стол пошире.");
 });
 
 test("item and newItem come from names, and a missing label stays the sku", () => {

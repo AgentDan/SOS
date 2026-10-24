@@ -58,6 +58,8 @@ test("contract lists are the block boundary", () => {
     "unclear",
     "unknown_sku",
     "limit",
+    "no_host",
+    "host_full",
     "cannot_remove_support",
     "nothing_cheaper",
     "not_found",
@@ -254,7 +256,7 @@ test("validateExecutorResult rejects a failed turn with an unknown reason code",
     validateExecutorResult(executorResult({ ok: false, reasonCode: "nope" }))
   );
   assert.deepEqual(errors, [
-    "reasonCode must be one of: unclear, unknown_sku, limit, cannot_remove_support, nothing_cheaper, not_found, not_implemented, distance_unclear, distance_not_on_scene, distance_need_two"
+    "reasonCode must be one of: unclear, unknown_sku, limit, no_host, host_full, cannot_remove_support, nothing_cheaper, not_found, not_implemented, distance_unclear, distance_not_on_scene, distance_need_two"
   ]);
 });
 

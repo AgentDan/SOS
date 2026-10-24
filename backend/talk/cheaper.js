@@ -37,7 +37,7 @@ function carriesCargo(sku, bySku, sceneSkus) {
   return sceneSkus.some((item) => bySku.get(item)?.placement?.hostSku === sku);
 }
 
-function runCheaper({ catalog, scene }) {
+function runCheaper({ catalog, scene, canReplace }) {
   const products = catalogProducts(catalog);
   const sceneSkus = Array.isArray(scene?.skus) ? scene.skus : [];
   const apply =
@@ -57,6 +57,10 @@ function runCheaper({ catalog, scene }) {
     if (price === null) continue;
     const replacement = nearestCheaper(products, current, price);
     if (!replacement) continue;
+    if (typeof canReplace === "function") {
+      const swap = canReplace({ catalog, sceneSkus, sku, withSku: replacement.sku });
+      if (!swap || swap.ok !== true) continue;
+    }
     const savedEur = price - replacement.price;
     if (best === null || savedEur > best.savedEur) {
       best = { sku, withSku: replacement.sku, savedEur };

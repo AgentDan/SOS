@@ -6,7 +6,7 @@ const catalog = {
   types: [
     { id: "desk_legs", maxOnScene: 1 },
     { id: "desk_top", maxOnScene: 1 },
-    { id: "monitor", maxOnScene: 2 },
+    { id: "monitor" },
     { id: "chair", maxOnScene: 1 }
   ],
   products: [
@@ -15,6 +15,34 @@ const catalog = {
     { sku: "DESK-TOP-1800", type: "desk_top" },
     { sku: "MON-613-366", type: "monitor", placement: { hostSku: "DESK-TOP-1400" } },
     { sku: "CHAIR-460", type: "chair" }
+  ]
+};
+
+const placed = {
+  types: [
+    { id: "desk_legs", canHostOn: [], maxOnScene: 1 },
+    {
+      id: "desk_top",
+      canHostOn: ["desk_legs"],
+      maxOnScene: 2,
+      rowTypes: ["monitor"],
+      rowGapMm: 100,
+      edgeMarginMm: 50
+    },
+    { id: "monitor", canHostOn: ["desk_top"] },
+    { id: "chair", canHostOn: [], maxOnScene: 1 }
+  ],
+  products: [
+    { sku: "DESK-LEGS-1400", type: "desk_legs", alwaysPresent: true, dimensions: { width: 1400 } },
+    { sku: "DESK-TOP-1400", type: "desk_top", dimensions: { width: 1400 } },
+    { sku: "DESK-TOP-1800", type: "desk_top", dimensions: { width: 1800 } },
+    {
+      sku: "MON-613-366",
+      type: "monitor",
+      dimensions: { width: 613 },
+      placement: { hostSku: "DESK-TOP-1400" }
+    },
+    { sku: "CHAIR-460", type: "chair", dimensions: { width: 460 } }
   ]
 };
 
@@ -45,8 +73,7 @@ function run(intent, skus, options = {}) {
   const result = runCommand({
     intent,
     catalog: options.catalog ?? catalog,
-    scene: board,
-    limits: options.limits ?? { maxItems: 12 }
+    scene: board
   });
   return { result, board };
 }
@@ -74,21 +101,52 @@ test("add of an unknown sku is unknown_sku", () => {
   assert.deepEqual(board.calls, []);
 });
 
-test("add of a monitor already on scene is ok", () => {
-  const { result, board } = run(command("add", "MON-613-366"), ["DESK-LEGS-1400", "MON-613-366"]);
-  assert.equal(result.ok, true);
-  assert.equal(result.say.code, "command_added");
-  assert.deepEqual(board.calls, [{ op: "add", sku: "MON-613-366" }]);
+test("add of a monitor without a desk is no_host", () => {
+  const { result, board } = run(command("add", "MON-613-366"), ["DESK-LEGS-1400"], {
+    catalog: placed
+  });
+  assert.equal(result.reasonCode, "no_host");
+  assert.equal(result.say.code, "no_host");
+  assert.deepEqual(result.say.params, { sku: "MON-613-366" });
+  assert.deepEqual(board.calls, []);
 });
 
-test("add of a monitor stops when maxOnScene is reached", () => {
+test("a second monitor fits on the wide desk and not on the narrow one", () => {
+  const wide = run(command("add", "MON-613-366"), [
+    "DESK-LEGS-1400",
+    "DESK-TOP-1800",
+    "MON-613-366"
+  ], { catalog: placed });
+  assert.equal(wide.result.ok, true);
+  assert.deepEqual(wide.board.calls, [{ op: "add", sku: "MON-613-366" }]);
+
+  const narrow = run(command("add", "MON-613-366"), [
+    "DESK-LEGS-1400",
+    "DESK-TOP-1400",
+    "MON-613-366"
+  ], { catalog: placed });
+  assert.equal(narrow.result.reasonCode, "host_full");
+  assert.deepEqual(narrow.result.facts, {
+    action: "add",
+    sku: "MON-613-366",
+    hostSku: "DESK-TOP-1400",
+    inRow: 1,
+    fits: 1
+  });
+  assert.deepEqual(narrow.board.calls, []);
+});
+
+test("a third monitor on the wide desk is host_full", () => {
   const { result, board } = run(command("add", "MON-613-366"), [
     "DESK-LEGS-1400",
+    "DESK-TOP-1800",
     "MON-613-366",
     "MON-613-366"
-  ]);
-  assert.equal(result.reasonCode, "limit");
-  assert.equal(result.say.params.max, 2);
+  ], { catalog: placed });
+  assert.equal(result.reasonCode, "host_full");
+  assert.equal(result.facts.hostSku, "DESK-TOP-1800");
+  assert.equal(result.facts.inRow, 2);
+  assert.equal(result.facts.fits, 2);
   assert.deepEqual(board.calls, []);
 });
 
@@ -102,12 +160,40 @@ test("add stops at the type maxOnScene", () => {
   assert.deepEqual(board.calls, []);
 });
 
-test("add stops at maxItems", () => {
-  const { result, board } = run(command("add", "CHAIR-460"), ["DESK-LEGS-1400", "DESK-TOP-1400"], {
-    limits: { maxItems: 2 }
-  });
-  assert.equal(result.reasonCode, "limit");
-  assert.deepEqual(result.say.params, { max: 2 });
+test("replace of a wide desk refuses when two monitors do not fit on the narrow one", () => {
+  const { result, board } = run(
+    command("replace", "DESK-TOP-1800", { withSku: "DESK-TOP-1400" }),
+    ["DESK-LEGS-1400", "DESK-TOP-1800", "MON-613-366", "MON-613-366"],
+    { catalog: placed }
+  );
+  assert.equal(result.reasonCode, "host_full");
+  assert.equal(result.facts.hostSku, "DESK-TOP-1400");
+  assert.equal(result.facts.inRow, 1);
+  assert.equal(result.facts.fits, 1);
+  assert.equal(result.say.params.sku, "MON-613-366");
+  assert.deepEqual(board.calls, []);
+});
+
+test("replace of a wide desk keeps a single monitor on the narrow one", () => {
+  const { result, board } = run(
+    command("replace", "DESK-TOP-1800", { withSku: "DESK-TOP-1400" }),
+    ["DESK-LEGS-1400", "DESK-TOP-1800", "MON-613-366"],
+    { catalog: placed }
+  );
+  assert.equal(result.ok, true);
+  assert.deepEqual(board.calls, [
+    { op: "replace", sku: "DESK-TOP-1800", withSku: "DESK-TOP-1400" }
+  ]);
+});
+
+test("remove of the last desk under a monitor is cannot_remove_support", () => {
+  const { result, board } = run(command("remove", "DESK-TOP-1800"), [
+    "DESK-LEGS-1400",
+    "DESK-TOP-1800",
+    "MON-613-366"
+  ], { catalog: placed });
+  assert.equal(result.reasonCode, "cannot_remove_support");
+  assert.deepEqual(result.say.params.hosted, ["MON-613-366"]);
   assert.deepEqual(board.calls, []);
 });
 
@@ -313,8 +399,7 @@ test("runCommand does not change the catalog or the intent", () => {
   runCommand({
     intent,
     catalog: frozenCatalog,
-    scene: scene(["DESK-LEGS-1400"]),
-    limits: { maxItems: 12 }
+    scene: scene(["DESK-LEGS-1400"])
   });
   assert.deepEqual(frozenCatalog, beforeCatalog);
   assert.deepEqual(intent, beforeIntent);

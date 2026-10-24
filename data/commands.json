@@ -39,10 +39,7 @@
       }
     ],
     "directions": [],
-    "amounts": [],
-    "limits": {
-      "maxItems": 12
-    }
+    "amounts": []
   },
   "history": [
     {

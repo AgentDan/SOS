@@ -4,6 +4,7 @@ import { applyConfirmation } from "../profile/apply-confirmation.js";
 import { loadProfile } from "../profile/profile-store.js";
 import { applyFact } from "../profile/apply-facts.js";
 import { runCommand } from "../commands/commands.js";
+import { canReplace } from "../commands/placement.js";
 import { runTalk } from "../talk/talk.js";
 import { applySceneChange } from "../scene/apply-scene-change.js";
 import { computeScenePlan } from "../scene/scene-plan.js";
@@ -61,7 +62,7 @@ function answerIntent({ questionnaire, catalog, profile, intent }) {
   };
 }
 
-function applyIntent({ questionnaire, catalog, profile, intent, limits, consultant }) {
+function applyIntent({ questionnaire, catalog, profile, intent, consultant }) {
   if (intent?.type === "answer") {
     return answerIntent({ questionnaire, catalog, profile, intent });
   }
@@ -74,8 +75,7 @@ function applyIntent({ questionnaire, catalog, profile, intent, limits, consulta
       scene: {
         skus: before,
         apply: (change) => applySceneChange({ catalog, profile, change, before })
-      },
-      limits: limits ?? {}
+      }
     });
     return { status: 200, body: { ok: true }, profile, result };
   }
@@ -89,7 +89,8 @@ function applyIntent({ questionnaire, catalog, profile, intent, limits, consulta
       scene: {
         skus: before,
         apply: (change) => applySceneChange({ catalog, profile, change, before })
-      }
+      },
+      canReplace
     });
     return { status: 200, body: { ok: true }, profile, result };
   }

@@ -241,10 +241,14 @@ test("command words and unique actions are required", () => {
   );
 });
 
-test("commands limits.maxItems must be an integer >= 1", () => {
-  const ok = loadSkeleton();
-  ok.commands.draft.limits = { maxItems: 1 };
-  assert.equal(validateDialogData(ok), true);
+test("commands limits are optional and maxItems is not required", () => {
+  const omitted = loadSkeleton();
+  delete omitted.commands.draft.limits;
+  assert.equal(validateDialogData(omitted), true);
+
+  const empty = loadSkeleton();
+  empty.commands.draft.limits = {};
+  assert.equal(validateDialogData(empty), true);
 
   const bad = loadSkeleton();
   bad.commands.draft.limits = { maxItems: 0 };
@@ -252,6 +256,35 @@ test("commands limits.maxItems must be an integer >= 1", () => {
     () => validateDialogData(bad),
     (err) =>
       err instanceof Error && /commands: limits.maxItems must be an integer >= 1/.test(err.message)
+  );
+});
+
+test("catalog maxOnScene is optional and row layout fields are checked", () => {
+  const open = validPair();
+  delete open.catalog.draft.types.find((type) => type.id === "monitor").maxOnScene;
+  assert.equal(validateDialogData(open), true);
+
+  const badMax = validPair();
+  badMax.catalog.draft.types.find((type) => type.id === "chair").maxOnScene = 0;
+  assert.throws(
+    () => validateDialogData(badMax),
+    (err) => err instanceof Error && /maxOnScene must be an integer >= 1/.test(err.message)
+  );
+
+  const badRow = validPair();
+  const desk = badRow.catalog.draft.types.find((type) => type.id === "desk_top");
+  desk.rowTypes = ["missing_type"];
+  assert.throws(
+    () => validateDialogData(badRow),
+    (err) =>
+      err instanceof Error && /rowTypes references unknown type "missing_type"/.test(err.message)
+  );
+
+  const badGap = validPair();
+  badGap.catalog.draft.types.find((type) => type.id === "desk_top").rowGapMm = -1;
+  assert.throws(
+    () => validateDialogData(badGap),
+    (err) => err instanceof Error && /rowGapMm must be an integer >= 0/.test(err.message)
   );
 });
 

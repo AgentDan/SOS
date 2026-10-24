@@ -16,8 +16,7 @@ function buildContext(clientId) {
       commands,
       consultant,
       catalog
-    }),
-    limits: commands.limits ?? {}
+    })
   };
 }
 

@@ -18,7 +18,7 @@ function findFaq(layer, faqId) {
   return faq.find((entry) => entry?.id === faqId) ?? null;
 }
 
-function runTalk({ intent, catalog, consultant, scene }) {
+function runTalk({ intent, catalog, consultant, scene, canReplace }) {
   const topic = intent?.payload?.topic;
   if (topic === "faq") {
     const faqId = intent?.payload?.faqId;
@@ -47,7 +47,7 @@ function runTalk({ intent, catalog, consultant, scene }) {
     });
   }
 
-  if (topic === "cheaper") return runCheaper({ catalog, scene });
+  if (topic === "cheaper") return runCheaper({ catalog, scene, canReplace });
 
   const facts = {};
   if (topic !== undefined) facts.topic = topic;
