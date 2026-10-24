@@ -3,7 +3,7 @@ import { mkdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readEnvelope } from "../config/load.js";
-import { addCollidersToGlb, ColliderError } from "../colliders/index.js";
+import { addCollidersToGlb, ColliderError, summarizeGlb } from "../colliders/index.js";
 import { adminError } from "./auth.js";
 import { appendJournal } from "./journal.js";
 
@@ -72,6 +72,29 @@ function uploadModel(sku, body) {
   if (!product) throw adminError(404, { error: "unknown sku" });
   if (!Buffer.isBuffer(body) || body.length === 0) {
     throw adminError(400, { error: "expected a GLB body" });
+  }
+
+  if (product.type === "person") {
+    let summary;
+    try {
+      summary = summarizeGlb(body);
+    } catch (err) {
+      if (err instanceof ColliderError) throw adminError(422, { error: err.message });
+      throw err;
+    }
+    saveModel(product.sku, body);
+    appendJournal({
+      action: "model",
+      section: "catalog",
+      detail: { sku: product.sku, bytes: body.length, parts: 0 }
+    });
+    return {
+      sku: product.sku,
+      bytes: body.length,
+      parts: [],
+      sizeMm: summary.sizeMm,
+      catalogMm: catalogMillimeters(product)
+    };
   }
 
   let built;

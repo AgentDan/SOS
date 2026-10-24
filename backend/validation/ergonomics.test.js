@@ -74,3 +74,25 @@ test("default height must be an integer inside bounds and hand must be right or 
   hand.defaults.hand = "both";
   assert.ok(errorsOf(envelope(hand)).some((line) => line.includes("defaults.hand")));
 });
+
+test("mannequin is optional and, when set, needs a string sku and a height from 100 to 250", () => {
+  const withMannequin = goodDraft();
+  withMannequin.mannequin = { sku: "character", referenceHeightCm: 142 };
+  assert.deepEqual(errorsOf(envelope(withMannequin)), []);
+
+  const missingSku = goodDraft();
+  missingSku.mannequin = { referenceHeightCm: 142 };
+  assert.ok(errorsOf(envelope(missingSku)).some((line) => line.includes("mannequin.sku")));
+
+  const low = goodDraft();
+  low.mannequin = { sku: "character", referenceHeightCm: 99 };
+  assert.ok(errorsOf(envelope(low)).some((line) => line.includes("referenceHeightCm")));
+
+  const fraction = goodDraft();
+  fraction.mannequin = { sku: "character", referenceHeightCm: 142.5 };
+  assert.ok(errorsOf(envelope(fraction)).some((line) => line.includes("referenceHeightCm")));
+
+  const notObject = goodDraft();
+  notObject.mannequin = "character";
+  assert.ok(errorsOf(envelope(notObject)).some((line) => line.includes("mannequin must be an object")));
+});

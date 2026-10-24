@@ -199,6 +199,20 @@ function validatePlacement(item, path, errors) {
   }
 }
 
+function validatePerson(item, errors) {
+  if (item === null) return;
+  if (!isPlainObject(item)) {
+    errors.push("person must be an object or null");
+    return;
+  }
+  requireString(item, "sku", "person.sku", errors);
+  for (const key of ["x", "y", "z", "rotY", "scale"]) {
+    if (typeof item[key] !== "number" || !Number.isFinite(item[key])) {
+      errors.push(`person.${key} must be a number`);
+    }
+  }
+}
+
 function validateScene(value) {
   if (!isPlainObject(value)) return rejectObject();
   const errors = [];
@@ -210,6 +224,8 @@ function validateScene(value) {
       validatePlacement(item, `placements[${index}]`, errors);
     });
   }
+  if (value.person === undefined) errors.push("person is required");
+  else validatePerson(value.person, errors);
   return done(errors);
 }
 

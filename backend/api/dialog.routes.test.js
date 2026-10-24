@@ -58,6 +58,7 @@ test("a garbage message is unclear and a missing text is 400", async () => {
     assert.ok(body.reply.text.length > 0);
     assert.ok(Array.isArray(body.scene.skus));
     assert.equal(body.scene.issues, undefined);
+    assert.equal(body.scene.person, null);
     assert.deepEqual(
       body.scene.placements.find((item) => item.sku === "DESK-LEGS-1400"),
       { sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0, rotY: 0 }

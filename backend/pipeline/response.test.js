@@ -85,6 +85,7 @@ test("buildResponse speaks from the profile after the command", () => {
     { sku: "CHAIR-460", x: 0, y: 0, z: 760, rotY: 180 }
   ]);
   assert.equal(body.scene.issues, undefined);
+  assert.equal(body.scene.person, null);
   assert.deepEqual(validateScene(body.scene), { ok: true, errors: [] });
   assert.deepEqual(body.reply, { text: "Готово, добавил: кресло.", via: "template" });
   assert.equal(body.result, result);
@@ -126,5 +127,6 @@ test("a broken result still returns the fallback line", () => {
   assert.deepEqual(body.reply, { text: FALLBACK_TEXT, via: "template" });
   assert.ok(Array.isArray(body.scene.skus));
   assert.deepEqual(body.scene.placements, [{ sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0, rotY: 0 }]);
+  assert.equal(body.scene.person, null);
   assert.equal(body.scene.issues, undefined);
 });

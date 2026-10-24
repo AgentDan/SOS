@@ -1,7 +1,7 @@
 {
   "section": "questionnaire",
-  "draftVersion": 1,
-  "publishedVersion": 2,
+  "draftVersion": 2,
+  "publishedVersion": 3,
   "draft": {
     "phases": [
       {
@@ -219,6 +219,223 @@
       "version": 2,
       "date": "2026-10-06T18:35:47.846Z",
       "description": "initial publish"
+    },
+    {
+      "version": 3,
+      "date": "2026-10-24T21:05:47.063Z",
+      "description": "1",
+      "snapshot": {
+        "phases": [
+          {
+            "id": "situation",
+            "order": 1,
+            "name": "Ситуация"
+          },
+          {
+            "id": "needs",
+            "order": 2,
+            "name": "Потребности"
+          },
+          {
+            "id": "confirmation",
+            "order": 3,
+            "name": "Подтверждение"
+          }
+        ],
+        "scenarios": [
+          {
+            "id": "home_office",
+            "name": "Домашний офис"
+          },
+          {
+            "id": "gaming_setup",
+            "name": "Игровая станция"
+          }
+        ],
+        "questions": [
+          {
+            "id": "q_work_type",
+            "phase": "situation",
+            "priority": 10,
+            "textFallback": "Чем вы в основном занимаетесь за столом?",
+            "type": "single",
+            "options": [
+              {
+                "id": "coding",
+                "label": "Программирую"
+              },
+              {
+                "id": "design",
+                "label": "Занимаюсь дизайном"
+              },
+              {
+                "id": "office",
+                "label": "Офисная работа"
+              },
+              {
+                "id": "gaming",
+                "label": "Играю"
+              }
+            ],
+            "dependsOn": [],
+            "appliesToScenarios": [
+              "home_office",
+              "gaming_setup"
+            ]
+          },
+          {
+            "id": "q_height",
+            "phase": "needs",
+            "priority": 12,
+            "textFallback": "Какой у вас рост?",
+            "type": "single",
+            "options": [
+              {
+                "id": "h_u160",
+                "label": "до 160 см",
+                "heightCm": 155
+              },
+              {
+                "id": "h_160",
+                "label": "160–170 см",
+                "heightCm": 165
+              },
+              {
+                "id": "h_170",
+                "label": "170–180 см",
+                "heightCm": 175
+              },
+              {
+                "id": "h_180",
+                "label": "180–190 см",
+                "heightCm": 185
+              },
+              {
+                "id": "h_190",
+                "label": "выше 190 см",
+                "heightCm": 195
+              }
+            ],
+            "dependsOn": [],
+            "appliesToScenarios": [
+              "home_office",
+              "gaming_setup"
+            ]
+          },
+          {
+            "id": "q_hand",
+            "phase": "needs",
+            "priority": 11,
+            "textFallback": "Какой рукой вы работаете за столом?",
+            "type": "single",
+            "options": [
+              {
+                "id": "right",
+                "label": "Правой"
+              },
+              {
+                "id": "left",
+                "label": "Левой"
+              }
+            ],
+            "dependsOn": [],
+            "appliesToScenarios": [
+              "home_office",
+              "gaming_setup"
+            ]
+          },
+          {
+            "id": "q_desk_width",
+            "phase": "needs",
+            "priority": 5,
+            "textFallback": "Насколько широкий стол вам нужен?",
+            "type": "single",
+            "options": [
+              {
+                "id": "narrow",
+                "label": "До 120 см"
+              },
+              {
+                "id": "wide",
+                "label": "От 160 см"
+              }
+            ],
+            "dependsOn": [],
+            "appliesToScenarios": [
+              "home_office",
+              "gaming_setup"
+            ]
+          },
+          {
+            "id": "q_back_pain",
+            "phase": "needs",
+            "priority": 4,
+            "textFallback": "Спина не беспокоит от долгого сидения?",
+            "type": "single",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Да, есть проблемы"
+              },
+              {
+                "id": "no",
+                "label": "Нет, всё в порядке"
+              }
+            ],
+            "dependsOn": [],
+            "appliesToScenarios": [
+              "home_office",
+              "gaming_setup"
+            ]
+          },
+          {
+            "id": "q_monitor_arm",
+            "phase": "needs",
+            "priority": 3,
+            "textFallback": "Хотите монитор на кронштейне вместо подставки?",
+            "type": "single",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Да, на кронштейне"
+              },
+              {
+                "id": "no",
+                "label": "Нет, обычная подставка"
+              }
+            ],
+            "dependsOn": [
+              {
+                "questionId": "q_desk_width",
+                "optionId": "wide"
+              }
+            ],
+            "appliesToScenarios": [
+              "gaming_setup"
+            ]
+          }
+        ],
+        "inference": [
+          {
+            "id": "inf_wide_desk",
+            "when": {
+              "questionId": "q_work_type",
+              "optionId": "coding"
+            },
+            "resultNeed": "desk_top_wide",
+            "confidence": "medium"
+          },
+          {
+            "id": "inf_chair",
+            "when": {
+              "questionId": "q_back_pain",
+              "optionId": "yes"
+            },
+            "resultNeed": "ergonomic_chair",
+            "confidence": "high"
+          }
+        ]
+      }
     }
   ],
   "published": {
@@ -272,6 +489,67 @@
           {
             "id": "gaming",
             "label": "Играю"
+          }
+        ],
+        "dependsOn": [],
+        "appliesToScenarios": [
+          "home_office",
+          "gaming_setup"
+        ]
+      },
+      {
+        "id": "q_height",
+        "phase": "needs",
+        "priority": 12,
+        "textFallback": "Какой у вас рост?",
+        "type": "single",
+        "options": [
+          {
+            "id": "h_u160",
+            "label": "до 160 см",
+            "heightCm": 155
+          },
+          {
+            "id": "h_160",
+            "label": "160–170 см",
+            "heightCm": 165
+          },
+          {
+            "id": "h_170",
+            "label": "170–180 см",
+            "heightCm": 175
+          },
+          {
+            "id": "h_180",
+            "label": "180–190 см",
+            "heightCm": 185
+          },
+          {
+            "id": "h_190",
+            "label": "выше 190 см",
+            "heightCm": 195
+          }
+        ],
+        "dependsOn": [],
+        "appliesToScenarios": [
+          "home_office",
+          "gaming_setup"
+        ]
+      },
+      {
+        "id": "q_hand",
+        "phase": "needs",
+        "priority": 11,
+        "textFallback": "Какой рукой вы работаете за столом?",
+        "type": "single",
+        "options": [
+          {
+            "id": "right",
+            "label": "Правой"
+          },
+          {
+            "id": "left",
+            "label": "Левой"
           }
         ],
         "dependsOn": [],

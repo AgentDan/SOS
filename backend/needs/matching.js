@@ -9,7 +9,7 @@ function resolveNeed(catalog, needId) {
   if (!criteria) return null;
 
   const products = catalog?.products ?? catalog?.draft?.products ?? [];
-  let matches = products.filter((product) => product.type === criteria.type);
+  let matches = products.filter((product) => product.type === criteria.type && product.type !== "person");
 
   if (criteria.minWidth != null) {
     matches = matches.filter((product) => (product.dimensions?.width ?? 0) >= criteria.minWidth);

@@ -40,7 +40,11 @@ function buildResponse({ outcome, context }) {
     : isPlainObject(context?.profile)
       ? context.profile
       : {};
-  const { skus, placements } = assembleScene(catalog, profile);
+  const scene = assembleScene(catalog, profile, {
+    questionnaire: context?.questionnaire,
+    ergonomics: context?.ergonomics
+  });
+  const skus = scene.skus;
   const found = getNextQuestion(context?.questionnaire, profile, catalog);
   const nextQuestion = found && isPlainObject(found.question) ? found.question : null;
   const input = {
@@ -62,7 +66,7 @@ function buildResponse({ outcome, context }) {
     version: 1,
     status: 200,
     question: nextQuestion,
-    scene: { skus, placements },
+    scene,
     reply: spoken,
     result: outcome?.result
   };

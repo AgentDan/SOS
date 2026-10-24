@@ -1,7 +1,7 @@
 {
   "section": "commands",
-  "draftVersion": 2,
-  "publishedVersion": 3,
+  "draftVersion": 3,
+  "publishedVersion": 4,
   "draft": {
     "commands": [
       {
@@ -131,6 +131,50 @@
           "maxItems": 12
         }
       }
+    },
+    {
+      "version": 4,
+      "date": "2026-10-24T21:06:04.848Z",
+      "description": "1",
+      "snapshot": {
+        "commands": [
+          {
+            "action": "distance",
+            "words": [
+              "расстоя",
+              "дистанц",
+              "как далеко",
+              "сколько до"
+            ]
+          },
+          {
+            "action": "add",
+            "words": [
+              "добав",
+              "постав",
+              "положи"
+            ]
+          },
+          {
+            "action": "remove",
+            "words": [
+              "убер",
+              "убра",
+              "удал",
+              "сними"
+            ]
+          },
+          {
+            "action": "replace",
+            "words": [
+              "замен",
+              "поменя"
+            ]
+          }
+        ],
+        "directions": [],
+        "amounts": []
+      }
     }
   ],
   "published": {
@@ -170,9 +214,6 @@
       }
     ],
     "directions": [],
-    "amounts": [],
-    "limits": {
-      "maxItems": 12
-    }
+    "amounts": []
   }
 }

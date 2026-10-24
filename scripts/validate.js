@@ -22,6 +22,7 @@ function checkModels(sections) {
       errors.push(`${sku}: нет файла models/${sku}.glb`);
       continue;
     }
+    if (product.type === "person") continue;
     let summary;
     try {
       summary = summarizeGlb(readFileSync(file));

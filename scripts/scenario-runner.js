@@ -6,6 +6,7 @@ import { getProfile } from "../backend/pipeline/reads.js";
 import { prepareDraftData, removeDraftData } from "../tests/scenarios/prepare-draft-data.js";
 import { bodySteps, runBody } from "../tests/scenarios/body.js";
 import { layoutSteps, runLayout } from "../tests/scenarios/layout.js";
+import { personSteps, runPerson } from "../tests/scenarios/person.js";
 import { runSkeleton, skeletonSteps } from "../tests/scenarios/skeleton.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -185,6 +186,10 @@ function runLayoutScenario() {
   return withDraftData(() => runLayout());
 }
 
+function runPersonScenario() {
+  return withDraftData(() => runPerson());
+}
+
 async function main() {
   let failed = 0;
 
@@ -226,6 +231,15 @@ async function main() {
   }
   report("layout", layoutSteps.length, layoutErrors);
   if (layoutErrors.length > 0) failed += 1;
+
+  let personErrors;
+  try {
+    personErrors = (await runPersonScenario()).errors;
+  } catch (err) {
+    personErrors = [err instanceof Error ? err.message : String(err)];
+  }
+  report("person", personSteps.length, personErrors);
+  if (personErrors.length > 0) failed += 1;
 
   if (failed > 0) process.exit(1);
 }

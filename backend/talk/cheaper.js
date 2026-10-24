@@ -21,7 +21,7 @@ function nearestCheaper(products, current, price) {
   let replacement = null;
   for (const candidate of products) {
     if (!candidate || typeof candidate.sku !== "string" || candidate.sku.length === 0) continue;
-    if (candidate.type !== current.type) continue;
+    if (candidate.type === "person" || candidate.type !== current.type) continue;
     if (candidate.sku === current.sku) continue;
     const candidatePrice = priceOf(candidate);
     if (candidatePrice === null || candidatePrice >= price) continue;
@@ -50,7 +50,7 @@ function runCheaper({ catalog, scene, canReplace }) {
   let best = null;
   for (const sku of sceneSkus) {
     const current = bySku.get(sku);
-    if (!current || current.alwaysPresent === true) continue;
+    if (!current || current.alwaysPresent === true || current.type === "person") continue;
     if (carriesCargo(sku, bySku, sceneSkus)) continue;
     if (typeof current.type !== "string" || current.type.length === 0) continue;
     const price = priceOf(current);

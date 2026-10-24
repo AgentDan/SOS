@@ -1,0 +1,15 @@
+{
+  "sku": "character",
+  "type": "person",
+  "name": "Character",
+  "label": "манекен",
+  "dimensions": {
+    "width": 814,
+    "depth": 778,
+    "height": 1420
+  },
+  "words": [],
+  "media": {
+    "model3d": "character.glb"
+  }
+}

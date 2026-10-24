@@ -177,8 +177,8 @@ test("body.js does not import other blocks", () => {
   assert.deepEqual(importSpecifiers(source), []);
 });
 
-test("layout.js and distance.js import nothing", () => {
-  for (const name of ["layout.js", "distance.js"]) {
+test("layout.js, distance.js and person.js import nothing", () => {
+  for (const name of ["layout.js", "distance.js", "person.js"]) {
     const source = readFileSync(path.join(BACKEND, "scene", name), "utf8");
     assert.deepEqual(importSpecifiers(source), [], name);
   }

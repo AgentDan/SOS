@@ -433,8 +433,69 @@ test("height and hand questions are in the questionnaire draft", () => {
     height.options.map((option) => option.heightCm),
     [155, 165, 175, 185, 195]
   );
-  assert.equal(published.some((question) => question.id === "q_height"), false);
-  assert.equal(published.some((question) => question.id === "q_hand"), false);
+  assert.equal(published.some((question) => question.id === "q_height"), true);
+  assert.equal(published.some((question) => question.id === "q_hand"), true);
+});
+
+test("a person product may omit its price, and mannequin sku must be that type", () => {
+  const priced = loadSkeleton();
+  const person = priced.catalog.draft.products.find((item) => item.type === "person");
+  assert.equal(Object.hasOwn(person, "priceEur"), false);
+  assert.equal(validateDialogData(priced), true);
+
+  const chair = loadSkeleton();
+  delete chair.catalog.draft.products.find((item) => item.sku === "CHAIR-460").priceEur;
+  assert.throws(
+    () => validateDialogData(chair),
+    (err) =>
+      err instanceof Error &&
+      /catalog: product "CHAIR-460" is missing required field "priceEur"/.test(err.message)
+  );
+
+  const missing = loadSkeleton();
+  missing.ergonomics.draft.mannequin.sku = "NO-SUCH";
+  assert.throws(
+    () => validateDialogData(missing),
+    (err) =>
+      err instanceof Error &&
+      /ergonomics: mannequin\.sku "NO-SUCH" must be a catalog product of type "person"/.test(err.message)
+  );
+
+  const notPerson = loadSkeleton();
+  notPerson.ergonomics.draft.mannequin.sku = "CHAIR-460";
+  assert.throws(
+    () => validateDialogData(notPerson),
+    (err) =>
+      err instanceof Error &&
+      /ergonomics: mannequin\.sku "CHAIR-460" must be a catalog product of type "person"/.test(err.message)
+  );
+});
+
+test("seatHeightMm is an optional integer greater than or equal to zero", () => {
+  const ok = loadSkeleton();
+  assert.equal(
+    ok.catalog.draft.products.find((item) => item.sku === "CHAIR-460").placement.seatHeightMm,
+    450
+  );
+  assert.equal(validateDialogData(ok), true);
+
+  const negative = loadSkeleton();
+  negative.catalog.draft.products.find((item) => item.sku === "CHAIR-460").placement.seatHeightMm = -1;
+  assert.throws(
+    () => validateDialogData(negative),
+    (err) =>
+      err instanceof Error &&
+      /placement\.seatHeightMm must be an integer >= 0/.test(err.message)
+  );
+
+  const fraction = loadSkeleton();
+  fraction.catalog.draft.products.find((item) => item.sku === "CHAIR-460").placement.seatHeightMm = 450.5;
+  assert.throws(
+    () => validateDialogData(fraction),
+    (err) =>
+      err instanceof Error &&
+      /placement\.seatHeightMm must be an integer >= 0/.test(err.message)
+  );
 });
 
 test("ergonomics bounds and defaults are checked", () => {

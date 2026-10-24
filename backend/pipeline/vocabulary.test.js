@@ -50,7 +50,10 @@ test("published layers fill the vocabulary", () => {
   assert.deepEqual(
     vocab.products,
     catalog.products
-      .filter((product) => typeof product.sku === "string" && Array.isArray(product.words))
+      .filter(
+        (product) =>
+          product.type !== "person" && typeof product.sku === "string" && Array.isArray(product.words)
+      )
       .map((product) => ({ sku: product.sku, words: product.words }))
   );
   assert.deepEqual(vocab.topics, {
@@ -91,6 +94,18 @@ test("missing or crooked sources do not throw", () => {
       faq: []
     }
   );
+});
+
+test("a person product is left out of the vocabulary", () => {
+  const vocab = buildVocabulary({
+    catalog: {
+      products: [
+        { sku: "CHAIR-460", type: "chair", words: ["кресл"] },
+        { sku: "character", type: "person", words: ["манекен"] }
+      ]
+    }
+  });
+  assert.deepEqual(vocab.products, [{ sku: "CHAIR-460", words: ["кресл"] }]);
 });
 
 test("buildVocabulary does not change a frozen input", () => {

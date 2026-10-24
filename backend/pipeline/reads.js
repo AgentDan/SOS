@@ -1,12 +1,26 @@
 import { getNextQuestion } from "../director/question-engine.js";
 import { getBody } from "../profile/body.js";
 import { layout } from "../scene/layout.js";
+import { placePerson } from "../scene/person.js";
 import { computeScenePlan } from "../scene/scene-plan.js";
 import { buildContext } from "./context.js";
 
-function assembleScene(catalog, profile) {
+function assembleScene(catalog, profile, extras) {
   const skus = computeScenePlan(catalog, profile);
-  return { skus, placements: layout({ catalog, skus }).placements };
+  const placements = layout({ catalog, skus }).placements;
+  if (!extras) return { skus, placements, person: null };
+  const body = getBody({
+    profile,
+    questionnaire: extras.questionnaire,
+    ergonomics: extras.ergonomics
+  });
+  const person = placePerson({
+    catalog,
+    ergonomics: extras.ergonomics,
+    body,
+    placements
+  });
+  return { skus, placements, person };
 }
 
 function getNext(clientId) {
@@ -16,8 +30,8 @@ function getNext(clientId) {
 }
 
 function getScene(clientId) {
-  const { catalog, profile } = buildContext(clientId);
-  return assembleScene(catalog, profile);
+  const { catalog, profile, questionnaire, ergonomics } = buildContext(clientId);
+  return assembleScene(catalog, profile, { questionnaire, ergonomics });
 }
 
 function getProfile(clientId) {

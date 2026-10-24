@@ -46,6 +46,19 @@ function validateErgonomics(ergonomics, errors) {
       errors.push('ergonomics: defaults.hand must be "right" or "left"');
     }
   }
+
+  if (draft.mannequin !== undefined) {
+    if (!isPlainObject(draft.mannequin)) {
+      errors.push("ergonomics: mannequin must be an object");
+    } else {
+      if (typeof draft.mannequin.sku !== "string") {
+        errors.push("ergonomics: mannequin.sku must be a string");
+      }
+      if (!integerInRange(draft.mannequin.referenceHeightCm)) {
+        errors.push("ergonomics: mannequin.referenceHeightCm must be an integer from 100 to 250");
+      }
+    }
+  }
 }
 
 export { validateErgonomics };

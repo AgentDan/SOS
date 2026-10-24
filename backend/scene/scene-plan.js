@@ -37,16 +37,28 @@ function applySceneEdits(skus, edits) {
   return next;
 }
 
-function computeScenePlan(catalog, profile) {
+function catalogProducts(catalog) {
   const products = catalog?.products ?? catalog?.draft?.products ?? [];
+  return Array.isArray(products) ? products : [];
+}
+
+function isPersonSku(catalog, sku) {
+  const product = catalogProducts(catalog).find((item) => item && item.sku === sku);
+  return product?.type === "person";
+}
+
+function computeScenePlan(catalog, profile) {
+  const products = catalogProducts(catalog);
   const anchored = products
-    .filter((product) => product?.alwaysPresent === true)
+    .filter((product) => product?.alwaysPresent === true && product?.type !== "person")
     .map((product) => product.sku);
 
   const needs = Array.isArray(profile?.needs) ? profile.needs : [];
   const resolved = needs.map((need) => need?.resolvedSku).filter((sku) => sku != null);
 
-  return applySceneEdits([...new Set([...anchored, ...resolved])], profile?.sceneEdits);
+  return applySceneEdits([...new Set([...anchored, ...resolved])], profile?.sceneEdits).filter(
+    (sku) => !isPersonSku(catalog, sku)
+  );
 }
 
 export { applySceneEdits, computeScenePlan };

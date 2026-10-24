@@ -64,13 +64,13 @@ function answerIntent({ questionnaire, catalog, profile, intent }) {
   };
 }
 
-function applyIntent({ questionnaire, catalog, profile, intent, consultant }) {
+function applyIntent({ questionnaire, catalog, profile, intent, consultant, ergonomics }) {
   if (intent?.type === "answer") {
     return answerIntent({ questionnaire, catalog, profile, intent });
   }
 
   if (intent?.type === "command") {
-    const before = assembleScene(catalog, profile);
+    const before = assembleScene(catalog, profile, { questionnaire, ergonomics });
     const result = runCommand({
       intent,
       catalog,

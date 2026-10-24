@@ -21,7 +21,8 @@ function buildVocabulary({ commands, consultant, catalog } = {}) {
 
   const products = [];
   for (const product of asArray(catalogProducts(catalog))) {
-    if (!isPlainObject(product) || typeof product.sku !== "string" || !Array.isArray(product.words)) {
+    if (!isPlainObject(product) || product.type === "person") continue;
+    if (typeof product.sku !== "string" || !Array.isArray(product.words)) {
       continue;
     }
     products.push({ sku: product.sku, words: [...product.words] });

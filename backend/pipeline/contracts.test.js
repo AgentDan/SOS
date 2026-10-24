@@ -374,7 +374,8 @@ test("validators do not change a frozen input", () => {
       validateScene,
       {
         skus: ["DESK-LEGS-1400"],
-        placements: [{ sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0, rotY: 0 }]
+        placements: [{ sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0, rotY: 0 }],
+        person: null
       }
     ]
   ];
@@ -392,21 +393,51 @@ test("validators do not change a frozen input", () => {
   assert.deepEqual(bad, beforeBad);
 });
 
-test("validateScene requires a placement list beside skus", () => {
+test("validateScene requires placements and person beside skus", () => {
   accepted(
     validateScene({
       skus: [],
-      placements: []
+      placements: [],
+      person: null
     })
   );
-  assert.deepEqual(rejected(validateScene({ skus: ["DESK-LEGS-1400"] })), ["placements is required"]);
+  accepted(
+    validateScene({
+      skus: [],
+      placements: [],
+      person: { sku: "character", x: 0, y: 450, z: 760, rotY: 180, scale: 1 }
+    })
+  );
+  assert.deepEqual(rejected(validateScene({ skus: ["DESK-LEGS-1400"], person: null })), [
+    "placements is required"
+  ]);
   assert.deepEqual(
     rejected(
       validateScene({
         skus: ["DESK-LEGS-1400"],
-        placements: [{ sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0 }]
+        placements: [{ sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0 }],
+        person: null
       })
     ),
     ["placements[0].rotY must be a number"]
+  );
+  assert.deepEqual(
+    rejected(
+      validateScene({
+        skus: [],
+        placements: []
+      })
+    ),
+    ["person is required"]
+  );
+  assert.deepEqual(
+    rejected(
+      validateScene({
+        skus: [],
+        placements: [],
+        person: { sku: "character", x: 0, y: 450, z: 760, rotY: 180 }
+      })
+    ),
+    ["person.scale must be a number"]
   );
 });

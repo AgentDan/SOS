@@ -93,6 +93,10 @@ function buildAll() {
     const product = catalog.get(sku);
     const catalogSize = catalogMm(product);
     const filePath = path.join(modelsDir, fileName);
+    if (product && product.type === "person") {
+      rows.push([sku, "0", "—", formatMm(catalogSize), "person, без коллайдеров"]);
+      continue;
+    }
     try {
       const built = addCollidersToGlb(readFileSync(filePath), {
         type: (product && product.type) || ""

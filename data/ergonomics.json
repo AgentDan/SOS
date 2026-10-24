@@ -1,6 +1,6 @@
 {
   "section": "ergonomics",
-  "draftVersion": 1,
+  "draftVersion": 2,
   "publishedVersion": 1,
   "draft": {
     "bounds": {
@@ -10,6 +10,10 @@
     "defaults": {
       "heightCm": 175,
       "hand": "right"
+    },
+    "mannequin": {
+      "sku": "character",
+      "referenceHeightCm": 142
     }
   },
   "published": {

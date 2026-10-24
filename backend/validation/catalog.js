@@ -104,7 +104,9 @@ function validateCatalogDraft(catalog, errors) {
     for (const product of products) {
       const label = product && product.sku ? product.sku : "<unknown sku>";
 
-      for (const field of ["sku", "type", "priceEur"]) {
+      const required = ["sku", "type"];
+      if (!product || product.type !== "person") required.push("priceEur");
+      for (const field of required) {
         if (isMissing(product, field)) {
           errors.push(`catalog: product "${label}" is missing required field "${field}"`);
         }
@@ -143,15 +145,22 @@ function validateCatalogDraft(catalog, errors) {
 
       if (product && product.words !== undefined) {
         const words = product.words;
-        const ok =
+        const entriesOk =
           Array.isArray(words) &&
-          words.length > 0 &&
           words.every((word) => typeof word === "string" && word.length > 0);
-        if (!ok) {
+        const lengthOk = product.type === "person" || (Array.isArray(words) && words.length > 0);
+        if (!entriesOk || !lengthOk) {
           errors.push(
             `catalog: product "${label}" words must be a non-empty array of non-empty strings`
           );
         }
+      }
+
+      const seatHeight = product && product.placement && product.placement.seatHeightMm;
+      if (seatHeight !== undefined && (!Number.isInteger(seatHeight) || seatHeight < 0)) {
+        errors.push(
+          `catalog: product "${label}" placement.seatHeightMm must be an integer >= 0`
+        );
       }
 
       const model3d = product && product.media && product.media.model3d;

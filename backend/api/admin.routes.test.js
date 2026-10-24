@@ -307,8 +307,19 @@ describe("admin API", { concurrency: 1 }, () => {
   });
 
   test("publish updates the client catalog and rollback restores it", async () => {
+    const ergoBefore = await api("/admin/sections/ergonomics");
+    const ergoDraft = structuredClone(ergoBefore.json.draft);
+    const withoutMannequin = structuredClone(ergoDraft);
+    delete withoutMannequin.mannequin;
     const original = (await api("/catalog", { token: false })).json;
-    const lines = journalEntries().length;
+    let lines = 0;
+
+    try {
+    assert.equal(
+      (await api("/admin/sections/ergonomics/draft", { method: "PUT", body: { draft: withoutMannequin } })).status,
+      200
+    );
+    lines = journalEntries().length;
 
     const baseline = await api("/admin/sections/catalog/draft", {
       method: "PUT",
@@ -373,6 +384,38 @@ describe("admin API", { concurrency: 1 }, () => {
       ["draft", "publish", "draft", "publish", "rollback"]
     );
     assert.equal(fresh.some((entry) => entry.action === "rollback" && entry.detail.version === published.json.publishedVersion), true);
+    } finally {
+      const catalogNow = await api("/admin/sections/catalog");
+      const draft = structuredClone(catalogNow.json.draft);
+      if (!draft.types.some((type) => type && type.id === "person")) {
+        draft.types.push({
+          id: "person",
+          label: "Person",
+          canBeHost: false,
+          canHostOn: [],
+          maxOnScene: 1
+        });
+      }
+      if (!draft.products.some((item) => item && item.sku === "character")) {
+        draft.products.push({
+          sku: "character",
+          type: "person",
+          name: "Character",
+          label: "манекен",
+          dimensions: { width: 814, depth: 778, height: 1420 },
+          words: [],
+          media: { model3d: "character.glb" }
+        });
+      }
+      assert.equal(
+        (await api("/admin/sections/catalog/draft", { method: "PUT", body: { draft } })).status,
+        200
+      );
+      assert.equal(
+        (await api("/admin/sections/ergonomics/draft", { method: "PUT", body: { draft: ergoDraft } })).status,
+        200
+      );
+    }
   });
 
   test("a publish that fails validation does not write the journal", async () => {
@@ -585,6 +628,20 @@ describe("admin API", { concurrency: 1 }, () => {
     assert.equal(entry.section, "catalog");
     assert.equal(entry.detail.sku, "DESK-TOP-1400");
     assert.equal(entry.detail.bytes, saved.length);
+
+    const personGlb = simpleGlb("Body", 0.2, 0.71, 0.2);
+    const personUpload = await api("/admin/models/character", {
+      method: "POST",
+      glb: personGlb
+    });
+    assert.equal(personUpload.status, 200);
+    assert.deepEqual(personUpload.json.parts, []);
+    const personSaved = readFileSync(path.join(tempModels, "character.glb"));
+    assert.deepEqual(personSaved, personGlb);
+    assert.equal(personSaved.includes(Buffer.from("COL_")), false);
+    const personEntry = journalEntries().at(-1);
+    assert.equal(personEntry.detail.sku, "character");
+    assert.equal(personEntry.detail.parts, 0);
   });
 
   test("journal limit returns the latest lines", async () => {

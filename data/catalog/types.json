@@ -35,5 +35,12 @@
     "canBeHost": false,
     "canHostOn": [],
     "maxOnScene": 2
+  },
+  {
+    "id": "person",
+    "label": "Person",
+    "canBeHost": false,
+    "canHostOn": [],
+    "maxOnScene": 1
   }
 ]
