@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [tailwindcss(), react()],
     root: __dirname,
+    cacheDir: path.resolve(__dirname, "../node_modules/.vite/admin"),
     server: {
       port: 5174,
       proxy: {

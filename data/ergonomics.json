@@ -1,7 +1,7 @@
 {
   "section": "ergonomics",
-  "draftVersion": 2,
-  "publishedVersion": 1,
+  "draftVersion": 4,
+  "publishedVersion": 2,
   "draft": {
     "bounds": {
       "heightMinCm": 140,
@@ -24,7 +24,31 @@
     "defaults": {
       "heightCm": 175,
       "hand": "right"
+    },
+    "mannequin": {
+      "sku": "character",
+      "referenceHeightCm": 142
     }
   },
-  "history": []
+  "history": [
+    {
+      "version": 2,
+      "date": "2026-10-24T21:59:23.507Z",
+      "description": "a",
+      "snapshot": {
+        "bounds": {
+          "heightMinCm": 140,
+          "heightMaxCm": 210
+        },
+        "defaults": {
+          "heightCm": 175,
+          "hand": "right"
+        },
+        "mannequin": {
+          "sku": "character",
+          "referenceHeightCm": 142
+        }
+      }
+    }
+  ]
 }

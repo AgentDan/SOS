@@ -9,6 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [tailwindcss(), react()],
   root: __dirname,
+  cacheDir: path.resolve(__dirname, "../node_modules/.vite/client"),
   envDir: path.join(__dirname, ".."),
   server: {
     port: 5173,
