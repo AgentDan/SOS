@@ -64,6 +64,11 @@ function validateCatalogDraft(catalog, errors) {
           errors.push(`catalog: type "${label}" edgeMarginMm must be an integer >= 0`);
         }
       }
+      if (type && type.rowBackMarginMm !== undefined) {
+        if (!Number.isInteger(type.rowBackMarginMm) || type.rowBackMarginMm < 0) {
+          errors.push(`catalog: type "${label}" rowBackMarginMm must be an integer >= 0`);
+        }
+      }
     }
 
     for (const type of types) {

@@ -1,3 +1,4 @@
+import { formatDistance, gap } from "../scene/distance.js";
 import {
   findProduct,
   firstReplacement,
@@ -151,24 +152,59 @@ function namedSkus(skus) {
   return skus.filter((sku) => typeof sku === "string" && sku.length > 0).slice(0, 2);
 }
 
-function runDistance({ skus, sceneSkus, catalog, action }) {
+function placedCopies(placements, sku) {
+  if (!Array.isArray(placements)) return [];
+  return placements.filter((item) => item && item.sku === sku);
+}
+
+function distanceText(catalog, a, b, placeA, placeB) {
+  const measured = gap(
+    { placement: placeA, dimensions: findProduct(catalog, a)?.dimensions },
+    { placement: placeB, dimensions: findProduct(catalog, b)?.dimensions }
+  );
+  return formatDistance(measured.gapMm);
+}
+
+function runDistance({ skus, sceneSkus, catalog, action, placements }) {
   const named = namedSkus(skus);
   const facts = factsOf(action);
-  if (named.length < 2) return refused("distance_unclear", facts, {});
+  let pair = named;
+  // Одно упоминание («мониторами») при двух копиях на сцене — это пара копий.
+  if (pair.length === 1 && copyCount(sceneSkus, pair[0]) >= 2) pair = [pair[0], pair[0]];
+  if (pair.length < 2) return refused("distance_unclear", facts, {});
 
-  const [a, b] = named;
+  const [a, b] = pair;
   const countA = copyCount(sceneSkus, a);
   const countB = a === b ? countA : copyCount(sceneSkus, b);
   if (countA === 0) return refused("distance_not_on_scene", facts, { name: productLabel(catalog, a) });
   if (countB === 0) return refused("distance_not_on_scene", facts, { name: productLabel(catalog, b) });
   if (a === b && countA < 2) return refused("distance_need_two", facts, {});
 
+  const copiesA = placedCopies(placements, a);
+  const placeA = copiesA[0];
+  const placeB = a === b ? copiesA[1] : placedCopies(placements, b)[0];
+  if (!placeA || !placeB) return refused("distance_no_position", facts, {});
+
+  let distance;
+  try {
+    distance = distanceText(catalog, a, b, placeA, placeB);
+  } catch (err) {
+    if (err instanceof Error && /размер|положен|расстояни/.test(err.message)) {
+      return refused("distance_no_position", facts, {});
+    }
+    throw err;
+  }
+
   return okCommand({
     sceneChanged: false,
     facts: { action, measure: { a, b } },
     say: {
       code: "distance_measure",
-      params: { a: productLabel(catalog, a), b: productLabel(catalog, b) }
+      params: {
+        a: productLabel(catalog, a),
+        b: productLabel(catalog, b),
+        distance
+      }
     }
   });
 }
@@ -181,7 +217,13 @@ function runCommand({ intent, catalog, scene }) {
   const apply = typeof scene?.apply === "function" ? scene.apply : () => ({ ok: false, reasonCode: "not_found" });
 
   if (action === "distance") {
-    return runDistance({ skus: intent?.payload?.skus, sceneSkus, catalog, action });
+    return runDistance({
+      skus: intent?.payload?.skus,
+      sceneSkus,
+      catalog,
+      action,
+      placements: scene?.placements
+    });
   }
 
   if (action !== "add" && action !== "remove" && action !== "replace") {

@@ -5,6 +5,7 @@ import { runTurn } from "../backend/pipeline/orchestrator.js";
 import { getProfile } from "../backend/pipeline/reads.js";
 import { prepareDraftData, removeDraftData } from "../tests/scenarios/prepare-draft-data.js";
 import { bodySteps, runBody } from "../tests/scenarios/body.js";
+import { layoutSteps, runLayout } from "../tests/scenarios/layout.js";
 import { runSkeleton, skeletonSteps } from "../tests/scenarios/skeleton.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -180,6 +181,10 @@ function runBodyScenario() {
   return withDraftData(() => runBody());
 }
 
+function runLayoutScenario() {
+  return withDraftData(() => runLayout());
+}
+
 function main() {
   let failed = 0;
 
@@ -212,6 +217,15 @@ function main() {
   }
   report("body", bodySteps.length, bodyErrors);
   if (bodyErrors.length > 0) failed += 1;
+
+  let layoutErrors;
+  try {
+    layoutErrors = runLayoutScenario().errors;
+  } catch (err) {
+    layoutErrors = [err instanceof Error ? err.message : String(err)];
+  }
+  report("layout", layoutSteps.length, layoutErrors);
+  if (layoutErrors.length > 0) failed += 1;
 
   if (failed > 0) process.exit(1);
 }

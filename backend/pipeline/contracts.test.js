@@ -9,7 +9,8 @@ import {
   validateExecutorResult,
   validateIntent,
   validateReplyInput,
-  validateReplyOutput
+  validateReplyOutput,
+  validateScene
 } from "./contracts.js";
 
 function accepted(result) {
@@ -66,7 +67,8 @@ test("contract lists are the block boundary", () => {
     "not_implemented",
     "distance_unclear",
     "distance_not_on_scene",
-    "distance_need_two"
+    "distance_need_two",
+    "distance_no_position"
   ]);
   assert.deepEqual(REPLY_VIA, ["template", "ai"]);
 });
@@ -256,7 +258,7 @@ test("validateExecutorResult rejects a failed turn with an unknown reason code",
     validateExecutorResult(executorResult({ ok: false, reasonCode: "nope" }))
   );
   assert.deepEqual(errors, [
-    "reasonCode must be one of: unclear, unknown_sku, limit, no_host, host_full, cannot_remove_support, nothing_cheaper, not_found, not_implemented, distance_unclear, distance_not_on_scene, distance_need_two"
+    "reasonCode must be one of: unclear, unknown_sku, limit, no_host, host_full, cannot_remove_support, nothing_cheaper, not_found, not_implemented, distance_unclear, distance_not_on_scene, distance_need_two, distance_no_position"
   ]);
 });
 
@@ -367,7 +369,14 @@ test("validators do not change a frozen input", () => {
         context: replyContext()
       }
     ],
-    [validateReplyOutput, { text: "Готово.", via: "template" }]
+    [validateReplyOutput, { text: "Готово.", via: "template" }],
+    [
+      validateScene,
+      {
+        skus: ["DESK-LEGS-1400"],
+        placements: [{ sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0, rotY: 0 }]
+      }
+    ]
   ];
 
   for (const [validate, value] of samples) {
@@ -381,4 +390,23 @@ test("validators do not change a frozen input", () => {
   const beforeBad = structuredClone(bad);
   rejected(validateExecutorResult(bad));
   assert.deepEqual(bad, beforeBad);
+});
+
+test("validateScene requires a placement list beside skus", () => {
+  accepted(
+    validateScene({
+      skus: [],
+      placements: []
+    })
+  );
+  assert.deepEqual(rejected(validateScene({ skus: ["DESK-LEGS-1400"] })), ["placements is required"]);
+  assert.deepEqual(
+    rejected(
+      validateScene({
+        skus: ["DESK-LEGS-1400"],
+        placements: [{ sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0 }]
+      })
+    ),
+    ["placements[0].rotY must be a number"]
+  );
 });

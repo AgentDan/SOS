@@ -70,6 +70,7 @@ function command(action, sku, extra) {
 
 function run(intent, skus, options = {}) {
   const board = scene(skus, options.apply);
+  if (options.placements !== undefined) board.placements = options.placements;
   const result = runCommand({
     intent,
     catalog: options.catalog ?? catalog,
@@ -290,42 +291,94 @@ test("unknown action is not_implemented", () => {
   assert.deepEqual(board.calls, []);
 });
 
-test("distance measures two named objects and does not change the scene", () => {
-  const labels = {
-    "CHAIR-460": "кресло",
-    "DESK-TOP-1800": "стол",
-    "MON-613-366": "монитор"
-  };
-  const named = {
-    ...catalog,
-    products: [
-      ...catalog.products.map((product) =>
-        labels[product.sku] ? { ...product, label: labels[product.sku] } : product
-      ),
-      { sku: "MON-613-366", type: "monitor", label: "монитор" }
-    ]
-  };
-  const skus = ["DESK-LEGS-1400", "MON-613-366", "MON-613-366", "CHAIR-460"];
-  const before = skus.slice();
-  const intent = {
-    type: "command",
-    source: "text",
-    payload: { action: "distance", skus: ["MON-613-366", "CHAIR-460"] }
-  };
-  const { result, board } = run(intent, skus, { catalog: named });
+const monitorSize = { width: 613, depth: 205, height: 366 };
+
+const measured = {
+  products: [
+    {
+      sku: "DESK-TOP-1400",
+      type: "desk_top",
+      label: "стол",
+      dimensions: { width: 1400, depth: 700, height: 30 }
+    },
+    {
+      sku: "DESK-TOP-1800",
+      type: "desk_top",
+      label: "стол",
+      dimensions: { width: 1800, depth: 800, height: 30 }
+    },
+    { sku: "MON-613-366", type: "monitor", label: "монитор", dimensions: monitorSize }
+  ]
+};
+
+function pose(sku, x, y, z, rotY = 0) {
+  return { sku, x, y, z, rotY };
+}
+
+function distanceIntent(skus) {
+  return { type: "command", source: "text", payload: { action: "distance", skus } };
+}
+
+test("distance between a monitor and its desk is a touch", () => {
+  const skus = ["DESK-LEGS-1400", "DESK-TOP-1400", "MON-613-366"];
+  const placements = [
+    pose("DESK-TOP-1400", 0, 1000, 0),
+    pose("MON-613-366", 0, 1030, -147.5)
+  ];
+  const { result, board } = run(distanceIntent(["MON-613-366", "DESK-TOP-1400"]), skus, {
+    catalog: measured,
+    placements
+  });
   assert.equal(result.ok, true);
   assert.equal(result.sceneChanged, false);
   assert.equal(result.reasonCode, null);
   assert.deepEqual(result.facts, {
     action: "distance",
-    measure: { a: "MON-613-366", b: "CHAIR-460" }
+    measure: { a: "MON-613-366", b: "DESK-TOP-1400" }
   });
   assert.deepEqual(result.say, {
     code: "distance_measure",
-    params: { a: "монитор", b: "кресло" }
+    params: { a: "монитор", b: "стол", distance: "0 см, они касаются" }
   });
   assert.deepEqual(board.calls, []);
-  assert.deepEqual(board.skus, before);
+  assert.deepEqual(board.skus, skus);
+});
+
+test("distance between two monitors on an 1800 desk is 10 cm", () => {
+  const skus = ["DESK-TOP-1800", "MON-613-366", "MON-613-366"];
+  const placements = [
+    pose("DESK-TOP-1800", 0, 1000, 0),
+    pose("MON-613-366", -356.5, 1030, -197.5),
+    pose("MON-613-366", 356.5, 1030, -197.5)
+  ];
+  const named = run(distanceIntent(["MON-613-366", "MON-613-366"]), skus, {
+    catalog: measured,
+    placements
+  });
+  assert.equal(named.result.ok, true);
+  assert.equal(named.result.sceneChanged, false);
+  assert.equal(named.result.say.params.distance, "10 см");
+  assert.deepEqual(named.result.facts.measure, { a: "MON-613-366", b: "MON-613-366" });
+  assert.deepEqual(named.board.calls, []);
+
+  const once = run(distanceIntent(["MON-613-366"]), skus, { catalog: measured, placements });
+  assert.equal(once.result.say.params.distance, "10 см");
+  assert.deepEqual(once.result.facts.measure, { a: "MON-613-366", b: "MON-613-366" });
+});
+
+test("distance without a placement is distance_no_position", () => {
+  const skus = ["DESK-TOP-1400", "MON-613-366"];
+  const { result, board } = run(distanceIntent(["MON-613-366", "DESK-TOP-1400"]), skus, {
+    catalog: measured,
+    placements: [pose("DESK-TOP-1400", 0, 1000, 0)]
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.sceneChanged, false);
+  assert.equal(result.reasonCode, "distance_no_position");
+  assert.equal(result.say.code, "distance_no_position");
+  assert.deepEqual(result.say.params, {});
+  assert.deepEqual(board.calls, []);
+  assert.deepEqual(board.skus, skus);
 });
 
 test("distance reports a missing object, a single copy, and an unclear request", () => {
@@ -383,8 +436,8 @@ test("distance reports a missing object, a single copy, and an unclear request",
     ["MON-613-366", "MON-613-366"],
     { catalog: named }
   );
-  assert.equal(pair.result.ok, true);
-  assert.deepEqual(pair.result.facts.measure, { a: "MON-613-366", b: "MON-613-366" });
+  assert.equal(pair.result.reasonCode, "distance_no_position");
+  assert.equal(pair.result.sceneChanged, false);
   assert.deepEqual(pair.board.skus, ["MON-613-366", "MON-613-366"]);
   assert.deepEqual(pair.board.calls, []);
 });

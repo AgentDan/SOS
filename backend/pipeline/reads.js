@@ -1,7 +1,13 @@
 import { getNextQuestion } from "../director/question-engine.js";
 import { getBody } from "../profile/body.js";
+import { layout } from "../scene/layout.js";
 import { computeScenePlan } from "../scene/scene-plan.js";
 import { buildContext } from "./context.js";
+
+function assembleScene(catalog, profile) {
+  const skus = computeScenePlan(catalog, profile);
+  return { skus, placements: layout({ catalog, skus }).placements };
+}
 
 function getNext(clientId) {
   const { questionnaire, profile, catalog } = buildContext(clientId);
@@ -11,7 +17,7 @@ function getNext(clientId) {
 
 function getScene(clientId) {
   const { catalog, profile } = buildContext(clientId);
-  return { skus: computeScenePlan(catalog, profile) };
+  return assembleScene(catalog, profile);
 }
 
 function getProfile(clientId) {
@@ -22,4 +28,4 @@ function getProfile(clientId) {
   };
 }
 
-export { getNext, getScene, getProfile };
+export { assembleScene, getNext, getScene, getProfile };

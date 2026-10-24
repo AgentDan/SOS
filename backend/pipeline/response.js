@@ -1,8 +1,8 @@
 import { readAiRules } from "../config/load.js";
 import { getNextQuestion } from "../director/question-engine.js";
-import { computeScenePlan } from "../scene/scene-plan.js";
 import { FALLBACK_TEXT, reply } from "../voice/reply.js";
 import { validateReplyInput } from "./contracts.js";
+import { assembleScene } from "./reads.js";
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -40,7 +40,7 @@ function buildResponse({ outcome, context }) {
     : isPlainObject(context?.profile)
       ? context.profile
       : {};
-  const skus = computeScenePlan(catalog, profile);
+  const { skus, placements } = assembleScene(catalog, profile);
   const found = getNextQuestion(context?.questionnaire, profile, catalog);
   const nextQuestion = found && isPlainObject(found.question) ? found.question : null;
   const input = {
@@ -62,7 +62,7 @@ function buildResponse({ outcome, context }) {
     version: 1,
     status: 200,
     question: nextQuestion,
-    scene: { skus },
+    scene: { skus, placements },
     reply: spoken,
     result: outcome?.result
   };

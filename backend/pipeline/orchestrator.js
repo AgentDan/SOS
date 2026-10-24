@@ -8,6 +8,7 @@ import { canReplace } from "../commands/placement.js";
 import { runTalk } from "../talk/talk.js";
 import { applySceneChange } from "../scene/apply-scene-change.js";
 import { computeScenePlan } from "../scene/scene-plan.js";
+import { assembleScene } from "./reads.js";
 import { checkAnswer, checkConfirmation } from "../understanding/check-answer.js";
 import { interpret } from "../understanding/interpret.js";
 import { readQuestionnaire } from "../config/load.js";
@@ -68,13 +69,14 @@ function applyIntent({ questionnaire, catalog, profile, intent, consultant }) {
   }
 
   if (intent?.type === "command") {
-    const before = computeScenePlan(catalog, profile);
+    const before = assembleScene(catalog, profile);
     const result = runCommand({
       intent,
       catalog,
       scene: {
-        skus: before,
-        apply: (change) => applySceneChange({ catalog, profile, change, before })
+        skus: before.skus,
+        placements: before.placements,
+        apply: (change) => applySceneChange({ catalog, profile, change, before: before.skus })
       }
     });
     return { status: 200, body: { ok: true }, profile, result };

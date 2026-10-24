@@ -64,7 +64,8 @@
       "distance_measure": "Расстояние между {a} и {b}: {distance}.",
       "distance_unclear": "Назовите два объекта, между которыми нужно измерить расстояние.",
       "distance_need_two": "Для такого замера нужны две штуки на сцене.",
-      "distance_not_on_scene": "{name} нет на сцене."
+      "distance_not_on_scene": "{name} нет на сцене.",
+      "distance_no_position": "Не могу измерить: этот предмет пока не расставлен."
     }
   },
   "history": [

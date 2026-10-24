@@ -61,7 +61,7 @@ function reply({ result, context, templates, names, maxWords } = {}) {
   const template = chosenTemplate(say.code, params, templates) ?? fallbackTemplate(outcome.ok, templates);
   const question = questionText(context?.nextQuestion);
 
-  let text = fill(template, {
+  const values = {
     item: named(names, params.sku),
     newItem: named(names, params.withSku),
     savedEur: params.savedEur,
@@ -71,7 +71,9 @@ function reply({ result, context, templates, names, maxWords } = {}) {
     a: params.a,
     b: params.b,
     name: params.name
-  });
+  };
+  if (typeof params.distance === "string") values.distance = params.distance;
+  let text = fill(template, values);
 
   if (outcome.ok === true && outcome.kind === "answer" && question) {
     text = `${text} ${question}`;

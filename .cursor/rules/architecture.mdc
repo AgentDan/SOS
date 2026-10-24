@@ -20,7 +20,7 @@ data/ → backend/config → backend/pipeline → backend/api → client/api →
 - `backend/api/**` импортирует только `backend/pipeline`, `backend/orders`, `backend/sessions`, `backend/admin-api`, `backend/config` и свои файлы.
 - Блоки `understanding`, `profile`, `scene`, `needs`, `sales`, `director`, `voice`, `commands`, `talk` не импортируют друг друга, а также `api`, `pipeline`, `config`, `orders`, `sessions`, `analytics`, `admin-api`. Только свои файлы, `node:*` и сторонние пакеты. К `ai` обращаются только `understanding` и `voice`.
 - `backend/profile/body.js` не импортирует другие блоки и не читает файлы.
-- `commands` получает сцену как переданную функцию, `scene` не импортирует.
+- `commands` получает сцену как переданную функцию, `scene` не импортирует. Исключение: `commands` может импортировать только `backend/scene/distance.js`. `layout.js` туда не импортируется — положения считает pipeline и передаёт в команду.
 - `talk` получает сцену как переданную функцию, `scene` не импортирует.
 - `backend/ai/**` не импортирует `api`, `pipeline`, блоки, `client`, `admin`.
 - `backend/pipeline/**` может импортировать блоки и `config`, но не `api`.

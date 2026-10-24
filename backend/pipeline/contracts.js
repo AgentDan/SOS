@@ -13,7 +13,8 @@ const REASON_CODES = Object.freeze([
   "not_implemented",
   "distance_unclear",
   "distance_not_on_scene",
-  "distance_need_two"
+  "distance_need_two",
+  "distance_no_position"
 ]);
 const REPLY_VIA = Object.freeze(["template", "ai"]);
 
@@ -185,6 +186,33 @@ function validateReplyInput(value) {
   return done(errors);
 }
 
+function validatePlacement(item, path, errors) {
+  if (!isPlainObject(item)) {
+    errors.push(`${path} must be an object`);
+    return;
+  }
+  requireString(item, "sku", `${path}.sku`, errors);
+  for (const key of ["x", "y", "z", "rotY"]) {
+    if (typeof item[key] !== "number" || !Number.isFinite(item[key])) {
+      errors.push(`${path}.${key} must be a number`);
+    }
+  }
+}
+
+function validateScene(value) {
+  if (!isPlainObject(value)) return rejectObject();
+  const errors = [];
+  requireStringArray(value, "skus", "skus", errors);
+  if (value.placements === undefined) errors.push("placements is required");
+  else if (!Array.isArray(value.placements)) errors.push("placements must be an array");
+  else {
+    value.placements.forEach((item, index) => {
+      validatePlacement(item, `placements[${index}]`, errors);
+    });
+  }
+  return done(errors);
+}
+
 function validateReplyOutput(value) {
   if (!isPlainObject(value)) return rejectObject();
 
@@ -206,5 +234,6 @@ export {
   validateIntent,
   validateExecutorResult,
   validateReplyInput,
-  validateReplyOutput
+  validateReplyOutput,
+  validateScene
 };

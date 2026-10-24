@@ -18,7 +18,8 @@
       "monitor"
     ],
     "rowGapMm": 100,
-    "edgeMarginMm": 50
+    "edgeMarginMm": 50,
+    "rowBackMarginMm": 100
   },
   {
     "id": "monitor",

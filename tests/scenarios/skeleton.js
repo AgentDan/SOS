@@ -318,10 +318,16 @@ function play(clientId, errors, trace) {
       errors.push(`${label}: ${err instanceof Error ? err.message : String(err)}`);
     }
 
-    const after = getScene(clientId).skus.slice();
+    const stored = getScene(clientId);
+    const after = stored.skus.slice();
     const shownSkus = response?.scene?.skus ?? [];
     if (response && !sameSkus(after, shownSkus)) {
       errors.push(`${label}: response.scene.skus ${shown(shownSkus)} ≠ stored scene ${shown(after)}`);
+    }
+    if (response && JSON.stringify(response.scene?.placements) !== JSON.stringify(stored.placements)) {
+      errors.push(
+        `${label}: response.scene.placements ${shown(response.scene?.placements)} ≠ stored ${shown(stored.placements)}`
+      );
     }
     checkScene(errors, label, before, after, step.expect);
     checkSaved(errors, label, response?.result, step.expect.savedEur);

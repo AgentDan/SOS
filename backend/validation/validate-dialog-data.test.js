@@ -287,6 +287,17 @@ test("catalog maxOnScene is optional and row layout fields are checked", () => {
     () => validateDialogData(badGap),
     (err) => err instanceof Error && /rowGapMm must be an integer >= 0/.test(err.message)
   );
+
+  const openMargin = validPair();
+  delete openMargin.catalog.draft.types.find((type) => type.id === "desk_top").rowBackMarginMm;
+  assert.equal(validateDialogData(openMargin), true);
+
+  const badMargin = validPair();
+  badMargin.catalog.draft.types.find((type) => type.id === "desk_top").rowBackMarginMm = 1.5;
+  assert.throws(
+    () => validateDialogData(badMargin),
+    (err) => err instanceof Error && /rowBackMarginMm must be an integer >= 0/.test(err.message)
+  );
 });
 
 test("catalog product label is an optional non-empty string", () => {

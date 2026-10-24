@@ -248,7 +248,7 @@ test("maxWords clips on a word boundary, and a bad limit does not clip", () => {
   assert.equal(speak(result, { templates: source, maxWords: Number.NaN }).text, "альфа бета гамма дельта");
 });
 
-test("distance text comes from templates and leaves the number for the client", () => {
+test("distance text comes from templates and fills the server distance", () => {
   const measured = speak(
     sayResult({
       ok: true,
@@ -298,6 +298,21 @@ test("distance text comes from templates and leaves the number for the client", 
   );
   assert.equal(neutral.text, "Расстояние между монитор и стол: {distance}.");
   assert.equal(neutral.fallback, "Не совсем понял. Скажите иначе, пожалуйста.");
+
+  const filled = speak(
+    sayResult({
+      ok: true,
+      kind: "command",
+      code: "distance_measure",
+      params: { a: "монитор", b: "стол", distance: "0 см, они касаются" }
+    })
+  );
+  assert.equal(filled.text, "Расстояние между монитор и стол: 0 см, они касаются.");
+
+  const unplaced = speak(
+    sayResult({ ok: false, kind: "command", code: "distance_no_position" })
+  );
+  assert.equal(unplaced.text, "Не могу измерить: этот предмет пока не расставлен.");
 });
 
 test("the next question is appended only after a successful answer", () => {

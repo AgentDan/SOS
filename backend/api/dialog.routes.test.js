@@ -57,6 +57,11 @@ test("a garbage message is unclear and a missing text is 400", async () => {
     assert.equal(typeof body.reply.text, "string");
     assert.ok(body.reply.text.length > 0);
     assert.ok(Array.isArray(body.scene.skus));
+    assert.equal(body.scene.issues, undefined);
+    assert.deepEqual(
+      body.scene.placements.find((item) => item.sku === "DESK-LEGS-1400"),
+      { sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0, rotY: 0 }
+    );
     assert.equal(body.question === null || typeof body.question === "object", true);
 
     const missing = await fetch(`http://127.0.0.1:${port}/dialog/message`, {

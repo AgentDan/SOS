@@ -122,7 +122,10 @@ function violations() {
           isInside(resolved, AI) &&
           (isInside(file, path.join(BACKEND, "understanding")) ||
             isInside(file, path.join(BACKEND, "voice")));
-        if (!aiException) record(found, file, spec);
+        const distanceException =
+          isInside(file, path.join(BACKEND, "commands")) &&
+          path.normalize(resolved) === path.normalize(path.join(BACKEND, "scene", "distance.js"));
+        if (!aiException && !distanceException) record(found, file, spec);
       }
 
       if (isInside(file, AI)) {
@@ -161,6 +164,25 @@ test("modules honor the dependency rules", () => {
 test("body.js does not import other blocks", () => {
   const source = readFileSync(path.join(BACKEND, "profile", "body.js"), "utf8");
   assert.deepEqual(importSpecifiers(source), []);
+});
+
+test("layout.js and distance.js import nothing", () => {
+  for (const name of ["layout.js", "distance.js"]) {
+    const source = readFileSync(path.join(BACKEND, "scene", name), "utf8");
+    assert.deepEqual(importSpecifiers(source), [], name);
+  }
+});
+
+test("commands reach scene only through distance.js", () => {
+  const sceneDir = path.join(BACKEND, "scene");
+  const distanceFile = path.normalize(path.join(sceneDir, "distance.js"));
+  for (const file of walkJs(path.join(BACKEND, "commands"))) {
+    for (const spec of importSpecifiers(readFileSync(file, "utf8"))) {
+      const resolved = resolveSpecifier(file, spec);
+      if (!resolved || !isInside(resolved, sceneDir)) continue;
+      assert.equal(path.normalize(resolved), distanceFile, `${file} imports ${spec}`);
+    }
+  }
 });
 
 test("only applySceneChange writes sceneEdits", () => {
