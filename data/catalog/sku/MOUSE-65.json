@@ -1,6 +1,7 @@
 {
   "sku": "MOUSE-65",
   "type": "mouse",
+  "movable": true,
   "name": "Mouse 65",
   "label": "мышь",
   "dimensions": {

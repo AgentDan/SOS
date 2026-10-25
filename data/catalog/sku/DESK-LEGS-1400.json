@@ -1,6 +1,7 @@
 {
   "sku": "DESK-LEGS-1400",
   "type": "desk_legs",
+  "movable": false,
   "name": "Desk legs 1400x700",
   "label": "опоры стола",
   "dimensions": {

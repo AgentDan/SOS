@@ -48,6 +48,14 @@ function createDrag({ canvas, camera, controls }) {
     pointer.y = -((event.clientY - rect.top) / height) * 2 + 1;
   }
 
+  function canDrag(entry) {
+    if (!entry || !entry.rigidBody) return false;
+    if (typeof entry.rigidBody.isValid === "function" && !entry.rigidBody.isValid()) return false;
+    if (typeof entry.rigidBody.isFixed === "function" && entry.rigidBody.isFixed()) return false;
+    if (entry.product && entry.product.movable === false) return false;
+    return true;
+  }
+
   function pick() {
     raycaster.setFromCamera(pointer, camera);
     const meshes = [];
@@ -58,7 +66,7 @@ function createDrag({ canvas, camera, controls }) {
     const hits = raycaster.intersectObjects(meshes, true);
     if (hits.length === 0) return null;
     const entry = productEntry(hits[0].object);
-    if (!entry) return null;
+    if (!canDrag(entry)) return null;
     return { entry, point: hits[0].point };
   }
 

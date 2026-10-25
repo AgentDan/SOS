@@ -211,7 +211,7 @@ function App() {
   if (route.screen === "section") screen = <SectionEditor key={screenKey} name={route.name} onDirty={markDirty} />;
   else if (route.screen === "sections") screen = <Sections key={screenKey} openSection={openSection} />;
   else if (route.screen === "knobs") screen = <Knobs key={screenKey} openSection={openSection} />;
-  else if (route.screen === "models") screen = <Models key={screenKey} />;
+  else if (route.screen === "models") screen = <Models key={screenKey} onDirty={markDirty} />;
   else if (route.screen === "journal") screen = <Journal key={screenKey} />;
 
   return (

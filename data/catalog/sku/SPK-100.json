@@ -1,6 +1,7 @@
 {
   "sku": "SPK-100",
   "type": "speaker",
+  "movable": true,
   "name": "Speaker 100",
   "label": "колонки",
   "dimensions": {

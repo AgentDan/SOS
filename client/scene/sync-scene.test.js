@@ -291,3 +291,83 @@ test("new monitors stay dynamic on the server pose until the scene changes", asy
     disposeWorld();
   }
 });
+
+test("a new scene keeps body types and a catalog flag change recreates the body", async () => {
+  await initWorld();
+  clear();
+  try {
+    const desk = { sku: "DESK-TOP-1400", type: "desk_top", movable: false };
+    const monitor = { sku: "MON-613-366", type: "monitor", movable: true };
+    const products = [desk, monitor];
+    let loads = 0;
+    const { syncScene } = createSceneSync({
+      world: getWorld(),
+      products,
+      loadModel: async () => {
+        loads += 1;
+        return {
+          object: new THREE.Group(),
+          parts: [{ half: { x: 0.3, y: 0.02, z: 0.3 }, local: { x: 0, y: 0.02, z: 0 } }]
+        };
+      }
+    });
+    const scene = new THREE.Scene();
+    const firstPlaces = [
+      { sku: "DESK-TOP-1400", x: 0, y: 1000, z: 0, rotY: 0 },
+      { sku: "MON-613-366", x: 200, y: 1200, z: 0, rotY: 0 }
+    ];
+    const nextPlaces = [
+      { sku: "DESK-TOP-1400", x: 0, y: 1000, z: 0, rotY: 90 },
+      { sku: "MON-613-366", x: 400, y: 1200, z: 0, rotY: 0 }
+    ];
+    await syncScene(scene, ["DESK-TOP-1400", "MON-613-366"], firstPlaces, null);
+    const deskBody = get("DESK-TOP-1400#1").rigidBody;
+    const monitorBody = get("MON-613-366#1").rigidBody;
+    assert.equal(deskBody.isFixed(), true);
+    assert.equal(monitorBody.isDynamic(), true);
+    assert.equal(monitorBody.gravityScale(), 1);
+    close(deskBody.translation().y, 1);
+    close(monitorBody.translation().x, 0.2);
+    assert.equal(loads, 2);
+
+    monitorBody.setTranslation({ x: 4, y: 1.2, z: 0 }, true);
+    get("MON-613-366#1").moved = true;
+    await syncScene(scene, ["DESK-TOP-1400", "MON-613-366"], firstPlaces, null);
+    close(monitorBody.translation().x, 4);
+    close(deskBody.translation().y, 1);
+    assert.equal(deskBody.isFixed(), true);
+    assert.equal(loads, 2);
+
+    await syncScene(scene, ["DESK-TOP-1400", "MON-613-366"], nextPlaces, null);
+    assert.equal(get("DESK-TOP-1400#1").rigidBody, deskBody);
+    assert.equal(get("MON-613-366#1").rigidBody, monitorBody);
+    assert.equal(deskBody.isFixed(), true);
+    assert.equal(monitorBody.isDynamic(), true);
+    assert.equal(monitorBody.gravityScale(), 1);
+    close(deskBody.translation().y, 1);
+    close(monitorBody.translation().x, 0.4);
+    assert.equal(loads, 2);
+
+    monitorBody.setTranslation({ x: 4, y: 1.2, z: 0 }, true);
+    desk.movable = true;
+    await syncScene(scene, ["DESK-TOP-1400", "MON-613-366"], nextPlaces, null);
+    const recreated = get("DESK-TOP-1400#1").rigidBody;
+    assert.notEqual(recreated, deskBody);
+    assert.equal(recreated.isDynamic(), true);
+    assert.equal(recreated.gravityScale(), 1);
+    close(recreated.translation().y, 1);
+    assert.equal(get("MON-613-366#1").rigidBody, monitorBody);
+    close(monitorBody.translation().x, 4);
+    assert.equal(monitorBody.isDynamic(), true);
+    assert.equal(loads, 3);
+
+    await syncScene(scene, ["DESK-TOP-1400", "MON-613-366"], nextPlaces, null);
+    close(monitorBody.translation().x, 4);
+    close(recreated.translation().y, 1);
+    assert.equal(get("DESK-TOP-1400#1").rigidBody, recreated);
+    assert.equal(loads, 3);
+  } finally {
+    clear();
+    disposeWorld();
+  }
+});

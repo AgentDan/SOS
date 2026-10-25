@@ -48,20 +48,25 @@ function poseObject(object, pose) {
   object.rotation.set(0, (numberOr(pose.rotY, 0) * Math.PI) / 180, 0);
 }
 
+function bodyIsFixed(body) {
+  return Boolean(body && typeof body.isFixed === "function" && body.isFixed());
+}
+
 function applyBodyPose(body, pose) {
   if (!body || (typeof body.isValid === "function" && !body.isValid())) return;
-  if (typeof body.setBodyType === "function") {
+  const fixed = bodyIsFixed(body);
+  if (!fixed && typeof body.setBodyType === "function") {
     body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
   }
-  if (typeof body.setEnabledRotations === "function") {
+  if (!fixed && typeof body.setEnabledRotations === "function") {
     body.setEnabledRotations(false, true, false, true);
   }
   if (typeof body.setTranslation === "function") {
     body.setTranslation({ x: pose.x, y: pose.y, z: pose.z }, true);
   }
   if (typeof body.setRotation === "function") body.setRotation(rotationOf(pose.rotY), true);
-  if (typeof body.setLinvel === "function") body.setLinvel({ x: 0, y: 0, z: 0 }, true);
-  if (typeof body.setAngvel === "function") body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+  if (!fixed && typeof body.setLinvel === "function") body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+  if (!fixed && typeof body.setAngvel === "function") body.setAngvel({ x: 0, y: 0, z: 0 }, true);
 }
 
 function moveToPose(entry, pose) {

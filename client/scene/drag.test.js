@@ -84,3 +84,58 @@ test("a drag notifies subscribers once the object actually moves", async () => {
   mesh.geometry.dispose();
   clear();
 });
+
+test("a fixed body is not dragged", async () => {
+  await RAPIER.init();
+  clear();
+  const canvas = fakeCanvas();
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+  camera.position.set(2, 3, 4);
+  camera.lookAt(0, 0, 0);
+  camera.updateMatrixWorld(true);
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+  mesh.updateMatrixWorld(true);
+  let typeChanges = 0;
+  register("DESK#1", {
+    mesh,
+    product: { sku: "DESK-TOP-1400", movable: false },
+    rigidBody: {
+      isValid() {
+        return true;
+      },
+      isFixed() {
+        return true;
+      },
+      translation() {
+        return { x: 0, y: 0, z: 0 };
+      },
+      setLinvel() {},
+      setAngvel() {},
+      setBodyType() {
+        typeChanges += 1;
+      },
+      setTranslation() {}
+    }
+  });
+  const drag = createDrag({ canvas, camera, controls: { enabled: true } });
+  canvas.emit("pointermove", { clientX: 50, clientY: 50, pointerId: 1 });
+  assert.equal(canvas.style.cursor, "");
+  canvas.emit(
+    "pointerdown",
+    {
+      button: 0,
+      clientX: 50,
+      clientY: 50,
+      pointerId: 1,
+      preventDefault() {},
+      stopImmediatePropagation() {}
+    },
+    true
+  );
+  assert.equal(typeChanges, 0);
+  assert.equal(get("DESK#1").moved, undefined);
+  assert.equal(canvas.style.cursor, "");
+  drag.dispose();
+  mesh.geometry.dispose();
+  clear();
+});

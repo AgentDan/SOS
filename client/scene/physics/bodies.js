@@ -12,6 +12,10 @@ function mmToM(mm) {
   return mm * MM_TO_M;
 }
 
+function catalogBodyIsFixed(item) {
+  return Boolean(item && item.movable === false);
+}
+
 function createBodyFromCatalogItem(item, { position = { x: 0, y: 0, z: 0 }, parts } = {}) {
   const sku = item && item.sku ? item.sku : "model";
   if (!Array.isArray(parts) || parts.length === 0) {
@@ -19,14 +23,17 @@ function createBodyFromCatalogItem(item, { position = { x: 0, y: 0, z: 0 }, part
   }
 
   const world = getWorld();
-  const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
-    .setTranslation(position.x, position.y, position.z)
-    .setLinvel(0, 0, 0)
-    .enabledRotations(false, true, false)
-    .setLinearDamping(LINEAR_DAMPING)
-    .setAngularDamping(ANGULAR_DAMPING)
-    .setCanSleep(true)
-    .setCcdEnabled(true);
+  const fixed = catalogBodyIsFixed(item);
+  const bodyDesc = fixed
+    ? RAPIER.RigidBodyDesc.fixed().setTranslation(position.x, position.y, position.z)
+    : RAPIER.RigidBodyDesc.dynamic()
+        .setTranslation(position.x, position.y, position.z)
+        .setLinvel(0, 0, 0)
+        .enabledRotations(false, true, false)
+        .setLinearDamping(LINEAR_DAMPING)
+        .setAngularDamping(ANGULAR_DAMPING)
+        .setCanSleep(true)
+        .setCcdEnabled(true);
   const rigidBody = world.createRigidBody(bodyDesc);
 
   for (const part of parts) {

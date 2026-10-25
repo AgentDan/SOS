@@ -30,6 +30,27 @@ function personFields(person) {
   };
 }
 
+function productIsFixed(product) {
+  return Boolean(product && product.movable === false);
+}
+
+function entryIsFixed(entry) {
+  const body = entry && entry.rigidBody;
+  return Boolean(body && typeof body.isFixed === "function" && body.isFixed());
+}
+
+function typeMatches(entry, product) {
+  const body = entry && entry.rigidBody;
+  if (!body || (typeof body.isValid === "function" && !body.isValid())) return false;
+  return entryIsFixed(entry) === productIsFixed(product);
+}
+
+function movableSignature(products) {
+  return (Array.isArray(products) ? products : [])
+    .map((row) => `${row && row.sku}:${row && row.movable === false ? "0" : "1"}`)
+    .join("|");
+}
+
 function visiblePersonKey(person, showPerson) {
   if (showPerson !== true) return "";
   const fields = personFields(person);
@@ -59,13 +80,22 @@ function disposeMesh(mesh) {
 
 function createSceneSync({ world, products, loadModel, loadPerson = loadPersonModel } = {}) {
   const catalog = Array.isArray(products) ? products : [];
-  let appliedKey = null;
+  let appliedSceneKey = null;
+  let appliedCatalogKey = null;
   let personMesh = null;
   let personKey = "";
   let personToken = 0;
 
   function productOf(sku) {
     return catalog.find((row) => row && row.sku === sku);
+  }
+
+  function removeEntry(scene, id) {
+    const entry = all().get(id);
+    if (!entry) return;
+    if (entry.rigidBody && world) world.removeRigidBody(entry.rigidBody);
+    if (entry.mesh) scene.remove(entry.mesh);
+    unregister(id);
   }
 
   function removePerson(scene) {
@@ -75,7 +105,7 @@ function createSceneSync({ world, products, loadModel, loadPerson = loadPersonMo
     personMesh = null;
   }
 
-  async function syncProducts(scene, skus, placements) {
+  async function syncProducts(scene, skus, placements, sceneChanged) {
     const occurrences = [];
     for (const item of enumerateInstances(skus)) {
       const product = productOf(item.sku);
@@ -89,20 +119,19 @@ function createSceneSync({ world, products, loadModel, loadPerson = loadPersonMo
     const target = new Set(occurrences.map((item) => item.id));
     for (const id of [...all().keys()]) {
       if (id === "floor" || target.has(id)) continue;
-      const entry = all().get(id);
-      if (entry?.rigidBody && world) world.removeRigidBody(entry.rigidBody);
-      if (entry?.mesh) scene.remove(entry.mesh);
-      unregister(id);
+      removeEntry(scene, id);
     }
 
     const fresh = [];
     const hasPlacements = Array.isArray(placements);
     for (const item of occurrences) {
       const existing = get(item.id);
-      if (existing) {
-        if (hasPlacements) moveToPose(existing, item.pose);
+      if (existing && typeMatches(existing, item.product)) {
+        existing.product = item.product;
+        if (sceneChanged && hasPlacements) moveToPose(existing, item.pose);
         continue;
       }
+      if (existing) removeEntry(scene, item.id);
       fresh.push(item);
     }
     if (fresh.length > 0) await placeProducts(scene, fresh, loadModel);
@@ -139,10 +168,14 @@ function createSceneSync({ world, products, loadModel, loadPerson = loadPersonMo
   }
 
   async function syncScene(scene, skus, placements, person, options = {}) {
-    const key = sceneSignature(skus, placements, person);
-    if (key !== appliedKey) {
-      await syncProducts(scene, skus, placements);
-      appliedKey = key;
+    const sceneKey = sceneSignature(skus, placements, person);
+    const catalogKey = movableSignature(catalog);
+    const sceneChanged = sceneKey !== appliedSceneKey;
+    const catalogChanged = catalogKey !== appliedCatalogKey;
+    if (sceneChanged || catalogChanged) {
+      await syncProducts(scene, skus, placements, sceneChanged);
+      appliedSceneKey = sceneKey;
+      appliedCatalogKey = catalogKey;
     }
     await syncPerson(scene, person, options.showPerson === true);
   }

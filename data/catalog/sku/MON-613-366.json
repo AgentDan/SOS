@@ -1,6 +1,7 @@
 {
   "sku": "MON-613-366",
   "type": "monitor",
+  "movable": true,
   "name": "Monitor 27-inch",
   "label": "монитор",
   "dimensions": {

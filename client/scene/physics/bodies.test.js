@@ -111,4 +111,87 @@ describe("catalog bodies", { concurrency: 1 }, () => {
       disposeWorld();
     }
   });
+
+  test("movable false is fixed and a missing or true flag stays dynamic", async () => {
+    await initWorld();
+    try {
+      const parts = [part({ x: 0.2, y: 0.05, z: 0.2 }, { x: 0, y: 0.05, z: 0 })];
+      const fixed = createBodyFromCatalogItem(
+        { ...ITEM, movable: false },
+        { position: { x: 0, y: 1.2, z: 0 }, parts }
+      ).rigidBody;
+      const explicit = createBodyFromCatalogItem(
+        { ...ITEM, sku: "MON-613-366", movable: true },
+        { position: { x: 2, y: 1.2, z: 0 }, parts }
+      ).rigidBody;
+      const omitted = createBodyFromCatalogItem(
+        { ...ITEM, sku: "MOUSE-65" },
+        { position: { x: -2, y: 1.2, z: 0 }, parts }
+      ).rigidBody;
+
+      assert.equal(fixed.isFixed(), true);
+      assert.equal(fixed.isDynamic(), false);
+      assert.equal(fixed.bodyType(), RAPIER.RigidBodyType.Fixed);
+      assert.equal(fixed.numColliders(), 1);
+      assert.equal(explicit.isDynamic(), true);
+      assert.equal(explicit.gravityScale(), 1);
+      assert.equal(omitted.isDynamic(), true);
+      assert.equal(omitted.bodyType(), RAPIER.RigidBodyType.Dynamic);
+
+      const parked = fixed.translation().y;
+      for (let i = 0; i < 40; i += 1) step();
+      assert.ok(Math.abs(fixed.translation().y - parked) < 1e-6);
+      assert.ok(explicit.translation().y < 1.2);
+      assert.ok(omitted.translation().y < 1.2);
+    } finally {
+      disposeWorld();
+    }
+  });
+
+  test("a movable body dropped above a fixed catalog body settles on it", async () => {
+    await initWorld();
+    try {
+      const supportTop = 0.55;
+      const support = createBodyFromCatalogItem(
+        { sku: "DESK-TOP-1400", type: "desk_top", movable: false },
+        {
+          position: { x: 0, y: 0.5, z: 0 },
+          parts: [part({ x: 1, y: 0.05, z: 1 }, { x: 0, y: 0, z: 0 })]
+        }
+      ).rigidBody;
+      const { rigidBody } = createBodyFromCatalogItem(
+        { sku: "MON-613-366", type: "monitor" },
+        {
+          position: { x: 0, y: 1.6, z: 0 },
+          parts: [part({ x: 0.12, y: 0.01, z: 0.12 }, { x: 0, y: 0.01, z: 0 })]
+        }
+      );
+      assert.equal(support.isFixed(), true);
+      assert.equal(support.numColliders(), 1);
+      assert.equal(rigidBody.isDynamic(), true);
+
+      let sleptAt = -1;
+      let lowest = Infinity;
+      for (let i = 0; i < 900; i += 1) {
+        step();
+        lowest = Math.min(lowest, rigidBody.translation().y);
+        if (rigidBody.isSleeping()) {
+          sleptAt = i;
+          break;
+        }
+      }
+
+      const vel = rigidBody.linvel();
+      const speed = Math.hypot(vel.x, vel.y, vel.z);
+      const bottom = rigidBody.translation().y;
+      assert.equal(sleptAt >= 0, true, `not asleep, bottom ${bottom}, speed ${speed}, lowest ${lowest}`);
+      assert.ok(speed < 1e-3, `speed ${speed}`);
+      assert.ok(Math.abs(bottom - supportTop) < 0.02, `bottom ${bottom} vs ${supportTop}`);
+      assert.ok(lowest > supportTop - 0.05, `tunneled to ${lowest}`);
+      assert.ok(Math.abs(support.translation().y - 0.5) < 1e-6);
+      assert.equal(support.isFixed(), true);
+    } finally {
+      disposeWorld();
+    }
+  });
 });

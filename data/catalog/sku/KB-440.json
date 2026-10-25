@@ -1,6 +1,7 @@
 {
   "sku": "KB-440",
   "type": "keyboard",
+  "movable": true,
   "name": "Keyboard 440",
   "label": "клавиатура",
   "dimensions": {

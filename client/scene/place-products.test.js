@@ -109,3 +109,47 @@ test("a placed copy is dynamic with gravity and returns to the server pose", asy
     disposeWorld();
   }
 });
+
+test("a product with movable false stays fixed on the server pose", async () => {
+  await initWorld();
+  clear();
+  try {
+    const scene = new THREE.Scene();
+    await placeProducts(
+      scene,
+      [
+        {
+          id: "DESK-TOP-1400#1",
+          sku: "DESK-TOP-1400",
+          n: 1,
+          product: { sku: "DESK-TOP-1400", type: "desk_top", movable: false },
+          pose: { x: 0.2, y: 1, z: -0.1, rotY: 90 }
+        }
+      ],
+      async () => ({
+        object: new THREE.Group(),
+        parts: [{ half: { x: 0.4, y: 0.015, z: 0.2 }, local: { x: 0, y: 0.015, z: 0 } }]
+      })
+    );
+    const entry = get("DESK-TOP-1400#1");
+    const body = entry.rigidBody;
+    assert.equal(body.isFixed(), true);
+    assert.equal(body.isDynamic(), false);
+    assert.equal(body.numColliders(), 1);
+    close(body.translation().x, 0.2);
+    close(body.translation().y, 1);
+    close(body.translation().z, -0.1);
+    const parked = body.translation().y;
+    for (let i = 0; i < 20; i += 1) step();
+    close(body.translation().y, parked);
+
+    moveToPose(entry, { x: 0.3, y: 1.2, z: 0, rotY: 0 });
+    assert.equal(body.isFixed(), true);
+    close(body.translation().x, 0.3);
+    close(body.translation().y, 1.2);
+    close(body.translation().z, 0);
+  } finally {
+    clear();
+    disposeWorld();
+  }
+});

@@ -163,6 +163,10 @@ function validateCatalogDraft(catalog, errors) {
         }
       }
 
+      if (product && product.movable !== undefined && typeof product.movable !== "boolean") {
+        errors.push(`catalog: product "${label}" movable must be a boolean`);
+      }
+
       if (product && product.words !== undefined) {
         const words = product.words;
         const entriesOk =

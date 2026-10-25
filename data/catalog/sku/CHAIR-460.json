@@ -1,6 +1,7 @@
 {
   "sku": "CHAIR-460",
   "type": "chair",
+  "movable": false,
   "name": "Chair 460x520",
   "label": "кресло",
   "dimensions": {

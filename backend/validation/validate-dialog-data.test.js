@@ -367,6 +367,33 @@ test("flank and front layout fields are optional lists of catalog types", () => 
   );
 });
 
+test("catalog product movable is an optional boolean", () => {
+  const chair = (data) => data.catalog.draft.products.find((item) => item.sku === "CHAIR-460");
+
+  const missing = validPair();
+  delete chair(missing).movable;
+  assert.equal(validateDialogData(missing), true);
+
+  const off = validPair();
+  chair(off).movable = false;
+  assert.equal(validateDialogData(off), true);
+
+  const on = validPair();
+  chair(on).movable = true;
+  assert.equal(validateDialogData(on), true);
+
+  for (const value of ["no", 0, null]) {
+    const bad = validPair();
+    chair(bad).movable = value;
+    assert.throws(
+      () => validateDialogData(bad),
+      (err) =>
+        err instanceof Error &&
+        /catalog: product "CHAIR-460" movable must be a boolean/.test(err.message)
+    );
+  }
+});
+
 test("catalog product label is an optional non-empty string", () => {
   const chair = (data) => data.catalog.draft.products.find((item) => item.sku === "CHAIR-460");
 
