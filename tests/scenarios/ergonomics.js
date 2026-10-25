@@ -422,7 +422,11 @@ async function runCombo(clientId, combo, index, errors, products, table, referen
     combo.desk === 1400 ? { ok: false, reason: "host_full" } : { ok: true, delta: monitorPrice }
   );
   await expectCommand(clientId, "поставь колонки", errors, tag, products, { ok: true, delta: speakerPrice });
-  await expectCommand(clientId, "поставь колонки", errors, tag, products, { ok: false, reason: "limit" });
+  // Третья колонка: сначала место, потом лимит типа — на 1800 ряд полон (host_full), на 1400 место есть (limit).
+  await expectCommand(clientId, "поставь колонки", errors, tag, products, {
+    ok: false,
+    reason: combo.desk === 1800 ? "host_full" : "limit"
+  });
 
   return {
     index,
