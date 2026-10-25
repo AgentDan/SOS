@@ -31,6 +31,7 @@ function buildVocabulary({ commands, consultant, catalog } = {}) {
   const topicsSrc = isPlainObject(consultant?.topics) ? consultant.topics : {};
   const topics = {
     cheaper: Array.isArray(topicsSrc.cheaper) ? [...topicsSrc.cheaper] : [],
+    ergo: Array.isArray(topicsSrc.ergo) ? [...topicsSrc.ergo] : [],
     smalltalk: Array.isArray(topicsSrc.smalltalk) ? [...topicsSrc.smalltalk] : []
   };
 

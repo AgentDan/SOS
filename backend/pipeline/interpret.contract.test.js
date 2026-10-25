@@ -15,6 +15,7 @@ const vocabulary = {
   ],
   topics: {
     cheaper: ["дешевле", "Подёшевле"],
+    ergo: ["удобн", "эргоном", "подходит ли"],
     smalltalk: ["привет", "как дела"]
   },
   faq: [
@@ -40,6 +41,7 @@ const controlPhrases = [
   { name: "command with case yo and punctuation", input: text("Убери, крёсло!") },
   { name: "earlier sku", input: text("убери стол и кресло") },
   { name: "talk cheaper", input: text("хочу дешевле") },
+  { name: "talk ergo", input: text("удобно ли мне") },
   { name: "talk faq", input: text("какая доставка") },
   { name: "earlier faq", input: text("есть гарантия и доставка") },
   { name: "talk smalltalk", input: text("привет") },

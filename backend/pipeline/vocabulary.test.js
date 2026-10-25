@@ -19,7 +19,7 @@ test("full sources fill every vocabulary list", () => {
       ]
     },
     consultant: {
-      topics: { cheaper: ["дешевле"], smalltalk: ["привет"] },
+      topics: { cheaper: ["дешевле"], ergo: ["удобн"], smalltalk: ["привет"] },
       faq: [{ id: "delivery", words: ["доставка"] }, { id: "skip" }]
     },
     catalog: {
@@ -33,7 +33,7 @@ test("full sources fill every vocabulary list", () => {
   assert.deepEqual(vocab, {
     commands: [{ action: "remove", words: ["убери"] }],
     products: [{ sku: "CHAIR-460", words: ["кресл"] }],
-    topics: { cheaper: ["дешевле"], smalltalk: ["привет"] },
+    topics: { cheaper: ["дешевле"], ergo: ["удобн"], smalltalk: ["привет"] },
     faq: [{ id: "delivery", words: ["доставка"] }]
   });
 });
@@ -58,6 +58,7 @@ test("published layers fill the vocabulary", () => {
   );
   assert.deepEqual(vocab.topics, {
     cheaper: consultant.topics.cheaper,
+    ergo: Array.isArray(consultant.topics.ergo) ? consultant.topics.ergo : [],
     smalltalk: consultant.topics.smalltalk
   });
   assert.deepEqual(
@@ -72,13 +73,13 @@ test("missing or crooked sources do not throw", () => {
   assert.deepEqual(buildVocabulary({}), {
     commands: [],
     products: [],
-    topics: { cheaper: [], smalltalk: [] },
+    topics: { cheaper: [], ergo: [], smalltalk: [] },
     faq: []
   });
   assert.deepEqual(buildVocabulary(undefined), {
     commands: [],
     products: [],
-    topics: { cheaper: [], smalltalk: [] },
+    topics: { cheaper: [], ergo: [], smalltalk: [] },
     faq: []
   });
   assert.deepEqual(
@@ -90,7 +91,7 @@ test("missing or crooked sources do not throw", () => {
     {
       commands: [],
       products: [],
-      topics: { cheaper: [], smalltalk: [] },
+      topics: { cheaper: [], ergo: [], smalltalk: [] },
       faq: []
     }
   );

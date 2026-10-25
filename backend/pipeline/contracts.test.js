@@ -54,7 +54,7 @@ function replyContext(overrides = {}) {
 test("contract lists are the block boundary", () => {
   assert.deepEqual(INTENT_TYPES, ["answer", "command", "talk", "unclear"]);
   assert.deepEqual(INTENT_SOURCES, ["button", "text"]);
-  assert.deepEqual(TALK_TOPICS, ["faq", "cheaper", "smalltalk"]);
+  assert.deepEqual(TALK_TOPICS, ["faq", "cheaper", "ergo", "smalltalk"]);
   assert.deepEqual(REASON_CODES, [
     "unclear",
     "unknown_sku",
@@ -130,6 +130,7 @@ test("validateIntent accepts every talk topic", () => {
     })
   );
   accepted(validateIntent({ type: "talk", source: "text", payload: { topic: "cheaper" } }));
+  accepted(validateIntent({ type: "talk", source: "text", payload: { topic: "ergo" } }));
   accepted(validateIntent({ type: "talk", source: "button", payload: { topic: "smalltalk" } }));
 });
 
@@ -190,7 +191,7 @@ test("validateIntent rejects an unknown talk topic", () => {
       payload: { topic: "price" }
     })
   );
-  assert.deepEqual(errors, ["payload.topic must be one of: faq, cheaper, smalltalk"]);
+  assert.deepEqual(errors, ["payload.topic must be one of: faq, cheaper, ergo, smalltalk"]);
 });
 
 test("validateExecutorResult accepts every kind when the turn succeeded", () => {

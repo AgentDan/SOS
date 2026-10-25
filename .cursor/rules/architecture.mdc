@@ -24,6 +24,7 @@ data/ → backend/config → backend/pipeline → backend/api → client/api →
 - Блок `ergonomics/` ничего не импортирует из других блоков. Импортирует его только `pipeline/`.
 - `commands` получает сцену как переданную функцию, `scene` не импортирует. Исключение: `commands` может импортировать только `backend/scene/distance.js`. `layout.js` туда не импортируется — положения считает pipeline и передаёт в команду.
 - `talk` получает сцену как переданную функцию, `scene` не импортирует.
+- `backend/talk/ergo-answer.js` лежит в `talk/` и ничего не импортирует из других блоков.
 - `backend/ai/**` не импортирует `api`, `pipeline`, блоки, `client`, `admin`. `backend/ai/llm.js` ничего не импортирует из блоков. `backend/understanding/parse-with-llm.js` импортирует только `backend/ai`.
 - `backend/pipeline/**` может импортировать блоки и `config`, но не `api`.
 - `client/**` не импортирует `backend/**` и `admin/**`. `admin/**` не импортирует `backend/**` и `client/**`.

@@ -84,14 +84,15 @@ function applyIntent({ questionnaire, catalog, profile, intent, consultant, ergo
   }
 
   if (intent?.type === "talk") {
-    const before = computeScenePlan(catalog, profile);
+    const before = assembleScene(catalog, profile, { questionnaire, ergonomics });
     const result = runTalk({
       intent,
       catalog,
       consultant,
       scene: {
-        skus: before,
-        apply: (change) => applySceneChange({ catalog, profile, change, before })
+        skus: before.skus,
+        ergo: before.ergo,
+        apply: (change) => applySceneChange({ catalog, profile, change, before: before.skus })
       },
       canReplace
     });

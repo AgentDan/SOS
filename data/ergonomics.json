@@ -1,7 +1,7 @@
 {
   "section": "ergonomics",
-  "draftVersion": 6,
-  "publishedVersion": 3,
+  "draftVersion": 7,
+  "publishedVersion": 4,
   "draft": {
     "bounds": {
       "heightMinCm": 140,
@@ -52,6 +52,20 @@
         "y": 0,
         "z": 0
       }
+    },
+    "table": {
+      "seatHeightFactor": 2.6,
+      "deskHeightFactor": 4.15,
+      "eyeAboveSeatFactor": 4.57,
+      "monitorDistanceFactor": 3.4,
+      "monitorDistanceMinMm": 500,
+      "monitorDistanceMaxMm": 700,
+      "eyeForwardMm": 150,
+      "tolerance": {
+        "deskHeightMm": 60,
+        "monitorDistanceMm": 100,
+        "monitorTopMm": 80
+      }
     }
   },
   "history": [
@@ -94,6 +108,44 @@
             "x": 0,
             "y": 0,
             "z": 0
+          }
+        }
+      }
+    },
+    {
+      "version": 4,
+      "date": "2026-10-25T00:17:46.562Z",
+      "description": "q",
+      "snapshot": {
+        "bounds": {
+          "heightMinCm": 140,
+          "heightMaxCm": 210
+        },
+        "defaults": {
+          "heightCm": 175,
+          "hand": "right"
+        },
+        "mannequin": {
+          "sku": "character",
+          "referenceHeightCm": 180,
+          "offsetMm": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "table": {
+          "seatHeightFactor": 2.6,
+          "deskHeightFactor": 4.15,
+          "eyeAboveSeatFactor": 4.57,
+          "monitorDistanceFactor": 3.4,
+          "monitorDistanceMinMm": 500,
+          "monitorDistanceMaxMm": 700,
+          "eyeForwardMm": 150,
+          "tolerance": {
+            "deskHeightMm": 60,
+            "monitorDistanceMm": 100,
+            "monitorTopMm": 80
           }
         }
       }

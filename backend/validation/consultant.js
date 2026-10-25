@@ -19,6 +19,9 @@ function validateTopics(topics, errors) {
   if (!isStringList(topics.smalltalk)) {
     errors.push("consultant: topics.smalltalk must be an array of non-empty strings");
   }
+  if (topics.ergo !== undefined && !isStringList(topics.ergo)) {
+    errors.push("consultant: topics.ergo must be an array of non-empty strings");
+  }
 }
 
 function validateFaq(faq, errors) {
@@ -55,7 +58,10 @@ const REPLY_PLACEHOLDERS = new Set([
   "a",
   "b",
   "name",
-  "distance"
+  "distance",
+  "actual",
+  "target",
+  "delta"
 ]);
 
 function validateReplies(replies, errors) {

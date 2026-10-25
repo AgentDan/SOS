@@ -14,6 +14,7 @@ const vocabulary = {
   ],
   topics: {
     cheaper: ["дешевле", "Подёшевле"],
+    ergo: ["удобн", "эргоном", "подходит ли", "по росту", "по моему росту"],
     smalltalk: ["привет", "как дела"]
   },
   faq: [
@@ -198,9 +199,17 @@ test("the earlier faq word sets faqId", () => {
   );
 });
 
-test("decision order checks command, then cheaper, then faq, then smalltalk", () => {
+test("ergonomics phrases are talk ergo", () => {
+  assert.deepEqual(interpret(text("удобно ли мне"), vocabulary), talk("ergo"));
+  assert.deepEqual(interpret(text("подходит ли мне этот стол"), vocabulary), talk("ergo"));
+  assert.deepEqual(interpret(text("эргономика"), vocabulary), talk("ergo"));
+});
+
+test("decision order checks command, then cheaper, then ergo, then faq, then smalltalk", () => {
   assert.deepEqual(interpret(text("хочу дешевле, убери стол"), vocabulary), command("remove", "DESK-TOP-1800"));
   assert.deepEqual(interpret(text("дешевле ли доставка"), vocabulary), talk("cheaper"));
+  assert.deepEqual(interpret(text("удобно ли мне дешевле"), vocabulary), talk("cheaper"));
+  assert.deepEqual(interpret(text("доставка, удобно ли мне"), vocabulary), talk("ergo"));
   assert.deepEqual(interpret(text("привет, какая доставка"), vocabulary), talk("faq", "delivery"));
   assert.deepEqual(interpret(text("абракадабра"), vocabulary), unclear("text", "no_match"));
 });

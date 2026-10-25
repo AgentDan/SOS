@@ -15,9 +15,10 @@ const consultant = {
   faq: [{ id: "delivery", words: ["доставк"], answer: "ТЕСТ: текст ответа заполняет владелец" }]
 };
 
-function scene(skus, apply) {
+function scene(skus, apply, ergo = null) {
   return {
     skus,
+    ergo,
     apply:
       apply ??
       ((change) => ({ ok: true, reasonCode: null, sceneChanged: true, skus, change }))
@@ -49,6 +50,16 @@ const cases = [
     intent: intent("cheaper"),
     skus: ["LEG", "HI"],
     apply: () => ({ ok: false })
+  },
+  { name: "ergo no data", intent: intent("ergo"), skus: ["LEG"], ergo: null, sayCode: "ergo_no_data" },
+  {
+    name: "ergo issue",
+    intent: intent("ergo"),
+    skus: ["LEG"],
+    ergo: {
+      issues: [{ code: "desk_too_high", sku: "LEG", actualMm: 1030, targetMm: 726, deltaMm: 304 }]
+    },
+    sayCode: "ergo_desk_too_high"
   }
 ];
 
@@ -58,9 +69,10 @@ test("runTalk results satisfy the executor contract", () => {
       intent: row.intent,
       catalog,
       consultant,
-      scene: scene(row.skus, row.apply)
+      scene: scene(row.skus, row.apply, row.ergo)
     });
     assert.equal(typeof result.say.code, "string", row.name);
+    if (row.sayCode) assert.equal(result.say.code, row.sayCode, row.name);
     assert.deepEqual(validateExecutorResult(result), { ok: true, errors: [] }, row.name);
   }
 });

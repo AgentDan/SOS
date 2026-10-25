@@ -1,6 +1,6 @@
 const INTENT_TYPES = Object.freeze(["answer", "command", "talk", "unclear"]);
 const INTENT_SOURCES = Object.freeze(["button", "text"]);
-const TALK_TOPICS = Object.freeze(["faq", "cheaper", "smalltalk"]);
+const TALK_TOPICS = Object.freeze(["faq", "cheaper", "ergo", "smalltalk"]);
 const REASON_CODES = Object.freeze([
   "unclear",
   "unknown_sku",

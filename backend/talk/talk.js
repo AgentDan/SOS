@@ -1,4 +1,5 @@
 import { runCheaper } from "./cheaper.js";
+import { runErgo } from "./ergo-answer.js";
 import { failTalk, okTalk } from "./result.js";
 
 function isPlainObject(value) {
@@ -48,6 +49,8 @@ function runTalk({ intent, catalog, consultant, scene, canReplace }) {
   }
 
   if (topic === "cheaper") return runCheaper({ catalog, scene, canReplace });
+
+  if (topic === "ergo") return runErgo({ ergo: scene?.ergo ?? null, catalog, scene });
 
   const facts = {};
   if (topic !== undefined) facts.topic = topic;

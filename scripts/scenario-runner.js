@@ -7,6 +7,7 @@ import { prepareDraftData, removeDraftData } from "../tests/scenarios/prepare-dr
 import { bodySteps, runBody } from "../tests/scenarios/body.js";
 import { layoutSteps, runLayout } from "../tests/scenarios/layout.js";
 import { ergoSteps, runErgo } from "../tests/scenarios/ergo.js";
+import { ergoTalkSteps, runErgoTalk } from "../tests/scenarios/ergo-talk.js";
 import { personSteps, runPerson } from "../tests/scenarios/person.js";
 import { runSkeleton, skeletonSteps } from "../tests/scenarios/skeleton.js";
 
@@ -195,6 +196,10 @@ function runErgoScenario() {
   return withDraftData(() => runErgo());
 }
 
+function runErgoTalkScenario() {
+  return withDraftData(() => runErgoTalk());
+}
+
 async function main() {
   let failed = 0;
 
@@ -254,6 +259,15 @@ async function main() {
   }
   report("ergo", ergoSteps.length, ergoErrors);
   if (ergoErrors.length > 0) failed += 1;
+
+  let ergoTalkErrors;
+  try {
+    ergoTalkErrors = (await runErgoTalkScenario()).errors;
+  } catch (err) {
+    ergoTalkErrors = [err instanceof Error ? err.message : String(err)];
+  }
+  report("ergo-talk", ergoTalkSteps.length, ergoTalkErrors);
+  if (ergoTalkErrors.length > 0) failed += 1;
 
   if (failed > 0) process.exit(1);
 }

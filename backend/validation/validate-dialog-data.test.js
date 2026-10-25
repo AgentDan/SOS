@@ -203,6 +203,34 @@ test("consultant topics are optional arrays of non-empty strings", () => {
   );
 });
 
+test("consultant topics.ergo is optional and otherwise a list of non-empty strings", () => {
+  const omitted = loadSkeleton();
+  delete omitted.consultant.draft.topics.ergo;
+  assert.equal(validateDialogData(omitted), true);
+
+  const empty = loadSkeleton();
+  empty.consultant.draft.topics.ergo = [];
+  assert.equal(validateDialogData(empty), true);
+
+  const blank = loadSkeleton();
+  blank.consultant.draft.topics.ergo = ["удобн", ""];
+  assert.throws(
+    () => validateDialogData(blank),
+    (err) =>
+      err instanceof Error &&
+      /consultant: topics\.ergo must be an array of non-empty strings/.test(err.message)
+  );
+
+  const notList = loadSkeleton();
+  notList.consultant.draft.topics.ergo = "удобн";
+  assert.throws(
+    () => validateDialogData(notList),
+    (err) =>
+      err instanceof Error &&
+      /consultant: topics\.ergo must be an array of non-empty strings/.test(err.message)
+  );
+});
+
 test("consultant formality must be вы or ты", () => {
   const formal = loadSkeleton();
   formal.consultant.draft.formality = "ты";
@@ -373,7 +401,7 @@ test("consultant replies are an optional map of templates", () => {
 
   const allowed = loadSkeleton();
   allowed.consultant.draft.replies = {
-    sample: "{item} {newItem} {savedEur} {max} {answer} {question}"
+    sample: "{item} {newItem} {savedEur} {max} {answer} {question} {actual} {target} {delta}"
   };
   assert.equal(validateDialogData(allowed), true);
 

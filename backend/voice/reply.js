@@ -62,7 +62,7 @@ function reply({ result, context, templates, names, maxWords } = {}) {
   const question = questionText(context?.nextQuestion);
 
   const values = {
-    item: named(names, params.sku),
+    item: nonEmpty(params.item) ?? named(names, params.sku),
     newItem: named(names, params.withSku),
     savedEur: params.savedEur,
     max: params.max,
@@ -70,7 +70,10 @@ function reply({ result, context, templates, names, maxWords } = {}) {
     question,
     a: params.a,
     b: params.b,
-    name: params.name
+    name: params.name,
+    actual: params.actual,
+    target: params.target,
+    delta: params.delta
   };
   if (typeof params.distance === "string") values.distance = params.distance;
   let text = fill(template, values);

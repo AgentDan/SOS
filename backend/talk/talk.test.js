@@ -89,6 +89,27 @@ test("smalltalk leaves the scene untouched", () => {
   assert.deepEqual(board.calls, []);
 });
 
+test("ergo answers from the scene and does not apply a change", () => {
+  const board = scene(["DESK-TOP-1800"]);
+  board.ergo = {
+    issues: [
+      { code: "desk_too_high", sku: "DESK-TOP-1800", actualMm: 1030, targetMm: 726, deltaMm: 304 }
+    ]
+  };
+  const result = runTalk({
+    intent: talk("ergo"),
+    catalog: { products: [{ sku: "DESK-TOP-1800", label: "стол 180" }] },
+    scene: board
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.sceneChanged, false);
+  assert.equal(result.say.code, "ergo_desk_too_high");
+  assert.deepEqual(result.say.params, { actual: 103, target: 73, delta: 30, item: "стол 180" });
+  assert.equal(result.facts.topic, "ergo");
+  assert.equal(result.facts.issues.length, 1);
+  assert.deepEqual(board.calls, []);
+});
+
 test("unknown topic is not_implemented", () => {
   const board = scene(["CHAIR"]);
   const result = runTalk({ intent: talk("weather"), catalog: { products: [] }, scene: board });

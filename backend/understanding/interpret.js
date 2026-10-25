@@ -10,7 +10,7 @@
  * {
  *   commands: [{ action: "add" | "remove" | "replace" | string, words: string[] }],
  *   products: [{ sku: string, words: string[] }],
- *   topics:   { cheaper: string[], smalltalk: string[] },
+ *   topics:   { cheaper: string[], ergo: string[], smalltalk: string[] },
  *   faq:      [{ id: string, words: string[] }]
  * }
  *
@@ -37,12 +37,16 @@
  *    слово стоит в тексте раньше остальных. Нет артикула — поля sku нет.
  *    direction, amount и unit скелет не заполняет.
  * 4. Слово из topics.cheaper → talk { topic: "cheaper" }.
- * 5. Слово из faq[].words → talk { topic: "faq", faqId }. При нескольких
+ * 5. Слово из topics.ergo → talk { topic: "ergo" }.
+ * 6. Слово из faq[].words → talk { topic: "faq", faqId }. При нескольких
  *    совпадениях берётся то, чьё слово стоит в тексте раньше.
- * 6. Слово из topics.smalltalk → talk { topic: "smalltalk" }.
- * 7. Иначе → unclear, reason "no_match".
+ * 7. Слово из topics.smalltalk → talk { topic: "smalltalk" }.
+ * 8. Иначе → unclear, reason "no_match".
  *
- * Внутри шагов 3 и 5 при равной позиции в тексте побеждает запись,
+ * Мульти-совпадения внутри шага решает первое слово по позиции в тексте,
+ * как у команд и FAQ. Более ранний шаг побеждает, даже если его слово
+ * в тексте стоит позже: «дешевле» в одной фразе с эргономикой остаётся cheaper.
+ * Внутри шагов 3 и 6 при равной позиции в тексте побеждает запись,
  * которая раньше в словаре. У distance на одном индексе то же правило,
  * дальше берутся следующие вхождения.
  */
@@ -175,6 +179,10 @@ function fromText(text, vocabulary) {
 
   if (listMatches(normalized, topics.cheaper)) {
     return { type: "talk", source: "text", payload: { topic: "cheaper" } };
+  }
+
+  if (listMatches(normalized, topics.ergo)) {
+    return { type: "talk", source: "text", payload: { topic: "ergo" } };
   }
 
   const faq = earliestEntry(normalized, vocab.faq, (entry) => typeof entry.id === "string");

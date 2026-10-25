@@ -41,9 +41,9 @@ function systemPrompt(vocabulary) {
     "Верни только JSON.",
     `Допустимые действия: ${commands}.`,
     `Допустимые артикулы и их слова: ${products}.`,
-    `Темы: cheaper (${wordList(topics.cheaper)}), smalltalk (${wordList(topics.smalltalk)}).`,
+    `Темы: cheaper (${wordList(topics.cheaper)}), ergo (${wordList(topics.ergo)}), smalltalk (${wordList(topics.smalltalk)}).`,
     `Частые вопросы: ${faq}.`,
-    'Формат: {"type":"command","action":"...","sku":"...","skus":[]} или {"type":"talk","topic":"cheaper|smalltalk|faq","faqId":"..."} или {"type":"unclear"}.',
+    'Формат: {"type":"command","action":"...","sku":"...","skus":[]} или {"type":"talk","topic":"cheaper|ergo|smalltalk|faq","faqId":"..."} или {"type":"unclear"}.',
     "Для distance укажи в skus не больше двух артикулов в порядке упоминания. Для остальных действий укажи один sku.",
     "Если под одно слово подходят несколько артикулов, возьми первый из перечня.",
     'Если не уверен, верни {"type":"unclear"}. Ничего не выдумывай.'
@@ -117,7 +117,7 @@ function commandIntent(parsed, actions, skus) {
 
 function talkIntent(parsed, faqIds) {
   const topic = parsed.topic;
-  if (topic !== "cheaper" && topic !== "smalltalk" && topic !== "faq") return null;
+  if (topic !== "cheaper" && topic !== "ergo" && topic !== "smalltalk" && topic !== "faq") return null;
   const hasFaq = Object.prototype.hasOwnProperty.call(parsed, "faqId") && parsed.faqId !== undefined;
   if (hasFaq && (typeof parsed.faqId !== "string" || !faqIds.has(parsed.faqId))) return null;
   if (topic === "faq") {

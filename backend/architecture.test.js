@@ -178,6 +178,16 @@ test("body.js does not import other blocks", () => {
   assert.deepEqual(importSpecifiers(source), []);
 });
 
+test("ergo-answer.js does not import other blocks", () => {
+  const file = path.join(BACKEND, "talk", "ergo-answer.js");
+  const talkDir = path.join(BACKEND, "talk");
+  for (const spec of importSpecifiers(readFileSync(file, "utf8"))) {
+    assert.equal(spec.startsWith("."), true, spec);
+    const resolved = resolveSpecifier(file, spec);
+    assert.ok(resolved && isInside(resolved, talkDir), spec);
+  }
+});
+
 test("ergonomics.js imports nothing", () => {
   const source = readFileSync(path.join(BACKEND, "ergonomics", "ergonomics.js"), "utf8");
   assert.deepEqual(importSpecifiers(source), []);

@@ -18,6 +18,7 @@ const vocabulary = {
   ],
   topics: {
     cheaper: ["дешевл"],
+    ergo: ["удобн"],
     smalltalk: ["привет"]
   },
   faq: [
@@ -103,6 +104,28 @@ test("more than two skus is null", async () => {
     })
   });
   assert.equal(intent, null);
+});
+
+test("ergo is an allowed talk topic and an unknown topic is dropped", async () => {
+  let system = "";
+  const intent = await parseWithLlm({
+    text: "удобно ли мне",
+    vocabulary,
+    llm: async ({ system: prompt }) => {
+      system = prompt;
+      return { ok: true, text: JSON.stringify({ type: "talk", topic: "ergo" }) };
+    }
+  });
+  assert.equal(system.includes("ergo (удобн)"), true);
+  assert.equal(system.includes("cheaper|ergo|smalltalk|faq"), true);
+  assert.deepEqual(intent, { type: "talk", source: "text", payload: { topic: "ergo" } });
+
+  const unknown = await parseWithLlm({
+    text: "удобно ли мне",
+    vocabulary,
+    llm: llmReturning({ type: "talk", topic: "weather" })
+  });
+  assert.equal(unknown, null);
 });
 
 test("unclear from the model is null", async () => {

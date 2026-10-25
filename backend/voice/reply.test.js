@@ -27,7 +27,15 @@ const SAY_CODES = [
   "command_replaced",
   "faq_answer",
   "smalltalk",
-  "cheaper_done"
+  "cheaper_done",
+  "ergo_ok",
+  "ergo_no_data",
+  "ergo_desk_too_high",
+  "ergo_desk_too_low",
+  "ergo_monitor_too_far",
+  "ergo_monitor_too_close",
+  "ergo_monitor_too_high",
+  "ergo_monitor_too_low"
 ];
 
 const names = {
@@ -98,7 +106,15 @@ test("every known say code produces a non-empty template line", () => {
       ok: true,
       kind: "talk",
       params: { sku: "DESK-TOP-1800", withSku: "DESK-TOP-1400", savedEur: 70 }
-    }
+    },
+    ergo_ok: { ok: true, kind: "talk" },
+    ergo_no_data: { ok: true, kind: "talk" },
+    ergo_desk_too_high: { ok: true, kind: "talk", params: { actual: 103, target: 73, delta: 30, item: "стол 180" } },
+    ergo_desk_too_low: { ok: true, kind: "talk", params: { actual: 60, target: 73, delta: -13, item: "стол 180" } },
+    ergo_monitor_too_far: { ok: true, kind: "talk", params: { actual: 71, target: 60, delta: 11, item: "монитор" } },
+    ergo_monitor_too_close: { ok: true, kind: "talk", params: { actual: 5, target: 60, delta: -55, item: "монитор" } },
+    ergo_monitor_too_high: { ok: true, kind: "talk", params: { actual: 140, target: 126, delta: 14, item: "монитор" } },
+    ergo_monitor_too_low: { ok: true, kind: "talk", params: { actual: 90, target: 126, delta: -36, item: "монитор" } }
   };
 
   for (const code of SAY_CODES) {
@@ -235,6 +251,46 @@ test("a missing template falls back by ok, then to the built-in line", () => {
     { templates: {} }
   );
   assert.equal(broken.text, FALLBACK_TEXT);
+});
+
+test("ergo lines fill centimetres from params and stay within 35 words", () => {
+  const high = speak(
+    sayResult({
+      ok: true,
+      kind: "talk",
+      code: "ergo_desk_too_high",
+      params: { actual: 103, target: 73, delta: 30, item: "стол 180" }
+    })
+  );
+  assert.equal(high.text, "Стол высоковат: 103 см, для вашего роста лучше около 73 см.");
+  assert.ok(high.text.split(/\s+/).filter((word) => word.length > 0).length <= 35);
+
+  const low = speak(
+    sayResult({
+      ok: true,
+      kind: "talk",
+      code: "ergo_monitor_too_low",
+      params: { actual: 90, target: 126, delta: -36, item: "монитор" }
+    })
+  );
+  assert.equal(low.text, "Монитор низковат: верх на 90 см, глаза на 126 см.");
+
+  const fitted = speak(sayResult({ ok: true, kind: "talk", code: "ergo_ok" }));
+  assert.equal(fitted.text, "Для вашего роста всё стоит удобно.");
+
+  const missing = speak(sayResult({ ok: true, kind: "talk", code: "ergo_no_data" }));
+  assert.equal(missing.text, "Пока не могу оценить: нужны рост, стол и кресло.");
+
+  const named = speak(
+    sayResult({
+      ok: true,
+      kind: "talk",
+      code: "ergo_desk_too_low",
+      params: { actual: 60, target: 73, delta: -13, item: "стол 180" }
+    }),
+    { templates: { ergo_desk_too_low: "{item}: {actual} см, дельта {delta}." } }
+  );
+  assert.equal(named.text, "стол 180: 60 см, дельта -13.");
 });
 
 test("maxWords clips on a word boundary, and a bad limit does not clip", () => {
