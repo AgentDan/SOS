@@ -13,9 +13,11 @@ function createBodyFromCatalogItem(item, { position = { x: 0, y: 0, z: 0 }, part
   }
 
   const world = getWorld();
-  const bodyDesc = RAPIER.RigidBodyDesc.dynamic();
+  // Held on the server pose. Gravity must not drop a mesh whose size differs from the catalog.
+  const bodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
   bodyDesc.setTranslation(position.x, position.y, position.z);
   const rigidBody = world.createRigidBody(bodyDesc);
+  rigidBody.setGravityScale(0, true);
 
   for (const part of parts) {
     const colliderDesc = RAPIER.ColliderDesc.cuboid(part.half.x, part.half.y, part.half.z);

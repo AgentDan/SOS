@@ -1,7 +1,7 @@
 // Central lookup for every physics-backed object in the scene.
 // Instance id is `${sku}#${n}` (n starts at 1). Floor stays "floor".
-// id -> { mesh, rigidBody, product, position, hostId, moved? }
-// moved: the user dragged this copy, so auto layout does not shift it.
+// id -> { mesh, rigidBody, product, position, rotY, moved? }
+// moved: the user dragged this copy. The next different server scene clears it.
 const registry = new Map();
 
 function instanceKey(sku, n) {

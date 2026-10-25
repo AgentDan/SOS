@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchScene } from "./api/dialog-api.js";
+import { useCallback, useEffect, useState } from "react";
+import { fetchScene, readScene } from "./api/dialog-api.js";
 import { MessageInput } from "./chat/MessageInput.jsx";
 import { QuestionPanel } from "./chat/QuestionPanel.jsx";
 import { ReplyBox } from "./chat/ReplyBox.jsx";
@@ -8,15 +8,15 @@ import { getClientId } from "./session/client-id.js";
 
 function App() {
   const clientId = getClientId();
-  const [skus, setSkus] = useState(null);
+  const [scene, setScene] = useState(null);
+  const [showPerson, setShowPerson] = useState(false);
   const [panel, setPanel] = useState(false);
   const [reply, setReply] = useState("");
-  const [distanceToken, setDistanceToken] = useState(0);
-  const [measure, setMeasure] = useState(null);
-  const pendingRef = useRef(null);
 
-  const showSkus = useCallback((list) => {
-    setSkus(Array.isArray(list) ? list : []);
+  const remember = useCallback((data) => {
+    const next = readScene(data);
+    setScene(next);
+    if (next.person == null) setShowPerson(false);
   }, []);
 
   useEffect(() => {
@@ -24,7 +24,7 @@ function App() {
     fetchScene(clientId)
       .then((data) => {
         if (!alive) return;
-        showSkus(data?.skus);
+        remember(data);
       })
       .catch((err) => {
         console.error("SOS failed to start:", err);
@@ -33,64 +33,38 @@ function App() {
     return () => {
       alive = false;
     };
-  }, [clientId, showSkus]);
+  }, [clientId, remember]);
 
   const refreshScene = useCallback(async () => {
     const data = await fetchScene(clientId);
-    showSkus(data?.skus);
-  }, [clientId, showSkus]);
-
-  const onDistance = useCallback((event) => {
-    const pending = pendingRef.current;
-    if (!pending || !event || event.token !== pending.token) return;
-    const label = event.label;
-    if (typeof label === "string" && label.length > 0) {
-      setReply(pending.text.split("{distance}").join(label));
-      return;
-    }
-    const fallback = pending.fallback.trim();
-    setReply(fallback || pending.text.split("{distance}").join("").replace(/\s{2,}/g, " ").trim());
-  }, []);
+    remember(data);
+  }, [clientId, remember]);
 
   const onSent = useCallback(
     (response) => {
       const text = typeof response?.reply?.text === "string" ? response.reply.text : "";
-      const facts = response?.result?.facts;
-      const pair = facts?.measure;
-      showSkus(response?.scene?.skus);
-      if (
-        response?.result?.ok === true &&
-        facts?.action === "distance" &&
-        typeof pair?.a === "string" &&
-        typeof pair?.b === "string"
-      ) {
-        const token = distanceToken + 1;
-        const fallback = response?.reply?.fallback;
-        pendingRef.current = {
-          token,
-          text,
-          fallback: typeof fallback === "string" ? fallback : ""
-        };
-        setMeasure({ a: pair.a, b: pair.b });
-        setDistanceToken(token);
-        setReply("");
-        return;
-      }
-      pendingRef.current = null;
+      remember(response?.scene);
       setReply(text);
     },
-    [distanceToken, showSkus]
+    [remember]
   );
+
+  const person = scene?.person ?? null;
 
   return (
     <>
       <SceneView
-        skus={skus}
-        distanceToken={distanceToken}
-        measure={measure}
-        onDistance={onDistance}
+        skus={scene ? scene.skus : null}
+        placements={scene ? scene.placements : null}
+        person={person}
+        showPerson={showPerson && person != null}
         onReady={() => setPanel(true)}
       />
+      {person ? (
+        <button type="button" className="scene-person" onClick={() => setShowPerson((on) => !on)}>
+          {showPerson ? "Скрыть манекена" : "Показать манекена"}
+        </button>
+      ) : null}
       {panel ? (
         <QuestionPanel clientId={clientId} onAnswered={refreshScene} />
       ) : (

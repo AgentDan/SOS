@@ -59,3 +59,18 @@
   cursor: default;
   opacity: 0.45;
 }
+
+.scene-person {
+  pointer-events: auto;
+  position: absolute;
+  z-index: 10;
+  top: 16px;
+  right: 16px;
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: #eee;
+  color: #121212;
+  font: 14px/1.4 system-ui, sans-serif;
+  cursor: pointer;
+}

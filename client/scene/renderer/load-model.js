@@ -1,8 +1,13 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { mmToM } from "../physics/bodies.js";
 
 const loader = new GLTFLoader();
+const PERSON_OPACITY = 0.45;
+
+// Product models: base center on x/z and the lowest point on y land on the origin.
+// The mannequin keeps its own x/z (floor, centered in x, z under the pelvis) and only drops to y = 0.
+const PRODUCT_NORMALIZE = { centerX: true, centerZ: true };
+const PERSON_NORMALIZE = { centerX: false, centerZ: false };
 
 function loadGltf(url) {
   return new Promise((resolve, reject) => {
@@ -10,23 +15,17 @@ function loadGltf(url) {
   });
 }
 
-function fitToCatalogDimensions(model, dimensions) {
-  const inner = new THREE.Group();
-  inner.add(model);
-  inner.updateWorldMatrix(true, true);
-
-  const box = new THREE.Box3().setFromObject(inner);
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-  inner.position.set(-center.x, -center.y, -center.z);
-
+function normalizeModel(model, { centerX = true, centerZ = true } = {}) {
   const wrapper = new THREE.Group();
-  wrapper.add(inner);
-  wrapper.scale.set(
-    size.x > 0 ? mmToM(dimensions.width) / size.x : 1,
-    size.y > 0 ? mmToM(dimensions.height) / size.y : 1,
-    size.z > 0 ? mmToM(dimensions.depth) / size.z : 1
-  );
+  wrapper.add(model);
+  wrapper.updateWorldMatrix(true, true);
+  const box = new THREE.Box3().setFromObject(wrapper);
+  if (box.isEmpty()) return wrapper;
+  const center = box.getCenter(new THREE.Vector3());
+  model.position.x += centerX ? -center.x : 0;
+  model.position.y += -box.min.y;
+  model.position.z += centerZ ? -center.z : 0;
+  wrapper.updateWorldMatrix(true, true);
   return wrapper;
 }
 
@@ -78,9 +77,19 @@ function readFittedColliderParts(root, sku) {
   return parts;
 }
 
-async function loadCatalogModel(product) {
+function prepareScene(gltf) {
+  gltf.scene.traverse((obj) => {
+    if (obj.isMesh) {
+      obj.castShadow = false;
+      obj.receiveShadow = false;
+    }
+  });
+  return gltf.scene;
+}
+
+async function loadGltfProduct(product) {
   const sku = product && product.sku ? product.sku : "model";
-  const url = modelUrl(product.media && product.media.model3d);
+  const url = modelUrl(product && product.media && product.media.model3d);
   if (!url) throw new Error(`${sku}: нет файла модели`);
 
   let gltf;
@@ -90,15 +99,41 @@ async function loadCatalogModel(product) {
     const reason = err && err.message ? err.message : "не удалось загрузить";
     throw new Error(`${sku}: ${reason}`);
   }
-  gltf.scene.traverse((obj) => {
-    if (obj.isMesh) {
-      obj.castShadow = false;
-      obj.receiveShadow = false;
+  return { sku, scene: prepareScene(gltf) };
+}
+
+function fadePerson(root) {
+  root.traverse((obj) => {
+    if (!obj.isMesh) return;
+    obj.renderOrder = 2;
+    const materials = Array.isArray(obj.material) ? obj.material : obj.material ? [obj.material] : [];
+    for (const material of materials) {
+      material.transparent = true;
+      material.opacity = PERSON_OPACITY;
+      material.depthWrite = false;
     }
   });
-  const object = fitToCatalogDimensions(gltf.scene, product.dimensions);
+}
+
+async function loadCatalogModel(product) {
+  const { sku, scene } = await loadGltfProduct(product);
+  const object = normalizeModel(scene, PRODUCT_NORMALIZE);
   const parts = readFittedColliderParts(object, sku);
   return { object, parts };
 }
 
-export { loadCatalogModel, readFittedColliderParts };
+async function loadPersonModel(product) {
+  const { scene } = await loadGltfProduct(product);
+  const object = normalizeModel(scene, PERSON_NORMALIZE);
+  fadePerson(object);
+  return { object };
+}
+
+export {
+  loadCatalogModel,
+  loadPersonModel,
+  normalizeModel,
+  readFittedColliderParts,
+  PRODUCT_NORMALIZE,
+  PERSON_NORMALIZE
+};

@@ -30,4 +30,16 @@ async function fetchScene(clientId) {
   return res.json();
 }
 
-export { fetchNext, postAnswer, sendMessage, fetchScene };
+function readScene(data) {
+  const source = data && typeof data === "object" ? data : {};
+  return {
+    skus: Array.isArray(source.skus) ? source.skus : [],
+    placements: Array.isArray(source.placements) ? source.placements : null,
+    person:
+      source.person && typeof source.person === "object" && !Array.isArray(source.person)
+        ? source.person
+        : null
+  };
+}
+
+export { fetchNext, postAnswer, sendMessage, fetchScene, readScene };

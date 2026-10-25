@@ -84,7 +84,8 @@ function createDrag({ canvas, camera, controls }) {
     body.setTranslation(state.target, true);
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-    body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
+    // Leave the copy where the drag ended. A dynamic body would fall off the server pose.
+    body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
   }
 
   function onPointerDown(event) {
