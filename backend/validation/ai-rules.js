@@ -28,6 +28,7 @@ function validateAiRules(aiRules, errors) {
     optionalStrings(draft.output.bannedStems, "output.bannedStems", errors);
     optionalStrings(draft.output.pressureStems, "output.pressureStems", errors);
     optionalStrings(draft.output.aiSkipCodes, "output.aiSkipCodes", errors);
+    optionalStrings(draft.output.addedStems, "output.addedStems", errors);
   }
 }
 

@@ -26,6 +26,21 @@ function stemHit(text, stems) {
   );
 }
 
+function addedClaim(template, candidate, stems) {
+  if (!Array.isArray(stems)) return false;
+  const source = template.toLowerCase();
+  const hay = candidate.toLowerCase();
+  return stems.some((stem) => {
+    if (typeof stem !== "string" || stem.length === 0) return false;
+    const needle = stem.toLowerCase();
+    return hay.includes(needle) && !source.includes(needle);
+  });
+}
+
+function hasQuestion(text) {
+  return text.includes("?");
+}
+
 function emojiCount(text) {
   const found = text.match(/\p{Extended_Pictographic}/gu);
   return found ? found.length : 0;
@@ -52,6 +67,7 @@ function checkReply({ template, candidate, rules } = {}) {
   const source = typeof template === "string" ? template : "";
   const parts = sentences(text);
   if (parts.length === 0) return reject("empty");
+  if (parts.length > sentences(source).length + 1) return reject("too_many_sentences");
   if (parts.length > 2) return reject("too_long");
 
   const maxWords = limits.maxWords;
@@ -73,6 +89,8 @@ function checkReply({ template, candidate, rules } = {}) {
   if (limits.emoji === true && emojis > 1) return reject("emoji");
   if (hasLink(text)) return reject("link");
   if (hasCyrillic(source) && !hasCyrillic(text)) return reject("language");
+  if (addedClaim(source, text, limits.addedStems)) return reject("new_claim");
+  if (hasQuestion(text) && !hasQuestion(source)) return reject("new_question");
   return { ok: true };
 }
 

@@ -11,6 +11,7 @@ import { ergoTalkSteps, runErgoTalk } from "../tests/scenarios/ergo-talk.js";
 import { personSteps, runPerson } from "../tests/scenarios/person.js";
 import { runSkeleton, skeletonSteps } from "../tests/scenarios/skeleton.js";
 import { accessorySteps, runAccessories } from "../tests/scenarios/accessories.js";
+import { ergonomicsSteps, runErgonomics } from "../tests/scenarios/ergonomics.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
@@ -205,6 +206,10 @@ function runAccessoriesScenario() {
   return withDraftData(() => runAccessories());
 }
 
+function runErgonomicsScenario() {
+  return withDraftData(() => runErgonomics());
+}
+
 async function main() {
   let failed = 0;
 
@@ -282,6 +287,15 @@ async function main() {
   }
   report("accessories", accessorySteps.length, accessoryErrors);
   if (accessoryErrors.length > 0) failed += 1;
+
+  let ergonomicsErrors;
+  try {
+    ergonomicsErrors = (await runErgonomicsScenario()).errors;
+  } catch (err) {
+    ergonomicsErrors = [err instanceof Error ? err.message : String(err)];
+  }
+  report("ergonomics", ergonomicsSteps.length, ergonomicsErrors);
+  if (ergonomicsErrors.length > 0) failed += 1;
 
   if (failed > 0) process.exit(1);
 }

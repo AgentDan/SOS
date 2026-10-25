@@ -9,6 +9,19 @@ const rules = {
   noPressure: true,
   bannedStems: ["гарантир", "обещаю", "бесплатно", "скидк", "акци", "100%", "навсегда", "лучш"],
   pressureStems: ["срочно", "только сегодня", "успей", "последн", "пока не поздно"],
+  addedStems: [
+    "заказ",
+    "оплат",
+    "покупк",
+    "доставк",
+    "немного",
+    "слегка",
+    "чуть",
+    "выбрать вариант",
+    "дайте знать",
+    "пожелани",
+    "обращайтесь"
+  ],
   aiSkipCodes: ["answer_ok", "unclear", "smalltalk"]
 };
 
@@ -40,6 +53,10 @@ test("a good paraphrase is returned as an ai reply", async () => {
   }
   assert.equal(seen.purpose, "voice");
   assert.match(seen.system, /Перефразируй реплику консультанта по продаже офисной мебели/);
+  assert.match(seen.system, /Не добавляй новых предложений/);
+  assert.match(seen.system, /Не смягчай и не усиливай оценку/);
+  assert.match(seen.system, /Не упоминай заказ, покупку, оплату, доставку/);
+  assert.match(seen.system, /Не задавай вопросов/);
   assert.match(seen.system, /Максимум 35 слов/);
   assert.equal(seen.user.includes("Для вашего роста всё стоит удобно."), true);
   assert.equal(seen.user.includes("command_added"), true);
@@ -63,6 +80,39 @@ test("a changed number, a promise, a link, and a long line are rejected", async 
     });
     assert.deepEqual(spoken, { via: "template", note }, text);
     assert.equal(JSON.stringify(spoken).includes(text), false);
+  }
+});
+
+test("invented claims, a new question, and an extra sentence stay on the template", async () => {
+  const cases = [
+    [
+      "Стол высоковат: 103 см, для вашего роста лучше около 64 см.",
+      "Этот стол немного выше, чем нужно: 103 см. Для вашего роста будет удобнее выбрать вариант около 64 см.",
+      "rejected:new_claim"
+    ],
+    [
+      "Готово, добавил: монитор.",
+      "Отлично, я добавил монитор в ваш заказ. Если у вас есть ещё пожелания, дайте знать!",
+      "rejected:new_claim"
+    ],
+    ["Готово, добавил: монитор.", "Готово, монитор уже на месте.", null],
+    ["Готово, добавил в Заказ: монитор.", "Монитор уже в заказе.", null],
+    ["Готово, добавил: монитор.", "Монитор уже на месте?", "rejected:new_question"],
+    ["Готово, добавил: монитор.", "Готово. Монитор на месте. Напишите.", "rejected:too_many_sentences"]
+  ];
+  for (const [template, text, note] of cases) {
+    const spoken = await speakWithLlm({
+      template,
+      result: { kind: "command", say: { code: "command_added" } },
+      rules,
+      llm: answering(text)
+    });
+    if (note === null) {
+      assert.deepEqual(spoken, { text, via: "ai" }, text);
+    } else {
+      assert.deepEqual(spoken, { via: "template", note }, text);
+      assert.equal(JSON.stringify(spoken).includes(text), false);
+    }
   }
 });
 

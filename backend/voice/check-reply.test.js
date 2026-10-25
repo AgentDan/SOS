@@ -8,7 +8,20 @@ const rules = {
   noPromises: true,
   noPressure: true,
   bannedStems: ["гарантир", "обещаю", "бесплатно", "скидк", "акци", "100%", "навсегда", "лучш"],
-  pressureStems: ["срочно", "только сегодня", "успей", "последн", "пока не поздно"]
+  pressureStems: ["срочно", "только сегодня", "успей", "последн", "пока не поздно"],
+  addedStems: [
+    "заказ",
+    "оплат",
+    "покупк",
+    "доставк",
+    "немного",
+    "слегка",
+    "чуть",
+    "выбрать вариант",
+    "дайте знать",
+    "пожелани",
+    "обращайтесь"
+  ]
 };
 
 function verdict(template, candidate, extra = {}) {
@@ -35,7 +48,7 @@ test("an empty candidate is rejected", () => {
 });
 
 test("three sentences or too many words are too long", () => {
-  assert.deepEqual(verdict("Готово.", "Раз. Два. Три."), { ok: false, reason: "too_long" });
+  assert.deepEqual(verdict("Раз. Два.", "Раз. Два. Три."), { ok: false, reason: "too_long" });
   assert.deepEqual(
     verdict("Готово.", "раз два три четыре пять.", { maxWords: 4 }),
     { ok: false, reason: "too_long" }
@@ -80,4 +93,48 @@ test("a cyrillic template requires cyrillic in the candidate", () => {
     ok: false,
     reason: "language"
   });
+});
+
+test("a paraphrase without additions passes", () => {
+  assert.deepEqual(
+    verdict(
+      "Стол высоковат: 103 см, для вашего роста лучше около 64 см.",
+      "Стол высоковат: 103 см, для вашего роста удобнее около 64 см."
+    ),
+    { ok: true }
+  );
+});
+
+test("softening and an extra invitation are new claims", () => {
+  assert.deepEqual(
+    verdict(
+      "Стол высоковат: 103 см, для вашего роста лучше около 64 см.",
+      "Этот стол немного выше, чем нужно: 103 см. Для вашего роста будет удобнее выбрать вариант около 64 см."
+    ),
+    { ok: false, reason: "new_claim" }
+  );
+  assert.deepEqual(
+    verdict(
+      "Готово, добавил: монитор.",
+      "Отлично, я добавил монитор в ваш заказ. Если у вас есть ещё пожелания, дайте знать!"
+    ),
+    { ok: false, reason: "new_claim" }
+  );
+});
+
+test("a stem already present in the template is not a new claim", () => {
+  assert.deepEqual(verdict("Готово, добавил в Заказ: монитор.", "Монитор уже в заказе."), { ok: true });
+});
+
+test("a question mark or more than one extra sentence is rejected", () => {
+  assert.deepEqual(verdict("Готово, добавил: монитор.", "Монитор уже на месте?"), {
+    ok: false,
+    reason: "new_question"
+  });
+  assert.deepEqual(verdict("Монитор на месте?", "Монитор уже на месте?"), { ok: true });
+  assert.deepEqual(verdict("Готово, добавил: монитор.", "Готово. Монитор на месте. Напишите."), {
+    ok: false,
+    reason: "too_many_sentences"
+  });
+  assert.deepEqual(verdict("Готово.", "Готово, монитор на месте. Можно смотреть."), { ok: true });
 });

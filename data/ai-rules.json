@@ -1,6 +1,6 @@
 {
   "section": "ai-rules",
-  "draftVersion": 2,
+  "draftVersion": 3,
   "publishedVersion": 2,
   "draft": {
     "input": {
@@ -42,6 +42,19 @@
         "answer_ok",
         "unclear",
         "smalltalk"
+      ],
+      "addedStems": [
+        "заказ",
+        "оплат",
+        "покупк",
+        "доставк",
+        "немного",
+        "слегка",
+        "чуть",
+        "выбрать вариант",
+        "дайте знать",
+        "пожелани",
+        "обращайтесь"
       ]
     }
   },

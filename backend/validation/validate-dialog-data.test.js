@@ -614,10 +614,20 @@ test("ai-rules voice fields are an optional boolean and string arrays", () => {
       /ai-rules: output\.bannedStems must be an array of non-empty strings/.test(err.message)
   );
 
+  const added = loadSkeleton();
+  added.aiRules.draft.output.addedStems = ["заказ", ""];
+  assert.throws(
+    () => validateDialogData(added),
+    (err) =>
+      err instanceof Error &&
+      /ai-rules: output\.addedStems must be an array of non-empty strings/.test(err.message)
+  );
+
   const absent = loadSkeleton();
   delete absent.aiRules.draft.output.aiVoice;
   delete absent.aiRules.draft.output.bannedStems;
   delete absent.aiRules.draft.output.pressureStems;
   delete absent.aiRules.draft.output.aiSkipCodes;
+  delete absent.aiRules.draft.output.addedStems;
   assert.equal(validateDialogData(absent), true);
 });
