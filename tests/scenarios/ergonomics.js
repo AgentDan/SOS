@@ -80,6 +80,16 @@ function priceSum(scene, products) {
   return sum;
 }
 
+function typePrice(products, typeId) {
+  let price = null;
+  for (const product of products.values()) {
+    if (product?.type !== typeId || typeof product.priceEur !== "number") continue;
+    if (price === null) price = product.priceEur;
+    else if (price !== product.priceEur) return null;
+  }
+  return price;
+}
+
 function footprint(place, dimensions) {
   const turns = ((((place.rotY ?? 0) % 360) + 360) % 360);
   const swap = turns === 90 || turns === 270;
@@ -322,23 +332,36 @@ function printTable(rows) {
   for (const line of body) console.log(format(line));
 }
 
-async function expectHostFull(clientId, text, errors, tag, products) {
+async function expectCommand(clientId, text, errors, tag, products, expected) {
   const before = getScene(clientId);
   const beforeJson = JSON.stringify(before);
   const beforeSum = priceSum(before, products);
   const outcome = await say(clientId, text, errors, tag);
   const after = getScene(clientId);
   const problems = [];
-  const refused = outcome.result?.ok === false && outcome.result?.reasonCode === "host_full";
-  if (!refused) {
-    const got = outcome.result?.ok === true ? "ok" : (outcome.result?.reasonCode ?? "нет результата");
-    problems.push(`ожидал отказ host_full, получил ${got}`);
+  if (expected.ok) {
+    if (outcome.result?.ok !== true) {
+      problems.push(`ожидал ok, получил ${outcome.result?.reasonCode ?? "нет результата"}`);
+    }
+  } else {
+    const refused = outcome.result?.ok === false && outcome.result?.reasonCode === expected.reason;
+    if (!refused) {
+      const got = outcome.result?.ok === true ? "ok" : (outcome.result?.reasonCode ?? "нет результата");
+      problems.push(`ожидал отказ ${expected.reason}, получил ${got}`);
+    }
   }
-  if (JSON.stringify(after) !== beforeJson) problems.push("сцена изменилась");
   const afterSum = priceSum(after, products);
-  if (afterSum !== beforeSum) problems.push(`сумма ${beforeSum} → ${afterSum}`);
+  const same = JSON.stringify(after) === beforeJson;
+  if (expected.ok) {
+    if (same) problems.push("сцена не изменилась");
+    if (afterSum - beforeSum !== expected.delta) {
+      problems.push(`сумма ${beforeSum} → ${afterSum}, ожидал +${expected.delta}`);
+    }
+  } else {
+    if (!same) problems.push("сцена изменилась");
+    if (afterSum !== beforeSum) problems.push(`сумма ${beforeSum} → ${afterSum}`);
+  }
   if (problems.length > 0) errors.push(`${tag} «${text}»: ${problems.join("; ")}`);
-  return beforeJson;
 }
 
 async function runCombo(clientId, combo, index, errors, products, table, reference, mannequinSku) {
@@ -386,19 +409,20 @@ async function runCombo(clientId, combo, index, errors, products, table, referen
   const asked = await say(clientId, "удобно ли мне?", errors, tag);
   checkReplyNumbers(errors, tag, asked.response?.reply?.text ?? "", desk, heightCm);
 
-  if (combo.desk === 1400) {
-    const beforeMonitor = await expectHostFull(clientId, "добавь второй монитор", errors, tag, products);
-    if (JSON.stringify(getScene(clientId)) !== beforeMonitor) {
-      await say(clientId, "убери монитор", errors, tag);
-      if (JSON.stringify(getScene(clientId)) !== beforeMonitor) {
-        errors.push(`${tag}: после лишнего монитора сцена не вернулась, вторую колонку не проверяю`);
-      } else {
-        await expectHostFull(clientId, "поставь колонки", errors, tag, products);
-      }
-    } else {
-      await expectHostFull(clientId, "поставь колонки", errors, tag, products);
-    }
-  }
+  // Лимиты после обстановки. Отказ не меняет сцену и сумму.
+  // Колонка при ok прибавляет свою цену; второй монитор встаёт только на 1800.
+  const speakerPrice = typePrice(products, "speaker");
+  const monitorPrice = typePrice(products, "monitor");
+  await expectCommand(
+    clientId,
+    "добавь второй монитор",
+    errors,
+    tag,
+    products,
+    combo.desk === 1400 ? { ok: false, reason: "host_full" } : { ok: true, delta: monitorPrice }
+  );
+  await expectCommand(clientId, "поставь колонки", errors, tag, products, { ok: true, delta: speakerPrice });
+  await expectCommand(clientId, "поставь колонки", errors, tag, products, { ok: false, reason: "limit" });
 
   return {
     index,
