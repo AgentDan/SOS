@@ -50,7 +50,9 @@ test("a drag notifies subscribers once the object actually moves", async () => {
       },
       setLinvel() {},
       setAngvel() {},
-      setBodyType() {},
+      setBodyType(type) {
+        this.bodyType = type;
+      },
       setTranslation() {}
     }
   });
@@ -75,6 +77,9 @@ test("a drag notifies subscribers once the object actually moves", async () => {
   assert.equal(get("BOX#1").moved, true);
   canvas.emit("pointermove", { clientX: 90, clientY: 30, pointerId: 1 });
   assert.equal(calls, 1);
+  assert.equal(get("BOX#1").rigidBody.bodyType, RAPIER.RigidBodyType.KinematicPositionBased);
+  canvas.emit("pointerup", { pointerId: 1 });
+  assert.equal(get("BOX#1").rigidBody.bodyType, RAPIER.RigidBodyType.Dynamic);
   drag.dispose();
   mesh.geometry.dispose();
   clear();

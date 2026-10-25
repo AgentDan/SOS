@@ -1,6 +1,9 @@
+import * as THREE from "three";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { posesFor } from "./place-products.js";
+import { moveToPose, placeProducts, posesFor } from "./place-products.js";
+import { clear, get } from "./physics/registry.js";
+import { disposeWorld, initWorld, step } from "./physics/world.js";
 
 function close(actual, expected) {
   assert.ok(Math.abs(actual - expected) < 1e-6, `${actual} vs ${expected}`);
@@ -49,4 +52,60 @@ test("the nth copy follows the nth placement of that sku", () => {
 test("missing placements resolve to the origin and do not throw", () => {
   assert.deepEqual(posesFor(["MON-613-366"], null)[0].pose, { x: 0, y: 0, z: 0, rotY: 0 });
   assert.deepEqual(posesFor(["MON-613-366"], undefined)[0].pose, { x: 0, y: 0, z: 0, rotY: 0 });
+});
+
+test("a placed copy is dynamic with gravity and returns to the server pose", async () => {
+  await initWorld();
+  clear();
+  try {
+    const scene = new THREE.Scene();
+    await placeProducts(
+      scene,
+      [
+        {
+          id: "MON-613-366#1",
+          sku: "MON-613-366",
+          n: 1,
+          product: { sku: "MON-613-366", type: "monitor" },
+          pose: { x: 0.1, y: 1.03, z: -0.2, rotY: 180 }
+        }
+      ],
+      async () => ({
+        object: new THREE.Group(),
+        parts: [{ half: { x: 0.2, y: 0.05, z: 0.1 }, local: { x: 0, y: 0.05, z: 0 } }]
+      })
+    );
+    const entry = get("MON-613-366#1");
+    const body = entry.rigidBody;
+    assert.equal(body.isDynamic(), true);
+    assert.equal(body.gravityScale(), 1);
+    assert.equal(body.isCcdEnabled(), true);
+    close(body.translation().y, 1.03);
+    close(body.rotation().y, 1);
+    close(body.rotation().w, 0);
+
+    body.setTranslation({ x: 2, y: 0.4, z: 0.3 }, true);
+    body.setLinvel({ x: 1, y: -2, z: 0.5 }, true);
+    entry.moved = true;
+    moveToPose(entry, { x: 0.1, y: 1.03, z: -0.2, rotY: 180 });
+    close(body.translation().x, 0.1);
+    close(body.translation().y, 1.03);
+    close(body.linvel().x, 0);
+    close(body.linvel().y, 0);
+    close(body.linvel().z, 0);
+    assert.equal(body.gravityScale(), 1);
+    assert.equal(body.isDynamic(), true);
+    assert.equal(entry.moved, false);
+
+    body.setAngvel({ x: 8, y: 0, z: 8 }, true);
+    const startY = body.translation().y;
+    for (let i = 0; i < 15; i += 1) step();
+    assert.ok(body.translation().y < startY - 0.01);
+    assert.ok(Math.abs(body.rotation().x) < 0.02, `pitch ${body.rotation().x}`);
+    assert.ok(Math.abs(body.rotation().z) < 0.02, `roll ${body.rotation().z}`);
+    assert.equal(body.gravityScale(), 1);
+  } finally {
+    clear();
+    disposeWorld();
+  }
 });

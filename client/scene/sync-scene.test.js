@@ -227,7 +227,7 @@ test("a person sku is not placed among the furniture", async () => {
   clear();
 });
 
-test("new monitors are created on the server poses and physics leaves them there", async () => {
+test("new monitors stay dynamic on the server pose until the scene changes", async () => {
   await initWorld();
   clear();
   try {
@@ -250,13 +250,28 @@ test("new monitors are created on the server poses and physics leaves them there
     close(left.mesh.position.x, -0.3565);
     close(right.rigidBody.rotation().y, 1);
     close(right.mesh.rotation.y, Math.PI);
+    assert.equal(left.rigidBody.isDynamic(), true);
+    assert.equal(left.rigidBody.gravityScale(), 1);
+    assert.equal(right.rigidBody.gravityScale(), 1);
+    assert.equal(left.rigidBody.isCcdEnabled(), true);
+
+    left.rigidBody.setAngvel({ x: 6, y: 0, z: 6 }, true);
+    for (let i = 0; i < 12; i += 1) step();
+    assert.ok(Math.abs(left.rigidBody.rotation().x) < 0.02, `pitch ${left.rigidBody.rotation().x}`);
+    assert.ok(Math.abs(left.rigidBody.rotation().z) < 0.02, `roll ${left.rigidBody.rotation().z}`);
+    assert.ok(left.rigidBody.translation().y < 1.03);
+    assert.equal(left.rigidBody.gravityScale(), 1);
 
     left.rigidBody.setTranslation({ x: 4, y: 1.03, z: -0.1975 }, true);
+    left.rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
     left.moved = true;
     await syncScene(scene, ["MON-613-366", "MON-613-366"], TWO_MONITORS, null);
-    for (let i = 0; i < 5; i += 1) step();
     close(left.rigidBody.translation().x, 4);
     close(left.rigidBody.translation().y, 1.03);
+
+    for (let i = 0; i < 5; i += 1) step();
+    close(left.rigidBody.translation().x, 4);
+    assert.ok(left.rigidBody.translation().y < 1.02);
 
     await syncScene(
       scene,
@@ -265,6 +280,11 @@ test("new monitors are created on the server poses and physics leaves them there
       null
     );
     close(left.rigidBody.translation().x, -0.1);
+    close(left.rigidBody.translation().y, 1.03);
+    const vel = left.rigidBody.linvel();
+    assert.ok(Math.hypot(vel.x, vel.y, vel.z) < 1e-6);
+    assert.equal(left.rigidBody.isDynamic(), true);
+    assert.equal(left.rigidBody.gravityScale(), 1);
     assert.equal(left.moved, false);
   } finally {
     clear();

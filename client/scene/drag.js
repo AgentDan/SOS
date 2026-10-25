@@ -81,11 +81,10 @@ function createDrag({ canvas, camera, controls }) {
     canvas.style.cursor = "";
     if (!entry || !entry.rigidBody || !entry.rigidBody.isValid()) return;
     const body = entry.rigidBody;
+    body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
     body.setTranslation(state.target, true);
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-    // Leave the copy where the drag ended. A dynamic body would fall off the server pose.
-    body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
   }
 
   function onPointerDown(event) {
@@ -154,6 +153,9 @@ function createDrag({ canvas, camera, controls }) {
       if (controls) controls.enabled = true;
       canvas.style.cursor = "";
       return;
+    }
+    if (typeof body.isKinematic === "function" && !body.isKinematic()) {
+      body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
     }
     body.setNextKinematicTranslation(state.target);
   }
