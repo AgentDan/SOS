@@ -17,6 +17,18 @@ const REASON_CODES = Object.freeze([
   "distance_no_position"
 ]);
 const REPLY_VIA = Object.freeze(["template", "ai"]);
+const UNDERSTOOD = Object.freeze(["dictionary", "ai", "button", "none"]);
+const VOICE_NOTES = Object.freeze(["ai_off", "voice_off", "skip_code", "failed"]);
+const REJECT_REASONS = Object.freeze([
+  "empty",
+  "too_long",
+  "number_changed",
+  "banned_word",
+  "pressure",
+  "emoji",
+  "link",
+  "language"
+]);
 const ERGO_ISSUE_CODES = Object.freeze([
   "desk_too_high",
   "desk_too_low",
@@ -305,15 +317,62 @@ function validateReplyOutput(value) {
   return done(errors);
 }
 
+function validVoiceNote(note) {
+  if (typeof note !== "string") return false;
+  if (VOICE_NOTES.includes(note)) return true;
+  const prefix = "rejected:";
+  if (!note.startsWith(prefix)) return false;
+  return REJECT_REASONS.includes(note.slice(prefix.length));
+}
+
+function validateMeta(meta, errors) {
+  if (!isPlainObject(meta)) {
+    errors.push("meta must be an object");
+    return;
+  }
+  for (const key of Object.keys(meta)) {
+    if (key !== "understood" && key !== "voice" && key !== "voiceNote") {
+      errors.push(`meta.${key} is not allowed`);
+    }
+  }
+  requireOneOf(meta, "understood", UNDERSTOOD, "meta.understood", errors);
+  requireOneOf(meta, "voice", REPLY_VIA, "meta.voice", errors);
+  if (meta.voice === "ai") {
+    if (meta.voiceNote !== undefined) {
+      errors.push("meta.voiceNote is only allowed when voice is template");
+    }
+    return;
+  }
+  if (meta.voice !== "template") return;
+  if (meta.voiceNote === undefined) {
+    errors.push("meta.voiceNote is required");
+    return;
+  }
+  if (!validVoiceNote(meta.voiceNote)) {
+    errors.push("meta.voiceNote must be one of: ai_off, voice_off, skip_code, failed, rejected:<reason>");
+  }
+}
+
+function validateDialogResponse(value) {
+  if (!isPlainObject(value)) return rejectObject();
+  const errors = [];
+  if (value.meta !== undefined) validateMeta(value.meta, errors);
+  return done(errors);
+}
+
 export {
   INTENT_TYPES,
   INTENT_SOURCES,
   TALK_TOPICS,
   REASON_CODES,
   REPLY_VIA,
+  UNDERSTOOD,
+  VOICE_NOTES,
+  REJECT_REASONS,
   validateIntent,
   validateExecutorResult,
   validateReplyInput,
   validateReplyOutput,
+  validateDialogResponse,
   validateScene
 };

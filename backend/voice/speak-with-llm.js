@@ -35,8 +35,12 @@ function candidateText(raw) {
   return parsed.text;
 }
 
+function templateNote(note) {
+  return { via: "template", note };
+}
+
 async function speakWithLlm({ template, result, rules, llm = callLlm, fetchImpl } = {}) {
-  if (shouldSkip(result, rules)) return null;
+  if (shouldSkip(result, rules)) return templateNote("skip_code");
 
   const ask = typeof llm === "function" ? llm : callLlm;
   let response;
@@ -49,14 +53,14 @@ async function speakWithLlm({ template, result, rules, llm = callLlm, fetchImpl 
       fetchImpl
     });
   } catch {
-    return null;
+    return templateNote("failed");
   }
-  if (!response || response.ok !== true || typeof response.text !== "string") return null;
+  if (!response || response.ok !== true || typeof response.text !== "string") return templateNote("failed");
 
   const text = candidateText(response.text);
-  if (text === null) return null;
+  if (text === null) return templateNote("failed");
   const verdict = checkReply({ template, candidate: text, rules });
-  if (!verdict.ok) return null;
+  if (!verdict.ok) return templateNote(`rejected:${verdict.reason}`);
   return { text, via: "ai" };
 }
 

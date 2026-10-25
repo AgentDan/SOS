@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchScene, readScene } from "./api/dialog-api.js";
+import { AiPilotToggle, readShowAi } from "./chat/ai-note.js";
 import { MessageInput } from "./chat/MessageInput.jsx";
 import { QuestionPanel } from "./chat/QuestionPanel.jsx";
 import { ReplyBox } from "./chat/ReplyBox.jsx";
@@ -12,6 +13,8 @@ function App() {
   const [showPerson, setShowPerson] = useState(false);
   const [panel, setPanel] = useState(false);
   const [reply, setReply] = useState("");
+  const [meta, setMeta] = useState(null);
+  const [showAi, setShowAi] = useState(readShowAi);
 
   const remember = useCallback((data) => {
     const next = readScene(data);
@@ -43,8 +46,10 @@ function App() {
   const onSent = useCallback(
     (response) => {
       const text = typeof response?.reply?.text === "string" ? response.reply.text : "";
+      const nextMeta = response?.meta;
       remember(response?.scene);
       setReply(text);
+      setMeta(nextMeta && typeof nextMeta === "object" && !Array.isArray(nextMeta) ? nextMeta : null);
     },
     [remember]
   );
@@ -60,11 +65,14 @@ function App() {
         showPerson={showPerson && person != null}
         onReady={() => setPanel(true)}
       />
-      {person ? (
-        <button type="button" className="scene-person" onClick={() => setShowPerson((on) => !on)}>
-          {showPerson ? "Скрыть манекена" : "Показать манекена"}
-        </button>
-      ) : null}
+      <div className="scene-tools">
+        <AiPilotToggle on={showAi} onChange={setShowAi} />
+        {person ? (
+          <button type="button" className="scene-person" onClick={() => setShowPerson((on) => !on)}>
+            {showPerson ? "Скрыть манекена" : "Показать манекена"}
+          </button>
+        ) : null}
+      </div>
       {panel ? (
         <QuestionPanel clientId={clientId} onAnswered={refreshScene} />
       ) : (
@@ -74,7 +82,7 @@ function App() {
         />
       )}
       <div className="chat-dock">
-        <ReplyBox text={reply} />
+        <ReplyBox text={reply} meta={meta} showAi={showAi} />
         <MessageInput clientId={clientId} onSent={onSent} />
       </div>
     </>

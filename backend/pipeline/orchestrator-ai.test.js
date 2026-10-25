@@ -6,7 +6,9 @@ import test, { afterEach, describe } from "node:test";
 import assert from "node:assert/strict";
 import { readCatalog } from "../config/load.js";
 import { computeScenePlan } from "../scene/scene-plan.js";
+import { validateDialogResponse } from "./contracts.js";
 import { buildContext } from "./context.js";
+import { getScene } from "./reads.js";
 import { runMessage, runTurn } from "./orchestrator.js";
 import { buildResponse } from "./response.js";
 
@@ -31,7 +33,7 @@ function warmReply(request) {
   return { ok: true, text: JSON.stringify({ text: `Хорошо. ${template}`.replace(/\s+/g, " ").trim() }) };
 }
 
-async function withAiVoice(run) {
+async function withAiVoice(run, mutate) {
   const previous = process.env.SOS_DATA_DIR;
   const dir = mkdtempSync(path.join(os.tmpdir(), "sos-voice-"));
   try {
@@ -39,6 +41,7 @@ async function withAiVoice(run) {
     const file = path.join(dir, "ai-rules.json");
     const rules = JSON.parse(readFileSync(file, "utf8"));
     rules.published = structuredClone(rules.draft);
+    if (typeof mutate === "function") mutate(rules);
     writeFileSync(file, `${JSON.stringify(rules, null, 2)}\n`);
     process.env.SOS_DATA_DIR = dir;
     await run();
@@ -263,6 +266,234 @@ describe("runMessage ai", { concurrency: 1 }, () => {
         assert.equal(crashed.response.status, 200);
         assert.equal(crashed.response.reply.via, "template");
         assert.equal(crashed.response.reply.text, crashedPlain.reply.text);
+      });
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  function assertMeta(outcome, expected, ...hidden) {
+    assert.deepEqual(validateDialogResponse(outcome.response), { ok: true, errors: [] });
+    assert.deepEqual(outcome.response.meta, expected);
+    assert.equal(outcome.response.scene.meta, undefined);
+    const blob = JSON.stringify(outcome.response.meta);
+    for (const text of [outcome.response.reply?.text, outcome.response.reply?.fallback, ...hidden]) {
+      if (typeof text === "string" && text.length > 0) assert.equal(blob.includes(text), false, text);
+    }
+  }
+
+  test("disabled ai marks the template and does not put the client text in meta", async () => {
+    const clientId = "meta-ai-off";
+    forget(clientId);
+    process.env.AI_ENABLED = "false";
+    process.env.OPENAI_API_KEY = "SENTINEL_OPENAI_KEY";
+    const phrase = "добавь кресло";
+    try {
+      const outcome = await runMessage({ clientId, text: phrase });
+      assert.equal(outcome.response.reply.via, "template");
+      assertMeta(
+        outcome,
+        { understood: "dictionary", voice: "template", voiceNote: "ai_off" },
+        phrase,
+        "SENTINEL_OPENAI_KEY"
+      );
+      assert.equal(getScene(clientId).meta, undefined);
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  test("a dictionary miss understood by ai is marked ai", async () => {
+    const clientId = "meta-understood-ai";
+    forget(clientId);
+    process.env.AI_ENABLED = "true";
+    const phrase = "хочу ещё одно кресло к столу";
+    try {
+      await withAiVoice(async () => {
+        const outcome = await runMessage({
+          clientId,
+          text: phrase,
+          llm: async (request) => {
+            if (request?.purpose === "parse") {
+              return {
+                ok: true,
+                text: JSON.stringify({ type: "command", action: "add", sku: "CHAIR-460" })
+              };
+            }
+            return warmReply(request);
+          }
+        });
+        assert.equal(outcome.result.kind, "command");
+        assert.equal(outcome.response.reply.via, "ai");
+        assertMeta(outcome, { understood: "ai", voice: "ai" }, phrase, "Хорошо");
+      });
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  test("a button answer is understood as a button and the answer body stays ok", async () => {
+    const clientId = "meta-button";
+    forget(clientId);
+    process.env.AI_ENABLED = "true";
+    try {
+      await withAiVoice(async () => {
+        let calls = 0;
+        const outcome = await runTurn({
+          clientId,
+          questionId: "q_work_type",
+          optionId: "coding",
+          llm: async () => {
+            calls += 1;
+            return { ok: true, text: JSON.stringify({ text: "Живая реплика." }) };
+          }
+        });
+        assert.equal(calls, 0);
+        assert.deepEqual(outcome.body, { ok: true });
+        assert.equal(outcome.response.reply.via, "template");
+        assertMeta(outcome, { understood: "button", voice: "template", voiceNote: "skip_code" });
+      });
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  test("a phrase nobody understood is marked none", async () => {
+    const clientId = "meta-none";
+    forget(clientId);
+    process.env.AI_ENABLED = "false";
+    const phrase = "абракадабра";
+    try {
+      const outcome = await runMessage({ clientId, text: phrase });
+      assert.equal(outcome.result.kind, "unclear");
+      assertMeta(outcome, { understood: "none", voice: "template", voiceNote: "ai_off" }, phrase);
+      assert.equal(getScene(clientId).meta, undefined);
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  test("ai voice switched off in the rules keeps the template", async () => {
+    const clientId = "meta-voice-off";
+    forget(clientId);
+    process.env.AI_ENABLED = "true";
+    const phrase = "добавь кресло";
+    try {
+      await withAiVoice(
+        async () => {
+          let calls = 0;
+          const outcome = await runMessage({
+            clientId,
+            text: phrase,
+            llm: async () => {
+              calls += 1;
+              return warmReply({ user: "Реплика: лишнее\nКод: command_added" });
+            }
+          });
+          assert.equal(calls, 0);
+          assert.equal(outcome.response.reply.via, "template");
+          assertMeta(outcome, { understood: "dictionary", voice: "template", voiceNote: "voice_off" }, phrase);
+        },
+        (rules) => {
+          rules.published.output.aiVoice = false;
+        }
+      );
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  test("a skip code does not ask ai for a paraphrase", async () => {
+    const clientId = "meta-skip";
+    forget(clientId);
+    process.env.AI_ENABLED = "true";
+    const phrase = "привет";
+    try {
+      await withAiVoice(async () => {
+        let calls = 0;
+        const outcome = await runMessage({
+          clientId,
+          text: phrase,
+          llm: async () => {
+            calls += 1;
+            return warmReply({ user: "Реплика: лишнее\nКод: smalltalk" });
+          }
+        });
+        assert.equal(calls, 0);
+        assert.equal(outcome.result.facts.topic, "smalltalk");
+        assertMeta(outcome, { understood: "dictionary", voice: "template", voiceNote: "skip_code" }, phrase);
+      });
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  test("a failed voice call is marked failed and keeps the template", async () => {
+    const clientId = "meta-failed";
+    forget(clientId);
+    process.env.AI_ENABLED = "true";
+    const phrase = "добавь кресло";
+    try {
+      await withAiVoice(async () => {
+        const outcome = await runMessage({
+          clientId,
+          text: phrase,
+          llm: async () => {
+            throw new Error("boom");
+          }
+        });
+        assert.equal(outcome.status, 200);
+        assert.equal(outcome.response.reply.via, "template");
+        assertMeta(outcome, { understood: "dictionary", voice: "template", voiceNote: "failed" }, phrase);
+      });
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  test("a paraphrase that changes a number is rejected", async () => {
+    const clientId = "meta-rejected";
+    forget(clientId);
+    process.env.AI_ENABLED = "true";
+    const phrase = "добавь кресло";
+    const candidate = "Кресло уже стоит, до стены 12 см.";
+    try {
+      await withAiVoice(async () => {
+        const outcome = await runMessage({
+          clientId,
+          text: phrase,
+          llm: async () => ({ ok: true, text: JSON.stringify({ text: candidate }) })
+        });
+        assert.equal(outcome.response.reply.via, "template");
+        assert.equal(outcome.response.reply.text.includes(candidate), false);
+        assertMeta(
+          outcome,
+          { understood: "dictionary", voice: "template", voiceNote: "rejected:number_changed" },
+          phrase,
+          candidate
+        );
+      });
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  test("an accepted paraphrase is marked as an ai reply", async () => {
+    const clientId = "meta-accepted";
+    forget(clientId);
+    process.env.AI_ENABLED = "true";
+    const phrase = "добавь кресло";
+    try {
+      await withAiVoice(async () => {
+        const outcome = await runMessage({
+          clientId,
+          text: phrase,
+          llm: async (request) => warmReply(request)
+        });
+        assert.equal(outcome.response.reply.via, "ai");
+        assert.equal(outcome.response.reply.text.startsWith("Хорошо."), true);
+        assertMeta(outcome, { understood: "dictionary", voice: "ai" }, phrase, "Хорошо");
+        assert.equal(outcome.response.meta.voiceNote, undefined);
       });
     } finally {
       forget(clientId);

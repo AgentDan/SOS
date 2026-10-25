@@ -4,8 +4,12 @@ import {
   INTENT_SOURCES,
   INTENT_TYPES,
   REASON_CODES,
+  REJECT_REASONS,
   REPLY_VIA,
   TALK_TOPICS,
+  UNDERSTOOD,
+  VOICE_NOTES,
+  validateDialogResponse,
   validateExecutorResult,
   validateIntent,
   validateReplyInput,
@@ -71,6 +75,18 @@ test("contract lists are the block boundary", () => {
     "distance_no_position"
   ]);
   assert.deepEqual(REPLY_VIA, ["template", "ai"]);
+  assert.deepEqual(UNDERSTOOD, ["dictionary", "ai", "button", "none"]);
+  assert.deepEqual(VOICE_NOTES, ["ai_off", "voice_off", "skip_code", "failed"]);
+  assert.deepEqual(REJECT_REASONS, [
+    "empty",
+    "too_long",
+    "number_changed",
+    "banned_word",
+    "pressure",
+    "emoji",
+    "link",
+    "language"
+  ]);
 });
 
 test("validateIntent accepts an answer from a button", () => {
@@ -352,6 +368,72 @@ test("validateReplyOutput rejects an empty text", () => {
   ]);
 });
 
+test("dialog meta is optional and its values come from the lists", () => {
+  accepted(validateDialogResponse({ version: 1, status: 200, reply: { text: "Готово.", via: "template" } }));
+  accepted(validateDialogResponse({ meta: { understood: "dictionary", voice: "ai" } }));
+  accepted(validateDialogResponse({ meta: { understood: "ai", voice: "ai" } }));
+  accepted(validateDialogResponse({ meta: { understood: "button", voice: "template", voiceNote: "skip_code" } }));
+  accepted(validateDialogResponse({ meta: { understood: "none", voice: "template", voiceNote: "failed" } }));
+  for (const voiceNote of VOICE_NOTES) {
+    accepted(
+      validateDialogResponse({ meta: { understood: "dictionary", voice: "template", voiceNote } })
+    );
+  }
+  for (const reason of REJECT_REASONS) {
+    accepted(
+      validateDialogResponse({
+        meta: { understood: "dictionary", voice: "template", voiceNote: `rejected:${reason}` }
+      })
+    );
+  }
+  for (const understood of UNDERSTOOD) {
+    accepted(
+      validateDialogResponse({ meta: { understood, voice: "template", voiceNote: "ai_off" } })
+    );
+  }
+
+  assert.deepEqual(rejected(validateDialogResponse(null)), ["must be an object"]);
+  assert.deepEqual(rejected(validateDialogResponse({ meta: "dictionary" })), ["meta must be an object"]);
+  assert.ok(
+    rejected(validateDialogResponse({ meta: { understood: "llm", voice: "ai" } })).includes(
+      "meta.understood must be one of: dictionary, ai, button, none"
+    )
+  );
+  assert.ok(
+    rejected(validateDialogResponse({ meta: { understood: "dictionary", voice: "human" } })).includes(
+      "meta.voice must be one of: template, ai"
+    )
+  );
+  assert.deepEqual(
+    rejected(
+      validateDialogResponse({
+        meta: { understood: "dictionary", voice: "ai", voiceNote: "ai_off" }
+      })
+    ),
+    ["meta.voiceNote is only allowed when voice is template"]
+  );
+  assert.deepEqual(
+    rejected(validateDialogResponse({ meta: { understood: "dictionary", voice: "template" } })),
+    ["meta.voiceNote is required"]
+  );
+  assert.deepEqual(
+    rejected(
+      validateDialogResponse({
+        meta: { understood: "dictionary", voice: "template", voiceNote: "клиент сказал привет" }
+      })
+    ),
+    ["meta.voiceNote must be one of: ai_off, voice_off, skip_code, failed, rejected:<reason>"]
+  );
+  assert.deepEqual(
+    rejected(
+      validateDialogResponse({
+        meta: { understood: "dictionary", voice: "template", voiceNote: "rejected:number_changed", text: "Готово." }
+      })
+    ),
+    ["meta.text is not allowed"]
+  );
+});
+
 test("validators do not change a frozen input", () => {
   const samples = [
     [
@@ -371,6 +453,10 @@ test("validators do not change a frozen input", () => {
       }
     ],
     [validateReplyOutput, { text: "Готово.", via: "template" }],
+    [
+      validateDialogResponse,
+      { version: 1, meta: { understood: "dictionary", voice: "template", voiceNote: "ai_off" } }
+    ],
     [
       validateScene,
       {

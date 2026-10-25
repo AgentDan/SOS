@@ -47,32 +47,33 @@ test("a good paraphrase is returned as an ai reply", async () => {
   assert.equal(seen.user.includes("clientId"), false);
 });
 
-test("a changed number, a promise, a link, and a long line are dropped", async () => {
+test("a changed number, a promise, a link, and a long line are rejected", async () => {
   const cases = [
-    ["Расстояние между монитор и стол: 10 см.", "Между монитором и столом 12 см."],
-    ["Готово, добавил: кресло.", "Гарантирую, кресло уже на месте."],
-    ["Готово, добавил: кресло.", "Кресло на месте, подробности на www.shop.ru."],
-    ["Готово.", `${"слово ".repeat(40).trim()}.`]
+    ["Расстояние между монитор и стол: 10 см.", "Между монитором и столом 12 см.", "rejected:number_changed"],
+    ["Готово, добавил: кресло.", "Гарантирую, кресло уже на месте.", "rejected:banned_word"],
+    ["Готово, добавил: кресло.", "Кресло на месте, подробности на www.shop.ru.", "rejected:link"],
+    ["Готово.", `${"слово ".repeat(40).trim()}.`, "rejected:too_long"]
   ];
-  for (const [template, text] of cases) {
+  for (const [template, text, note] of cases) {
     const spoken = await speakWithLlm({
       template,
       result: { kind: "command", say: { code: "command_added" } },
       rules,
       llm: answering(text)
     });
-    assert.equal(spoken, null, text);
+    assert.deepEqual(spoken, { via: "template", note }, text);
+    assert.equal(JSON.stringify(spoken).includes(text), false);
   }
 });
 
-test("non-json and a failed call return null", async () => {
+test("non-json and a failed call keep the template", async () => {
   const broken = await speakWithLlm({
     template: "Готово, добавил: кресло.",
     result: { kind: "command", say: { code: "command_added" } },
     rules,
     llm: async () => ({ ok: true, text: "не json" })
   });
-  assert.equal(broken, null);
+  assert.deepEqual(broken, { via: "template", note: "failed" });
 
   const failed = await speakWithLlm({
     template: "Готово, добавил: кресло.",
@@ -80,7 +81,7 @@ test("non-json and a failed call return null", async () => {
     rules,
     llm: async () => ({ ok: false, reason: "timeout" })
   });
-  assert.equal(failed, null);
+  assert.deepEqual(failed, { via: "template", note: "failed" });
 
   const thrown = await speakWithLlm({
     template: "Готово, добавил: кресло.",
@@ -90,7 +91,7 @@ test("non-json and a failed call return null", async () => {
       throw new Error("boom");
     }
   });
-  assert.equal(thrown, null);
+  assert.deepEqual(thrown, { via: "template", note: "failed" });
 });
 
 test("skip codes and an answer do not call the model", async () => {
@@ -106,7 +107,8 @@ test("skip codes and an answer do not call the model", async () => {
       rules,
       llm
     });
-    assert.equal(spoken, null, code);
+    assert.deepEqual(spoken, { via: "template", note: "skip_code" }, code);
+    assert.equal(JSON.stringify(spoken).includes("Записал"), false);
   }
   const answer = await speakWithLlm({
     template: "Записал. Чем вы занимаетесь?",
@@ -114,6 +116,6 @@ test("skip codes and an answer do not call the model", async () => {
     rules,
     llm
   });
-  assert.equal(answer, null);
+  assert.deepEqual(answer, { via: "template", note: "skip_code" });
   assert.equal(calls, 0);
 });

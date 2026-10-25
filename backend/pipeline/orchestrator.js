@@ -119,11 +119,26 @@ function applyIntent({ questionnaire, catalog, profile, intent, consultant, ergo
   throw new Error("unknown intent type");
 }
 
-async function withSpokenReply(outcome, context, { llm, fetchImpl } = {}) {
+function understoodCode(value) {
+  if (value === "dictionary" || value === "ai" || value === "button" || value === "none") return value;
+  return "none";
+}
+
+function templateMeta(understood, voiceNote) {
+  return { understood, voice: "template", voiceNote };
+}
+
+async function withSpokenReply(outcome, context, { llm, fetchImpl, understood } = {}) {
   if (!outcome || outcome.status !== 200 || !outcome.result) return outcome;
   const response = buildResponse({ outcome, context });
+  const who = understoodCode(understood);
   const rules = readAiRules();
-  if (process.env.AI_ENABLED === "true" && rules?.output?.aiVoice === true) {
+  let meta;
+  if (process.env.AI_ENABLED !== "true") {
+    meta = templateMeta(who, "ai_off");
+  } else if (rules?.output?.aiVoice !== true) {
+    meta = templateMeta(who, "voice_off");
+  } else {
     try {
       const voiced = await speakWithLlm({
         template: response.reply?.text,
@@ -132,15 +147,21 @@ async function withSpokenReply(outcome, context, { llm, fetchImpl } = {}) {
         ...(typeof llm === "function" ? { llm } : {}),
         ...(typeof fetchImpl === "function" ? { fetchImpl } : {})
       });
-      if (voiced && voiced.via === "ai" && typeof voiced.text === "string") {
+      if (voiced && voiced.via === "ai" && typeof voiced.text === "string" && voiced.text.length > 0) {
         const next = { text: voiced.text, via: "ai" };
         if (typeof response.reply?.fallback === "string") next.fallback = response.reply.fallback;
         response.reply = next;
+        meta = { understood: who, voice: "ai" };
+      } else if (voiced && voiced.via === "template" && typeof voiced.note === "string") {
+        meta = templateMeta(who, voiced.note);
+      } else {
+        meta = templateMeta(who, "failed");
       }
     } catch {
-      // сбой голоса оставляет шаблон
+      meta = templateMeta(who, "failed");
     }
   }
+  response.meta = meta;
   return { ...outcome, response };
 }
 
@@ -171,12 +192,13 @@ async function runTurn({ clientId, questionId, optionId, llm, fetchImpl } = {}) 
     }
   });
   persistTurn(outcome);
-  return withSpokenReply(outcome, context, { llm, fetchImpl });
+  return withSpokenReply(outcome, context, { llm, fetchImpl, understood: "button" });
 }
 
 async function runMessage({ clientId, text, llm, fetchImpl } = {}) {
   const context = buildContext(clientId);
   let intent = interpret({ source: "text", text }, context.vocabulary);
+  let understood = intent?.type === "unclear" ? "none" : "dictionary";
   if (intent?.type === "unclear" && intent.payload?.reason === "no_match") {
     try {
       const parsed = await parseWithLlm({
@@ -185,14 +207,17 @@ async function runMessage({ clientId, text, llm, fetchImpl } = {}) {
         ...(typeof llm === "function" ? { llm } : {}),
         ...(typeof fetchImpl === "function" ? { fetchImpl } : {})
       });
-      if (parsed) intent = parsed;
+      if (parsed) {
+        intent = parsed;
+        understood = "ai";
+      }
     } catch {
       // сбой AI оставляет словарный unclear
     }
   }
   const outcome = applyIntent({ ...context, intent });
   persistTurn(outcome);
-  return withSpokenReply(outcome, context, { llm, fetchImpl });
+  return withSpokenReply(outcome, context, { llm, fetchImpl, understood });
 }
 
 export { applyTurn, applyIntent, runTurn, runMessage };
