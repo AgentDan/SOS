@@ -121,7 +121,10 @@ describe("publish", { concurrency: 1 }, () => {
       "MON-613-366",
       "MON-613-367",
       "CHAIR-460",
-      "character"
+      "character",
+      "KB-440",
+      "MOUSE-65",
+      "SPK-100"
     ];
     assert.equal(envelope.publishedVersion, before + 1);
     assert.equal(envelope.draftVersion, readEnvelope("catalog").draftVersion);

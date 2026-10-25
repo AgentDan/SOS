@@ -10,6 +10,7 @@ import { ergoSteps, runErgo } from "../tests/scenarios/ergo.js";
 import { ergoTalkSteps, runErgoTalk } from "../tests/scenarios/ergo-talk.js";
 import { personSteps, runPerson } from "../tests/scenarios/person.js";
 import { runSkeleton, skeletonSteps } from "../tests/scenarios/skeleton.js";
+import { accessorySteps, runAccessories } from "../tests/scenarios/accessories.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
@@ -200,6 +201,10 @@ function runErgoTalkScenario() {
   return withDraftData(() => runErgoTalk());
 }
 
+function runAccessoriesScenario() {
+  return withDraftData(() => runAccessories());
+}
+
 async function main() {
   let failed = 0;
 
@@ -268,6 +273,15 @@ async function main() {
   }
   report("ergo-talk", ergoTalkSteps.length, ergoTalkErrors);
   if (ergoTalkErrors.length > 0) failed += 1;
+
+  let accessoryErrors;
+  try {
+    accessoryErrors = (await runAccessoriesScenario()).errors;
+  } catch (err) {
+    accessoryErrors = [err instanceof Error ? err.message : String(err)];
+  }
+  report("accessories", accessorySteps.length, accessoryErrors);
+  if (accessoryErrors.length > 0) failed += 1;
 
   if (failed > 0) process.exit(1);
 }

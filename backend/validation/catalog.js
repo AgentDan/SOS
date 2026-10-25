@@ -69,6 +69,12 @@ function validateCatalogDraft(catalog, errors) {
           errors.push(`catalog: type "${label}" rowBackMarginMm must be an integer >= 0`);
         }
       }
+      for (const field of ["frontMarginMm", "accessoryGapMm"]) {
+        if (!type || type[field] === undefined) continue;
+        if (!Number.isInteger(type[field]) || type[field] < 0) {
+          errors.push(`catalog: type "${label}" ${field} must be an integer >= 0`);
+        }
+      }
     }
 
     for (const type of types) {
@@ -91,6 +97,20 @@ function validateCatalogDraft(catalog, errors) {
             errors.push(
               `catalog: type "${label}" rowTypes references unknown type "${rowTypeId}"`
             );
+          }
+        }
+      }
+      for (const field of ["flankTypes", "frontTypes"]) {
+        if (type[field] === undefined) continue;
+        if (!Array.isArray(type[field])) {
+          errors.push(`catalog: type "${label}" ${field} must be an array of type ids`);
+          continue;
+        }
+        for (const typeId of type[field]) {
+          if (typeof typeId !== "string" || typeId.length === 0) {
+            errors.push(`catalog: type "${label}" ${field} must be an array of type ids`);
+          } else if (!typeIds.has(typeId)) {
+            errors.push(`catalog: type "${label}" ${field} references unknown type "${typeId}"`);
           }
         }
       }

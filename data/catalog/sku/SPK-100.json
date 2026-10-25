@@ -1,0 +1,22 @@
+{
+  "sku": "SPK-100",
+  "type": "speaker",
+  "name": "Speaker 100",
+  "label": "колонки",
+  "dimensions": {
+    "width": 100,
+    "depth": 110,
+    "height": 200
+  },
+  "priceEur": 59,
+  "words": [
+    "колонк",
+    "динамик"
+  ],
+  "media": {
+    "model3d": "SPK-100.glb"
+  },
+  "placement": {
+    "hostSku": "DESK-TOP-1400"
+  }
+}

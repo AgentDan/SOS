@@ -8,13 +8,15 @@ import { buildContext } from "./context.js";
 
 function assembleScene(catalog, profile, extras) {
   const skus = computeScenePlan(catalog, profile);
-  const placements = layout({ catalog, skus }).placements;
+  const body = extras
+    ? getBody({
+        profile,
+        questionnaire: extras.questionnaire,
+        ergonomics: extras.ergonomics
+      })
+    : null;
+  const placements = layout({ catalog, skus, hand: body ? body.hand : undefined }).placements;
   if (!extras) return { skus, placements, person: null, ergo: null };
-  const body = getBody({
-    profile,
-    questionnaire: extras.questionnaire,
-    ergonomics: extras.ergonomics
-  });
   const person = placePerson({
     catalog,
     ergonomics: extras.ergonomics,

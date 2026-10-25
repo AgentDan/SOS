@@ -132,6 +132,39 @@ test("computeScenePlan without sceneEdits matches the needs-only plan", () => {
   assert.equal(skus.includes("CHAIR-460"), false);
 });
 
+test("accessories stay out of needs and remain when a command added them", () => {
+  const catalog = loadCatalog();
+  const products = catalog.draft.products;
+  for (const type of ["keyboard", "mouse", "speaker"]) {
+    const items = products.filter((product) => product.type === type);
+    assert.ok(items.length > 0);
+    for (const item of items) assert.notEqual(item.alwaysPresent, true);
+  }
+  for (const need of catalog.draft.needs) {
+    assert.equal(["keyboard", "mouse", "speaker"].includes(need.criteria?.type), false);
+  }
+  const planned = computeScenePlan(catalog, {
+    needs: [
+      { id: "desk_top_wide", resolvedSku: "DESK-TOP-1800" },
+      { id: "ergonomic_chair", resolvedSku: "CHAIR-460" }
+    ]
+  });
+  assert.equal(planned.includes("KB-440"), false);
+  assert.equal(planned.includes("MOUSE-65"), false);
+  assert.equal(planned.includes("SPK-100"), false);
+  const kept = computeScenePlan(catalog, {
+    needs: [{ id: "desk_top_wide", resolvedSku: "DESK-TOP-1800" }],
+    sceneEdits: [
+      { op: "add", sku: "KB-440" },
+      { op: "add", sku: "MOUSE-65" },
+      { op: "add", sku: "SPK-100" }
+    ]
+  });
+  assert.ok(kept.includes("KB-440"));
+  assert.ok(kept.includes("MOUSE-65"));
+  assert.ok(kept.includes("SPK-100"));
+});
+
 test("computeScenePlan applies sceneEdits after the needs plan", () => {
   const skus = computeScenePlan(loadCatalog(), {
     needs: [{ id: "desk_top_wide", resolvedSku: "DESK-TOP-1800" }],

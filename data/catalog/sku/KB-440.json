@@ -1,0 +1,21 @@
+{
+  "sku": "KB-440",
+  "type": "keyboard",
+  "name": "Keyboard 440",
+  "label": "клавиатура",
+  "dimensions": {
+    "width": 440,
+    "depth": 140,
+    "height": 25
+  },
+  "priceEur": 49,
+  "words": [
+    "клавиатур"
+  ],
+  "media": {
+    "model3d": "KB-440.glb"
+  },
+  "placement": {
+    "hostSku": "DESK-TOP-1400"
+  }
+}

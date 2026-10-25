@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readCatalog, readConsultant, readDraft } from "../config/load.js";
+import { interpret } from "../understanding/interpret.js";
 import { buildVocabulary } from "./vocabulary.js";
 
 function deepFreeze(value) {
@@ -107,6 +108,28 @@ test("a person product is left out of the vocabulary", () => {
     }
   });
   assert.deepEqual(vocab.products, [{ sku: "CHAIR-460", words: ["кресл"] }]);
+});
+
+test("accessory words resolve to add and remove commands", () => {
+  const vocab = buildVocabulary({
+    commands: readDraft("commands"),
+    catalog: readDraft("catalog")
+  });
+  assert.deepEqual(interpret({ source: "text", text: "добавь мышь" }, vocab), {
+    type: "command",
+    source: "text",
+    payload: { action: "add", sku: "MOUSE-65" }
+  });
+  assert.deepEqual(interpret({ source: "text", text: "поставь колонки" }, vocab), {
+    type: "command",
+    source: "text",
+    payload: { action: "add", sku: "SPK-100" }
+  });
+  assert.deepEqual(interpret({ source: "text", text: "убери клавиатуру" }, vocab), {
+    type: "command",
+    source: "text",
+    payload: { action: "remove", sku: "KB-440" }
+  });
 });
 
 test("buildVocabulary does not change a frozen input", () => {

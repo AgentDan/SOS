@@ -4,7 +4,10 @@ const TYPE_COLORS = {
   desk_legs: 0x5c4033,
   desk_top: 0x8a6d4b,
   chair: 0x4a3728,
-  monitor: 0x222222
+  monitor: 0x222222,
+  keyboard: 0x3d5a80,
+  mouse: 0xc47b2b,
+  speaker: 0x2e7d4f
 };
 const DEFAULT_COLOR = 0x888888;
 

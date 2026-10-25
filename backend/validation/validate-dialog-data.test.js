@@ -328,6 +328,45 @@ test("catalog maxOnScene is optional and row layout fields are checked", () => {
   );
 });
 
+test("flank and front layout fields are optional lists of catalog types", () => {
+  const open = validPair();
+  const desk = open.catalog.draft.types.find((type) => type.id === "desk_top");
+  delete desk.flankTypes;
+  delete desk.frontTypes;
+  delete desk.frontMarginMm;
+  delete desk.accessoryGapMm;
+  assert.equal(validateDialogData(open), true);
+
+  const unknown = validPair();
+  unknown.catalog.draft.types.find((type) => type.id === "desk_top").flankTypes = ["missing_type"];
+  assert.throws(
+    () => validateDialogData(unknown),
+    (err) =>
+      err instanceof Error && /flankTypes references unknown type "missing_type"/.test(err.message)
+  );
+
+  const notList = validPair();
+  notList.catalog.draft.types.find((type) => type.id === "desk_top").frontTypes = "keyboard";
+  assert.throws(
+    () => validateDialogData(notList),
+    (err) => err instanceof Error && /frontTypes must be an array of type ids/.test(err.message)
+  );
+
+  const badGap = validPair();
+  badGap.catalog.draft.types.find((type) => type.id === "desk_top").accessoryGapMm = -1;
+  assert.throws(
+    () => validateDialogData(badGap),
+    (err) => err instanceof Error && /accessoryGapMm must be an integer >= 0/.test(err.message)
+  );
+
+  const fraction = validPair();
+  fraction.catalog.draft.types.find((type) => type.id === "desk_top").frontMarginMm = 1.5;
+  assert.throws(
+    () => validateDialogData(fraction),
+    (err) => err instanceof Error && /frontMarginMm must be an integer >= 0/.test(err.message)
+  );
+});
+
 test("catalog product label is an optional non-empty string", () => {
   const chair = (data) => data.catalog.draft.products.find((item) => item.sku === "CHAIR-460");
 

@@ -9,7 +9,11 @@ const types = [
     rowTypes: ["monitor"],
     rowGapMm: 100,
     edgeMarginMm: 50,
-    rowBackMarginMm: 100
+    rowBackMarginMm: 100,
+    flankTypes: ["speaker"],
+    frontTypes: ["keyboard", "mouse"],
+    frontMarginMm: 150,
+    accessoryGapMm: 100
   },
   { id: "monitor" },
   { id: "chair" }
@@ -29,6 +33,9 @@ const monitorB = product("MON-613-367", "monitor", { width: 613, depth: 205, hei
 const chair = product("CHAIR-460", "chair", { width: 460, depth: 520, height: 900 }, {
   placement: { offset: { x: 0, z: 760 } }
 });
+const keyboard = product("KB-440", "keyboard", { width: 440, depth: 140, height: 25 });
+const mouse = product("MOUSE-65", "mouse", { width: 65, depth: 110, height: 38 });
+const speaker = product("SPK-100", "speaker", { width: 100, depth: 110, height: 200 });
 
 function catalogOf(...products) {
   return { types, products };
@@ -159,4 +166,110 @@ test("a desk top without legs stands on the floor, and a second top has no rule"
   });
   assert.deepEqual(extra.issues, [{ sku: "DESK-TOP-1800", code: "no_layout_rule" }]);
   assert.equal(ofSku(extra, "DESK-TOP-1800").length, 0);
+});
+
+const accessorySkus = [
+  "DESK-LEGS-1400",
+  "DESK-TOP-1800",
+  "MON-613-366",
+  "MON-613-367",
+  "KB-440",
+  "MOUSE-65",
+  "SPK-100",
+  "SPK-100"
+];
+
+function planBox(place, dimensions) {
+  return {
+    x0: place.x - dimensions.width / 2,
+    x1: place.x + dimensions.width / 2,
+    z0: place.z - dimensions.depth / 2,
+    z1: place.z + dimensions.depth / 2
+  };
+}
+
+function overlaps(a, b) {
+  return a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1;
+}
+
+test("keyboard, mouse and speakers sit on the desk without overlapping", () => {
+  const products = [legs, top1800, monitor, monitorB, keyboard, mouse, speaker];
+  const right = layout({
+    catalog: catalogOf(...products),
+    skus: accessorySkus,
+    hand: "right"
+  });
+  const left = layout({
+    catalog: catalogOf(...products),
+    skus: accessorySkus,
+    hand: "left"
+  });
+
+  assert.deepEqual(right.issues, []);
+  assert.deepEqual(left.issues, []);
+  assert.deepEqual(
+    right.placements.map((item) => item.sku),
+    accessorySkus
+  );
+  assert.deepEqual(
+    left.placements.map((item) => item.sku),
+    accessorySkus
+  );
+
+  assert.deepEqual(ofSku(right, "KB-440"), [{ sku: "KB-440", x: 0, y: 1030, z: 180, rotY: 0 }]);
+  assert.deepEqual(ofSku(right, "MOUSE-65"), [{ sku: "MOUSE-65", x: 352.5, y: 1030, z: 180, rotY: 0 }]);
+  assert.deepEqual(ofSku(left, "MOUSE-65"), [{ sku: "MOUSE-65", x: -352.5, y: 1030, z: 180, rotY: 0 }]);
+  assert.deepEqual(ofSku(right, "SPK-100"), [
+    { sku: "SPK-100", x: -813, y: 1030, z: -245, rotY: 0 },
+    { sku: "SPK-100", x: 813, y: 1030, z: -245, rotY: 0 }
+  ]);
+  assert.deepEqual(ofSku(left, "SPK-100"), ofSku(right, "SPK-100"));
+
+  const sizes = new Map(products.map((item) => [item.sku, item.dimensions]));
+  for (const result of [right, left]) {
+    const onDesk = result.placements.filter((item) => item.y === 1030);
+    assert.equal(onDesk.length, 6);
+    for (let i = 0; i < onDesk.length; i += 1) {
+      for (let j = i + 1; j < onDesk.length; j += 1) {
+        const a = planBox(onDesk[i], sizes.get(onDesk[i].sku));
+        const b = planBox(onDesk[j], sizes.get(onDesk[j].sku));
+        assert.equal(overlaps(a, b), false, `${onDesk[i].sku} overlaps ${onDesk[j].sku}`);
+      }
+    }
+  }
+});
+
+test("a mouse without a keyboard is shifted 150 mm toward the working hand", () => {
+  const alone = layout({
+    catalog: catalogOf(legs, top1800, monitor, mouse),
+    skus: ["DESK-LEGS-1400", "DESK-TOP-1800", "MON-613-366", "MOUSE-65"],
+    hand: "left"
+  });
+  assert.deepEqual(ofSku(alone, "MOUSE-65"), [{ sku: "MOUSE-65", x: -150, y: 1030, z: 195, rotY: 0 }]);
+});
+
+test("speakers without monitors stand 300 mm from the desk center", () => {
+  const result = layout({
+    catalog: catalogOf(legs, top1800, speaker),
+    skus: ["DESK-LEGS-1400", "DESK-TOP-1800", "SPK-100", "SPK-100"]
+  });
+  assert.deepEqual(ofSku(result, "SPK-100").map((item) => item.x), [-300, 300]);
+  assert.equal(ofSku(result, "SPK-100")[0].z, -245);
+});
+
+test("speakers that do not fit on the top are left unplaced", () => {
+  const narrow = product("DESK-TOP-1800", "desk_top", { width: 1600, depth: 800, height: 30 });
+  const result = layout({
+    catalog: catalogOf(legs, narrow, monitor, monitorB, speaker),
+    skus: ["DESK-LEGS-1400", "DESK-TOP-1800", "MON-613-366", "MON-613-367", "SPK-100", "SPK-100"]
+  });
+  assert.equal(ofSku(result, "SPK-100").length, 0);
+  assert.deepEqual(
+    result.issues.filter((item) => item.sku === "SPK-100"),
+    [
+      { sku: "SPK-100", code: "row_overflow" },
+      { sku: "SPK-100", code: "row_overflow" }
+    ]
+  );
+  assert.equal(result.issues.some((item) => item.sku === "MON-613-366"), false);
 });

@@ -19,7 +19,16 @@
     ],
     "rowGapMm": 100,
     "edgeMarginMm": 50,
-    "rowBackMarginMm": 100
+    "rowBackMarginMm": 100,
+    "flankTypes": [
+      "speaker"
+    ],
+    "frontTypes": [
+      "keyboard",
+      "mouse"
+    ],
+    "frontMarginMm": 150,
+    "accessoryGapMm": 100
   },
   {
     "id": "monitor",
@@ -42,5 +51,32 @@
     "canBeHost": false,
     "canHostOn": [],
     "maxOnScene": 1
+  },
+  {
+    "id": "keyboard",
+    "label": "Keyboard",
+    "canBeHost": false,
+    "canHostOn": [
+      "desk_top"
+    ],
+    "maxOnScene": 1
+  },
+  {
+    "id": "mouse",
+    "label": "Mouse",
+    "canBeHost": false,
+    "canHostOn": [
+      "desk_top"
+    ],
+    "maxOnScene": 1
+  },
+  {
+    "id": "speaker",
+    "label": "Speaker",
+    "canBeHost": false,
+    "canHostOn": [
+      "desk_top"
+    ],
+    "maxOnScene": 2
   }
 ]

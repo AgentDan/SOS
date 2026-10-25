@@ -1,0 +1,21 @@
+{
+  "sku": "MOUSE-65",
+  "type": "mouse",
+  "name": "Mouse 65",
+  "label": "мышь",
+  "dimensions": {
+    "width": 65,
+    "depth": 110,
+    "height": 38
+  },
+  "priceEur": 29,
+  "words": [
+    "мыш"
+  ],
+  "media": {
+    "model3d": "MOUSE-65.glb"
+  },
+  "placement": {
+    "hostSku": "DESK-TOP-1400"
+  }
+}
