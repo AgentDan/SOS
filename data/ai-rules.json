@@ -1,7 +1,7 @@
 {
   "section": "ai-rules",
-  "draftVersion": 3,
-  "publishedVersion": 2,
+  "draftVersion": 4,
+  "publishedVersion": 3,
   "draft": {
     "input": {
       "strict": true,
@@ -111,6 +111,67 @@
           ]
         }
       }
+    },
+    {
+      "version": 3,
+      "date": "2026-10-25T13:45:45.795Z",
+      "description": "1",
+      "snapshot": {
+        "input": {
+          "strict": true,
+          "unclear": "ask",
+          "detectMood": true,
+          "faq": true,
+          "tier": "quick"
+        },
+        "output": {
+          "maxWords": 35,
+          "emoji": true,
+          "keepOptions": true,
+          "noPrices": false,
+          "noPromises": true,
+          "noContradict": true,
+          "offerCheaper": true,
+          "noPressure": true,
+          "tier": "quick",
+          "aiVoice": true,
+          "bannedStems": [
+            "гарантир",
+            "обещаю",
+            "бесплатно",
+            "скидк",
+            "акци",
+            "100%",
+            "навсегда",
+            "лучш"
+          ],
+          "pressureStems": [
+            "срочно",
+            "только сегодня",
+            "успей",
+            "последн",
+            "пока не поздно"
+          ],
+          "aiSkipCodes": [
+            "answer_ok",
+            "unclear",
+            "smalltalk"
+          ],
+          "addedStems": [
+            "заказ",
+            "оплат",
+            "покупк",
+            "доставк",
+            "немного",
+            "слегка",
+            "чуть",
+            "выбрать вариант",
+            "дайте знать",
+            "пожелани",
+            "обращайтесь"
+          ]
+        }
+      }
     }
   ],
   "published": {
@@ -153,6 +214,19 @@
         "answer_ok",
         "unclear",
         "smalltalk"
+      ],
+      "addedStems": [
+        "заказ",
+        "оплат",
+        "покупк",
+        "доставк",
+        "немного",
+        "слегка",
+        "чуть",
+        "выбрать вариант",
+        "дайте знать",
+        "пожелани",
+        "обращайтесь"
       ]
     }
   }
