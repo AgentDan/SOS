@@ -1,8 +1,6 @@
 import { Router } from "express";
-import { buildContext } from "../pipeline/context.js";
 import { runMessage, runTurn } from "../pipeline/orchestrator.js";
 import { getNext, getProfile, getScene } from "../pipeline/reads.js";
-import { buildResponse } from "../pipeline/response.js";
 import { requireClientId } from "./middleware/client-id.js";
 
 const router = Router();
@@ -13,9 +11,9 @@ router.get("/dialog/next", (req, res) => {
   res.json(getNext(req.query.clientId));
 });
 
-router.post("/dialog/answer", (req, res) => {
+router.post("/dialog/answer", async (req, res) => {
   const { clientId, questionId, optionId } = req.body ?? {};
-  const result = runTurn({ clientId, questionId, optionId });
+  const result = await runTurn({ clientId, questionId, optionId });
   res.status(result.status).json(result.body);
 });
 
@@ -25,8 +23,7 @@ router.post("/dialog/message", async (req, res) => {
     return res.status(400).json({ error: "text must be a string" });
   }
   const outcome = await runMessage({ clientId, text });
-  const context = buildContext(clientId);
-  res.status(200).json(buildResponse({ outcome, context }));
+  res.status(200).json(outcome.response);
 });
 
 router.get("/dialog/scene", (req, res) => {

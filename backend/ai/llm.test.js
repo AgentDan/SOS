@@ -1,3 +1,6 @@
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test, { afterEach, beforeEach, describe } from "node:test";
 import assert from "node:assert/strict";
 import { callLlm } from "./llm.js";
@@ -8,6 +11,7 @@ const MARKER = "SENTINEL_OPENAI_KEY";
 let saved;
 let logs;
 let originalLog;
+let usageDir;
 
 function completion(content, status = 200, usage = { prompt_tokens: 11, completion_tokens: 7 }) {
   return new Response(
@@ -34,6 +38,8 @@ describe("callLlm", { concurrency: 1 }, () => {
     console.log = (...args) => {
       logs.push(args.map((item) => String(item)).join(" "));
     };
+    usageDir = mkdtempSync(path.join(os.tmpdir(), "sos-ai-usage-"));
+    process.env.AI_USAGE_FILE = path.join(usageDir, "ai-usage.jsonl");
   });
 
   afterEach(() => {
@@ -42,6 +48,8 @@ describe("callLlm", { concurrency: 1 }, () => {
       if (saved[key] === undefined) delete process.env[key];
       else process.env[key] = saved[key];
     }
+    delete process.env.AI_USAGE_FILE;
+    if (usageDir) rmSync(usageDir, { recursive: true, force: true });
   });
 
   test("200 returns text and token counts", async () => {
@@ -194,6 +202,7 @@ describe("callLlm", { concurrency: 1 }, () => {
     });
     assert.equal(calls, 0);
     assert.deepEqual(result, { ok: false, reason: "disabled" });
+    assert.equal(logs.length, 0);
   });
 
   test("missing model is no_model and does not fetch", async () => {
@@ -208,6 +217,7 @@ describe("callLlm", { concurrency: 1 }, () => {
     });
     assert.equal(calls, 0);
     assert.deepEqual(result, { ok: false, reason: "no_model" });
+    assert.equal(logs.length, 0);
     assert.equal(logs.join("\n").includes("test-key"), false);
   });
 
@@ -223,6 +233,7 @@ describe("callLlm", { concurrency: 1 }, () => {
     });
     assert.equal(calls, 0);
     assert.deepEqual(result, { ok: false, reason: "no_key" });
+    assert.equal(logs.length, 0);
   });
 
   test("errors and the console do not contain the key", async () => {
@@ -243,10 +254,64 @@ describe("callLlm", { concurrency: 1 }, () => {
       }
     });
 
-    const dumped = `${JSON.stringify(thrown)}\n${JSON.stringify(denied)}\n${logs.join("\n")}`;
+    let usage = "";
+    try {
+      usage = readFileSync(process.env.AI_USAGE_FILE, "utf8");
+    } catch {
+      usage = "";
+    }
+    const dumped = `${JSON.stringify(thrown)}\n${JSON.stringify(denied)}\n${logs.join("\n")}\n${usage}`;
     assert.equal(dumped.includes(MARKER), false);
     assert.equal(thrown.reason, "network");
     assert.equal(denied.reason, "auth");
     assert.equal(calls, 3);
+  });
+
+  test("usage file records parse and voice but skips a disabled call", async () => {
+    const phrase = "секрет клиента";
+    enable(MARKER);
+    delete process.env.AI_ENABLED;
+    await callLlm({
+      purpose: "parse",
+      user: phrase,
+      system: phrase,
+      fetchImpl: async () => completion("{}")
+    });
+    assert.equal(existsSync(process.env.AI_USAGE_FILE), false);
+    assert.equal(logs.length, 0);
+
+    process.env.AI_ENABLED = "true";
+    await callLlm({
+      purpose: "parse",
+      user: phrase,
+      system: phrase,
+      fetchImpl: async () => completion('{"type":"unclear"}')
+    });
+    await callLlm({
+      purpose: "voice",
+      user: phrase,
+      system: phrase,
+      fetchImpl: async () => new Response(JSON.stringify({ error: { message: phrase } }), { status: 401 })
+    });
+
+    const raw = readFileSync(process.env.AI_USAGE_FILE, "utf8");
+    assert.equal(raw.includes(MARKER), false);
+    assert.equal(raw.includes(phrase), false);
+    const lines = raw.trim().split("\n").map((line) => JSON.parse(line));
+    assert.equal(lines.length, 2);
+    assert.equal(lines[0].purpose, "parse");
+    assert.equal(lines[0].ok, true);
+    assert.equal(lines[0].reason, "ok");
+    assert.equal(lines[0].model, "test-model");
+    assert.equal(lines[0].in, 11);
+    assert.equal(lines[0].out, 7);
+    assert.equal(typeof lines[0].ts, "string");
+    assert.equal(typeof lines[0].ms, "number");
+    assert.equal(lines[1].purpose, "voice");
+    assert.equal(lines[1].ok, false);
+    assert.equal(lines[1].reason, "auth");
+    assert.equal(lines[1].in, 0);
+    assert.equal(lines[1].out, 0);
+    assert.equal(lines[1].model, "test-model");
   });
 });

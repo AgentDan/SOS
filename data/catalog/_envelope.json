@@ -1,7 +1,7 @@
 {
   "section": "catalog",
-  "draftVersion": 11,
-  "publishedVersion": 11,
+  "draftVersion": 12,
+  "publishedVersion": 12,
   "history": [
     {
       "version": 1,
@@ -1876,6 +1876,328 @@
           }
         ]
       }
+    },
+    {
+      "version": 12,
+      "date": "2026-10-25T10:01:06.354Z",
+      "description": "1",
+      "snapshot": {
+        "types": [
+          {
+            "id": "desk_legs",
+            "label": "Desk legs",
+            "canBeHost": true,
+            "canHostOn": [],
+            "maxOnScene": 1
+          },
+          {
+            "id": "desk_top",
+            "label": "Desk top",
+            "canBeHost": true,
+            "canHostOn": [
+              "desk_legs"
+            ],
+            "maxOnScene": 2,
+            "rowTypes": [
+              "monitor"
+            ],
+            "rowGapMm": 100,
+            "edgeMarginMm": 50,
+            "rowBackMarginMm": 100,
+            "flankTypes": [
+              "speaker"
+            ],
+            "frontTypes": [
+              "keyboard",
+              "mouse"
+            ],
+            "frontMarginMm": 150,
+            "accessoryGapMm": 100
+          },
+          {
+            "id": "monitor",
+            "label": "Monitor",
+            "canBeHost": false,
+            "canHostOn": [
+              "desk_top"
+            ]
+          },
+          {
+            "id": "chair",
+            "label": "Chair",
+            "canBeHost": false,
+            "canHostOn": [],
+            "maxOnScene": 2
+          },
+          {
+            "id": "person",
+            "label": "Person",
+            "canBeHost": false,
+            "canHostOn": [],
+            "maxOnScene": 1
+          },
+          {
+            "id": "keyboard",
+            "label": "Keyboard",
+            "canBeHost": false,
+            "canHostOn": [
+              "desk_top"
+            ],
+            "maxOnScene": 1
+          },
+          {
+            "id": "mouse",
+            "label": "Mouse",
+            "canBeHost": false,
+            "canHostOn": [
+              "desk_top"
+            ],
+            "maxOnScene": 1
+          },
+          {
+            "id": "speaker",
+            "label": "Speaker",
+            "canBeHost": false,
+            "canHostOn": [
+              "desk_top"
+            ],
+            "maxOnScene": 2
+          }
+        ],
+        "needs": [
+          {
+            "id": "desk_top_wide",
+            "name": "Широкая столешница",
+            "why": "",
+            "criteria": {
+              "type": "desk_top",
+              "minWidth": 1600
+            }
+          },
+          {
+            "id": "ergonomic_chair",
+            "name": "Эргономичное кресло",
+            "why": "",
+            "criteria": {
+              "type": "chair"
+            }
+          }
+        ],
+        "products": [
+          {
+            "sku": "DESK-LEGS-1400",
+            "type": "desk_legs",
+            "name": "Desk legs 1400x700",
+            "label": "опоры стола",
+            "dimensions": {
+              "width": 1400,
+              "depth": 700,
+              "height": 1000
+            },
+            "priceEur": 79,
+            "alwaysPresent": true,
+            "words": [
+              "опор",
+              "ножк"
+            ],
+            "media": {
+              "model3d": "DESK-LEGS-1400.glb"
+            }
+          },
+          {
+            "sku": "DESK-TOP-1400",
+            "type": "desk_top",
+            "name": "Desk top 1400x700",
+            "label": "стол 140",
+            "dimensions": {
+              "width": 1400,
+              "depth": 700,
+              "height": 30
+            },
+            "priceEur": 189,
+            "words": [
+              "стол",
+              "столешниц"
+            ],
+            "media": {
+              "model3d": "DESK-TOP-1400.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-LEGS-1400"
+            }
+          },
+          {
+            "sku": "DESK-TOP-1800",
+            "type": "desk_top",
+            "name": "Desk top 1800x800",
+            "label": "стол 180",
+            "dimensions": {
+              "width": 1800,
+              "depth": 800,
+              "height": 30
+            },
+            "priceEur": 259,
+            "words": [
+              "стол",
+              "столешниц"
+            ],
+            "media": {
+              "model3d": "DESK-TOP-1800.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-LEGS-1400"
+            }
+          },
+          {
+            "sku": "MON-613-366",
+            "type": "monitor",
+            "name": "Monitor 27-inch",
+            "label": "монитор",
+            "dimensions": {
+              "width": 613,
+              "depth": 205,
+              "height": 366
+            },
+            "priceEur": 249,
+            "words": [
+              "монитор",
+              "экран"
+            ],
+            "media": {
+              "model3d": "MON-613-366.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-TOP-1400"
+            }
+          },
+          {
+            "sku": "MON-613-367",
+            "type": "monitor",
+            "name": "Monitor 27-inch",
+            "label": "монитор",
+            "dimensions": {
+              "width": 613,
+              "depth": 205,
+              "height": 366
+            },
+            "priceEur": 249,
+            "words": [
+              "монитор",
+              "экран"
+            ],
+            "media": {
+              "model3d": "MON-613-367.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-TOP-1400"
+            }
+          },
+          {
+            "sku": "CHAIR-460",
+            "type": "chair",
+            "name": "Chair 460x520",
+            "label": "кресло",
+            "dimensions": {
+              "width": 460,
+              "depth": 520,
+              "height": 900
+            },
+            "priceEur": 129,
+            "words": [
+              "кресл",
+              "стул"
+            ],
+            "media": {
+              "model3d": "CHAIR-460.glb"
+            },
+            "placement": {
+              "offset": {
+                "x": 0,
+                "z": 760
+              }
+            }
+          },
+          {
+            "sku": "character",
+            "type": "person",
+            "name": "Character",
+            "label": "манекен",
+            "dimensions": {
+              "width": 814,
+              "depth": 778,
+              "height": 1420
+            },
+            "words": [],
+            "media": {
+              "model3d": "character.glb"
+            }
+          },
+          {
+            "sku": "KB-440",
+            "type": "keyboard",
+            "name": "Keyboard 440",
+            "label": "клавиатура",
+            "dimensions": {
+              "width": 440,
+              "depth": 140,
+              "height": 25
+            },
+            "priceEur": 49,
+            "words": [
+              "клавиатур"
+            ],
+            "media": {
+              "model3d": "KB-440.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-TOP-1400"
+            }
+          },
+          {
+            "sku": "MOUSE-65",
+            "type": "mouse",
+            "name": "Mouse 65",
+            "label": "мышь",
+            "dimensions": {
+              "width": 65,
+              "depth": 110,
+              "height": 38
+            },
+            "priceEur": 29,
+            "words": [
+              "мыш"
+            ],
+            "media": {
+              "model3d": "MOUSE-65.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-TOP-1400"
+            }
+          },
+          {
+            "sku": "SPK-100",
+            "type": "speaker",
+            "name": "Speaker 100",
+            "label": "колонки",
+            "dimensions": {
+              "width": 100,
+              "depth": 110,
+              "height": 200
+            },
+            "priceEur": 59,
+            "words": [
+              "колонк",
+              "динамик"
+            ],
+            "media": {
+              "model3d": "SPK-100.glb"
+            },
+            "placement": {
+              "hostSku": "DESK-TOP-1400"
+            }
+          }
+        ]
+      }
     }
   ],
   "published": {
@@ -1900,7 +2222,16 @@
         ],
         "rowGapMm": 100,
         "edgeMarginMm": 50,
-        "rowBackMarginMm": 100
+        "rowBackMarginMm": 100,
+        "flankTypes": [
+          "speaker"
+        ],
+        "frontTypes": [
+          "keyboard",
+          "mouse"
+        ],
+        "frontMarginMm": 150,
+        "accessoryGapMm": 100
       },
       {
         "id": "monitor",
@@ -1923,6 +2254,33 @@
         "canBeHost": false,
         "canHostOn": [],
         "maxOnScene": 1
+      },
+      {
+        "id": "keyboard",
+        "label": "Keyboard",
+        "canBeHost": false,
+        "canHostOn": [
+          "desk_top"
+        ],
+        "maxOnScene": 1
+      },
+      {
+        "id": "mouse",
+        "label": "Mouse",
+        "canBeHost": false,
+        "canHostOn": [
+          "desk_top"
+        ],
+        "maxOnScene": 1
+      },
+      {
+        "id": "speaker",
+        "label": "Speaker",
+        "canBeHost": false,
+        "canHostOn": [
+          "desk_top"
+        ],
+        "maxOnScene": 2
       }
     ],
     "needs": [
@@ -2091,6 +2449,70 @@
         "words": [],
         "media": {
           "model3d": "character.glb"
+        }
+      },
+      {
+        "sku": "KB-440",
+        "type": "keyboard",
+        "name": "Keyboard 440",
+        "label": "клавиатура",
+        "dimensions": {
+          "width": 440,
+          "depth": 140,
+          "height": 25
+        },
+        "priceEur": 49,
+        "words": [
+          "клавиатур"
+        ],
+        "media": {
+          "model3d": "KB-440.glb"
+        },
+        "placement": {
+          "hostSku": "DESK-TOP-1400"
+        }
+      },
+      {
+        "sku": "MOUSE-65",
+        "type": "mouse",
+        "name": "Mouse 65",
+        "label": "мышь",
+        "dimensions": {
+          "width": 65,
+          "depth": 110,
+          "height": 38
+        },
+        "priceEur": 29,
+        "words": [
+          "мыш"
+        ],
+        "media": {
+          "model3d": "MOUSE-65.glb"
+        },
+        "placement": {
+          "hostSku": "DESK-TOP-1400"
+        }
+      },
+      {
+        "sku": "SPK-100",
+        "type": "speaker",
+        "name": "Speaker 100",
+        "label": "колонки",
+        "dimensions": {
+          "width": 100,
+          "depth": 110,
+          "height": 200
+        },
+        "priceEur": 59,
+        "words": [
+          "колонк",
+          "динамик"
+        ],
+        "media": {
+          "model3d": "SPK-100.glb"
+        },
+        "placement": {
+          "hostSku": "DESK-TOP-1400"
         }
       }
     ]

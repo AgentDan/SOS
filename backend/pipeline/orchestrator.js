@@ -12,9 +12,11 @@ import { assembleScene } from "./reads.js";
 import { checkAnswer, checkConfirmation } from "../understanding/check-answer.js";
 import { interpret } from "../understanding/interpret.js";
 import { parseWithLlm } from "../understanding/parse-with-llm.js";
-import { readQuestionnaire } from "../config/load.js";
+import { readAiRules, readQuestionnaire } from "../config/load.js";
+import { speakWithLlm } from "../voice/speak-with-llm.js";
 import { buildContext } from "./context.js";
 import { persistTurn } from "./persist.js";
+import { buildResponse } from "./response.js";
 import { failResult, okResult } from "./results.js";
 
 function applyTurn({ questionnaire, catalog, profile, questionId, optionId }) {
@@ -117,7 +119,32 @@ function applyIntent({ questionnaire, catalog, profile, intent, consultant, ergo
   throw new Error("unknown intent type");
 }
 
-function runTurn({ clientId, questionId, optionId }) {
+async function withSpokenReply(outcome, context, { llm, fetchImpl } = {}) {
+  if (!outcome || outcome.status !== 200 || !outcome.result) return outcome;
+  const response = buildResponse({ outcome, context });
+  const rules = readAiRules();
+  if (process.env.AI_ENABLED === "true" && rules?.output?.aiVoice === true) {
+    try {
+      const voiced = await speakWithLlm({
+        template: response.reply?.text,
+        result: outcome.result,
+        rules: rules.output,
+        ...(typeof llm === "function" ? { llm } : {}),
+        ...(typeof fetchImpl === "function" ? { fetchImpl } : {})
+      });
+      if (voiced && voiced.via === "ai" && typeof voiced.text === "string") {
+        const next = { text: voiced.text, via: "ai" };
+        if (typeof response.reply?.fallback === "string") next.fallback = response.reply.fallback;
+        response.reply = next;
+      }
+    } catch {
+      // сбой голоса оставляет шаблон
+    }
+  }
+  return { ...outcome, response };
+}
+
+async function runTurn({ clientId, questionId, optionId, llm, fetchImpl } = {}) {
   if (typeof questionId === "string" && questionId.startsWith("confirm_")) {
     const checked = checkConfirmation({
       pending: getPendingConfirmations(loadProfile(clientId)),
@@ -144,7 +171,7 @@ function runTurn({ clientId, questionId, optionId }) {
     }
   });
   persistTurn(outcome);
-  return outcome;
+  return withSpokenReply(outcome, context, { llm, fetchImpl });
 }
 
 async function runMessage({ clientId, text, llm, fetchImpl } = {}) {
@@ -165,7 +192,7 @@ async function runMessage({ clientId, text, llm, fetchImpl } = {}) {
   }
   const outcome = applyIntent({ ...context, intent });
   persistTurn(outcome);
-  return outcome;
+  return withSpokenReply(outcome, context, { llm, fetchImpl });
 }
 
 export { applyTurn, applyIntent, runTurn, runMessage };

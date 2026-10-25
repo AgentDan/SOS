@@ -1,6 +1,43 @@
 import { callLlm } from "../ai/llm.js";
 
 const TEXT_LIMIT = 300;
+const SYNONYM_HINT =
+  "лишнее, не нужно, ни к чему = remove; скромнее, подешевле, бюджетнее = talk cheaper; удобно ли мне = talk ergo";
+
+function firstWord(entry) {
+  const list = Array.isArray(entry?.words) ? entry.words : Array.isArray(entry) ? entry : [];
+  for (const word of list) {
+    if (typeof word === "string" && word.trim() !== "") return word.trim();
+  }
+  return "";
+}
+
+function exampleLines(vocabulary) {
+  const vocab = vocabulary && typeof vocabulary === "object" ? vocabulary : {};
+  const productWord = firstWord(Array.isArray(vocab.products) ? vocab.products[0] : null);
+  const commands = (Array.isArray(vocab.commands) ? vocab.commands : [])
+    .map((entry) => {
+      if (!entry || typeof entry.action !== "string") return "";
+      const stem = firstWord(entry);
+      if (!stem) return "";
+      const phrase = productWord ? `${stem} ${productWord}` : stem;
+      return `${entry.action} (${stem}) → «${phrase}»`;
+    })
+    .filter(Boolean);
+  const topics = vocab.topics && typeof vocab.topics === "object" ? vocab.topics : {};
+  const topicExamples = ["cheaper", "ergo", "smalltalk"]
+    .map((topic) => {
+      const stem = firstWord(topics[topic]);
+      if (!stem) return "";
+      return `${topic} (${stem}) → «${stem}»`;
+    })
+    .filter(Boolean);
+  const examples = [...commands, ...topicExamples];
+  const lines = [];
+  if (examples.length > 0) lines.push(`Примеры: ${examples.join("; ")}.`);
+  lines.push(SYNONYM_HINT);
+  return lines;
+}
 
 function words(entry) {
   if (!entry || !Array.isArray(entry.words)) return "";
@@ -43,6 +80,7 @@ function systemPrompt(vocabulary) {
     `Допустимые артикулы и их слова: ${products}.`,
     `Темы: cheaper (${wordList(topics.cheaper)}), ergo (${wordList(topics.ergo)}), smalltalk (${wordList(topics.smalltalk)}).`,
     `Частые вопросы: ${faq}.`,
+    ...exampleLines(vocab),
     'Формат: {"type":"command","action":"...","sku":"...","skus":[]} или {"type":"talk","topic":"cheaper|ergo|smalltalk|faq","faqId":"..."} или {"type":"unclear"}.',
     "Для distance укажи в skus не больше двух артикулов в порядке упоминания. Для остальных действий укажи один sku.",
     "Если под одно слово подходят несколько артикулов, возьми первый из перечня.",
@@ -153,6 +191,7 @@ async function parseWithLlm({ text, vocabulary, llm = callLlm, fetchImpl } = {})
       system: systemPrompt(vocabulary),
       user: clipped,
       maxTokens: 150,
+      purpose: "parse",
       fetchImpl
     });
   } catch {

@@ -214,6 +214,26 @@ test("decision order checks command, then cheaper, then ergo, then faq, then sma
   assert.deepEqual(interpret(text("абракадабра"), vocabulary), unclear("text", "no_match"));
 });
 
+test("new remove and cheaper stems keep the earliest command", () => {
+  const vocab = {
+    ...vocabulary,
+    commands: vocabulary.commands.map((entry) =>
+      entry.action === "remove"
+        ? {
+            ...entry,
+            words: [...entry.words, "лишн", "не нужен", "не нужна", "не нужно", "больше не нужн"]
+          }
+        : entry
+    ),
+    topics: {
+      ...vocabulary.topics,
+      cheaper: [...vocabulary.topics.cheaper, "скромн", "бюджетн", "недорог", "подешевл"]
+    }
+  };
+  assert.deepEqual(interpret(text("убери лишнее, покажи дешевле"), vocab), command("remove"));
+  assert.deepEqual(interpret(text("хочу дешевле, убери стол"), vocab), command("remove", "DESK-TOP-1800"));
+});
+
 test("empty, blank, and non-string text are unclear", () => {
   assert.deepEqual(interpret(text(""), vocabulary), unclear("text", "empty"));
   assert.deepEqual(interpret(text("   \n\t"), vocabulary), unclear("text", "empty"));

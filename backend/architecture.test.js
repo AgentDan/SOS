@@ -163,14 +163,48 @@ test("modules honor the dependency rules", () => {
 });
 
 test("llm.js does not import blocks", () => {
-  const source = readFileSync(path.join(AI, "llm.js"), "utf8");
-  assert.deepEqual(importSpecifiers(source), []);
+  const specs = importSpecifiers(readFileSync(path.join(AI, "llm.js"), "utf8"));
+  for (const spec of specs) assert.equal(spec.startsWith("node:"), true, spec);
 });
 
 test("parse-with-llm.js imports only ai", () => {
   const file = path.join(BACKEND, "understanding", "parse-with-llm.js");
   const specs = importSpecifiers(readFileSync(file, "utf8"));
   assert.deepEqual(specs, ["../ai/llm.js"]);
+});
+
+test("check-reply.js and speak-with-llm.js import only ai or each other", () => {
+  const voice = path.join(BACKEND, "voice");
+  const allowed = new Set([
+    path.normalize(path.join(AI, "llm.js")),
+    path.normalize(path.join(voice, "check-reply.js")),
+    path.normalize(path.join(voice, "speak-with-llm.js"))
+  ]);
+  for (const name of ["check-reply.js", "speak-with-llm.js"]) {
+    const file = path.join(voice, name);
+    for (const spec of importSpecifiers(readFileSync(file, "utf8"))) {
+      assert.equal(spec.startsWith("."), true, spec);
+      const resolved = resolveSpecifier(file, spec);
+      assert.ok(resolved && allowed.has(path.normalize(resolved)), spec);
+    }
+  }
+});
+
+test("only pipeline calls check-reply.js and speak-with-llm.js", () => {
+  const voiceDir = path.join(BACKEND, "voice");
+  const targets = ["check-reply.js", "speak-with-llm.js"].map((name) =>
+    path.normalize(path.join(voiceDir, name))
+  );
+  const found = [];
+  const files = [...walkIfExists(BACKEND), ...walkIfExists(CLIENT), ...walkIfExists(ADMIN)];
+  for (const file of files) {
+    if (isInside(file, voiceDir) || isInside(file, PIPELINE)) continue;
+    for (const spec of importSpecifiers(readFileSync(file, "utf8"))) {
+      const resolved = resolveSpecifier(file, spec);
+      if (resolved && targets.includes(path.normalize(resolved))) found.push(`${file} imports ${spec}`);
+    }
+  }
+  assert.deepEqual(found, [], found.join("\n"));
 });
 
 test("body.js does not import other blocks", () => {

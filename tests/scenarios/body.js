@@ -17,13 +17,13 @@ const EXPECTED = {
   source: { height: "stated", hand: "stated" }
 };
 
-function runBody() {
+async function runBody() {
   const errors = [];
   const clientId = `scenario-body-${Date.now()}-1`;
   const dir = path.join(CLIENTS_DIR, clientId);
   try {
     for (const step of STEPS) {
-      const result = runTurn({ clientId, questionId: step.questionId, optionId: step.optionId });
+      const result = await runTurn({ clientId, questionId: step.questionId, optionId: step.optionId });
       if (result.status !== 200) {
         const error = result.body?.error ?? result.status;
         errors.push(`${step.questionId}/${step.optionId} → ${error}`);

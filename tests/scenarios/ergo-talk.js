@@ -27,7 +27,7 @@ function respond(clientId, outcome) {
 async function play(clientId, steps, errors, ask) {
   for (const step of steps) {
     if (step.questionId) {
-      const result = runTurn({ clientId, questionId: step.questionId, optionId: step.optionId });
+      const result = await runTurn({ clientId, questionId: step.questionId, optionId: step.optionId });
       if (result.status !== 200) {
         errors.push(`${step.questionId}/${step.optionId} → ${result.body?.error ?? result.status}`);
       }

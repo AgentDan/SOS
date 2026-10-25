@@ -1,11 +1,14 @@
-import { rmSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test, { afterEach, describe } from "node:test";
 import assert from "node:assert/strict";
 import { readCatalog } from "../config/load.js";
 import { computeScenePlan } from "../scene/scene-plan.js";
-import { runMessage } from "./orchestrator.js";
+import { buildContext } from "./context.js";
+import { runMessage, runTurn } from "./orchestrator.js";
+import { buildResponse } from "./response.js";
 
 const CLIENTS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "runtime", "clients");
 const KEYS = ["AI_ENABLED", "OPENAI_API_KEY", "OPENAI_MODEL"];
@@ -19,6 +22,30 @@ function restoreEnv() {
   for (const key of KEYS) {
     if (saved[key] === undefined) delete process.env[key];
     else process.env[key] = saved[key];
+  }
+}
+
+function warmReply(request) {
+  const user = typeof request?.user === "string" ? request.user : "";
+  const template = user.replace(/^Реплика:\s*/, "").replace(/\nКод:[\s\S]*$/, "");
+  return { ok: true, text: JSON.stringify({ text: `Хорошо. ${template}`.replace(/\s+/g, " ").trim() }) };
+}
+
+async function withAiVoice(run) {
+  const previous = process.env.SOS_DATA_DIR;
+  const dir = mkdtempSync(path.join(os.tmpdir(), "sos-voice-"));
+  try {
+    cpSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "data"), dir, { recursive: true });
+    const file = path.join(dir, "ai-rules.json");
+    const rules = JSON.parse(readFileSync(file, "utf8"));
+    rules.published = structuredClone(rules.draft);
+    writeFileSync(file, `${JSON.stringify(rules, null, 2)}\n`);
+    process.env.SOS_DATA_DIR = dir;
+    await run();
+  } finally {
+    if (previous === undefined) delete process.env.SOS_DATA_DIR;
+    else process.env.SOS_DATA_DIR = previous;
+    rmSync(dir, { recursive: true, force: true });
   }
 }
 
@@ -138,6 +165,105 @@ describe("runMessage ai", { concurrency: 1 }, () => {
       assert.equal(thrown.status, 200);
       assert.equal(thrown.result.kind, "unclear");
       assert.deepEqual(thrown.result.facts, { reason: "no_match" });
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  test("disabled ai voice keeps the template reply", async () => {
+    const clientId = "orchestrator-voice-off";
+    forget(clientId);
+    process.env.AI_ENABLED = "false";
+    let calls = 0;
+    try {
+      await withAiVoice(async () => {
+        const outcome = await runMessage({
+          clientId,
+          text: "добавь кресло",
+          llm: async () => {
+            calls += 1;
+            return warmReply({ user: "Реплика: лишнее\nКод: command_added" });
+          }
+        });
+        const plain = buildResponse({ outcome, context: buildContext(clientId) });
+        assert.equal(calls, 0);
+        assert.equal(outcome.status, 200);
+        assert.equal(outcome.response.status, 200);
+        assert.deepEqual(outcome.response.reply, plain.reply);
+        assert.equal(outcome.response.reply.via, "template");
+      });
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  test("a good voice candidate replaces the reply and keeps fallback", async () => {
+    const clientId = "orchestrator-voice-on";
+    forget(clientId);
+    process.env.AI_ENABLED = "true";
+    try {
+      await withAiVoice(async () => {
+        const desk = await runTurn({ clientId, questionId: "q_work_type", optionId: "coding" });
+        assert.equal(desk.status, 200);
+        for (const text of ["добавь монитор", "добавь второй монитор"]) {
+          const added = await runMessage({ clientId, text, llm: async (request) => warmReply(request) });
+          assert.equal(added.result.ok, true, text);
+        }
+        let seen;
+        const outcome = await runMessage({
+          clientId,
+          text: "расстояние между мониторами",
+          llm: async (request) => {
+            seen = request;
+            return warmReply(request);
+          }
+        });
+        const plain = buildResponse({ outcome, context: buildContext(clientId) });
+        assert.equal(outcome.status, 200);
+        assert.equal(outcome.result.say.code, "distance_measure");
+        assert.equal(outcome.response.reply.via, "ai");
+        assert.equal(outcome.response.reply.text.startsWith("Хорошо."), true);
+        assert.equal(outcome.response.reply.text.includes(plain.reply.text), true);
+        assert.equal(typeof outcome.response.reply.fallback, "string");
+        assert.equal(outcome.response.reply.fallback, plain.reply.fallback);
+        assert.equal(seen.purpose, "voice");
+        assert.equal(seen.user.includes(clientId), false);
+        assert.equal(seen.user.includes("profile"), false);
+      });
+    } finally {
+      forget(clientId);
+    }
+  });
+
+  test("a bad candidate and a failed voice call keep the template and status 200", async () => {
+    const clientId = "orchestrator-voice-bad";
+    forget(clientId);
+    process.env.AI_ENABLED = "true";
+    try {
+      await withAiVoice(async () => {
+        const bad = await runMessage({
+          clientId,
+          text: "добавь кресло",
+          llm: async () => ({ ok: true, text: JSON.stringify({ text: "Гарантирую новое кресло." }) })
+        });
+        const badPlain = buildResponse({ outcome: bad, context: buildContext(clientId) });
+        assert.equal(bad.status, 200);
+        assert.equal(bad.response.reply.via, "template");
+        assert.equal(bad.response.reply.text, badPlain.reply.text);
+
+        const crashed = await runMessage({
+          clientId,
+          text: "убери кресло",
+          llm: async () => {
+            throw new Error("boom");
+          }
+        });
+        const crashedPlain = buildResponse({ outcome: crashed, context: buildContext(clientId) });
+        assert.equal(crashed.status, 200);
+        assert.equal(crashed.response.status, 200);
+        assert.equal(crashed.response.reply.via, "template");
+        assert.equal(crashed.response.reply.text, crashedPlain.reply.text);
+      });
     } finally {
       forget(clientId);
     }

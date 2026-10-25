@@ -596,3 +596,28 @@ test("ai-rules output.noContradict must be a boolean", () => {
       /ai-rules: output\.noContradict must be a boolean/.test(err.message)
   );
 });
+
+test("ai-rules voice fields are an optional boolean and string arrays", () => {
+  const flag = loadSkeleton();
+  flag.aiRules.draft.output.aiVoice = "yes";
+  assert.throws(
+    () => validateDialogData(flag),
+    (err) => err instanceof Error && /ai-rules: output\.aiVoice must be a boolean/.test(err.message)
+  );
+
+  const stems = loadSkeleton();
+  stems.aiRules.draft.output.bannedStems = ["гарантир", ""];
+  assert.throws(
+    () => validateDialogData(stems),
+    (err) =>
+      err instanceof Error &&
+      /ai-rules: output\.bannedStems must be an array of non-empty strings/.test(err.message)
+  );
+
+  const absent = loadSkeleton();
+  delete absent.aiRules.draft.output.aiVoice;
+  delete absent.aiRules.draft.output.bannedStems;
+  delete absent.aiRules.draft.output.pressureStems;
+  delete absent.aiRules.draft.output.aiSkipCodes;
+  assert.equal(validateDialogData(absent), true);
+});

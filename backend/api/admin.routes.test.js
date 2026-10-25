@@ -451,7 +451,7 @@ describe("admin API", { concurrency: 1 }, () => {
     assert.equal(humor.values.length, 1);
     assert.equal(humor.values[0].at, "humor");
     assert.equal(humor.values[0].value, readDraft("consultant").humor);
-    assert.equal(price.values.length, 6);
+    assert.equal(price.values.length, 9);
     assert.ok(price.values.every((item) => typeof item.key === "string" && item.at.includes("priceEur")));
 
     const lines = journalEntries().length;

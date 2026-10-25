@@ -21,7 +21,7 @@ async function runPerson() {
   const dir = path.join(CLIENTS_DIR, clientId);
   try {
     for (const step of STEPS) {
-      const result = runTurn({ clientId, questionId: step.questionId, optionId: step.optionId });
+      const result = await runTurn({ clientId, questionId: step.questionId, optionId: step.optionId });
       if (result.status !== 200) {
         errors.push(`${step.questionId}/${step.optionId} → ${result.body?.error ?? result.status}`);
       }

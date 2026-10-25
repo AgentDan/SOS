@@ -49,7 +49,7 @@ async function setup(clientId, hand) {
     { questionId: "q_work_type", optionId: "coding" }
   ];
   for (const step of answers) {
-    const result = runTurn({ clientId, questionId: step.questionId, optionId: step.optionId });
+    const result = await runTurn({ clientId, questionId: step.questionId, optionId: step.optionId });
     if (result.status !== 200) {
       errors.push(`${hand} ${step.questionId} → ${result.body?.error ?? result.status}`);
     }
@@ -77,7 +77,7 @@ async function setup(clientId, hand) {
       errors.push(`${hand} ${text}: ${outcome.result?.reasonCode ?? "no result"}`);
     }
   }
-  const height = runTurn({ clientId, questionId: "q_height", optionId: "h_170" });
+  const height = await runTurn({ clientId, questionId: "q_height", optionId: "h_170" });
   if (height.status !== 200) errors.push(`${hand} height again → ${height.body?.error ?? height.status}`);
   return errors;
 }

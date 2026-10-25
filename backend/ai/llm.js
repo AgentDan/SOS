@@ -1,7 +1,13 @@
+import { appendFileSync, mkdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 const RETRY_PAUSE_MS = 100;
 const DEFAULT_TIMEOUT_MS = 8000;
 const DEFAULT_MAX_TOKENS = 150;
 const URL = "https://api.openai.com/v1/chat/completions";
+const QUIET_REASONS = new Set(["disabled", "no_key", "no_model"]);
+const USAGE_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "runtime", "ai-usage.jsonl");
 
 function positive(value) {
   const number = Number(value);
@@ -24,12 +30,41 @@ function envText(name) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function logCall(result, started) {
-  const usage = result.ok ? result.usage : { inputTokens: 0, outputTokens: 0 };
-  const state = result.ok ? "ok" : "fail";
-  const reason = result.ok ? "ok" : result.reason;
+function usageTarget() {
+  const override = process.env.AI_USAGE_FILE;
+  if (typeof override === "string" && override.trim() !== "") return override.trim();
+  return USAGE_FILE;
+}
+
+function recordUsage({ purpose, ok, reason, usage, ms }) {
+  const line = JSON.stringify({
+    ts: new Date().toISOString(),
+    purpose: purpose === "parse" || purpose === "voice" ? purpose : null,
+    model: envText("OPENAI_MODEL"),
+    ok,
+    reason,
+    in: finiteCount(usage?.inputTokens),
+    out: finiteCount(usage?.outputTokens),
+    ms: finiteCount(ms)
+  });
+  try {
+    const file = usageTarget();
+    mkdirSync(path.dirname(file), { recursive: true });
+    appendFileSync(file, `${line}\n`, "utf8");
+  } catch {
+    // журнал не должен ломать диалог
+  }
+}
+
+function logCall(result, started, purpose) {
+  const ok = result.ok === true;
+  const reason = ok ? "ok" : result.reason;
+  if (QUIET_REASONS.has(reason)) return;
+  const usage = ok ? result.usage ?? { inputTokens: 0, outputTokens: 0 } : { inputTokens: 0, outputTokens: 0 };
   const ms = Date.now() - started;
+  const state = ok ? "ok" : "fail";
   console.log(`ai call ${state} reason=${reason} in=${usage.inputTokens} out=${usage.outputTokens} ms=${ms}`);
+  recordUsage({ purpose, ok, reason, usage, ms });
 }
 
 async function readText(response) {
@@ -130,6 +165,7 @@ async function runCall({ system, user, maxTokens, timeoutMs, fetchImpl } = {}) {
 
 async function callLlm(request = {}) {
   const started = Date.now();
+  const purpose = request?.purpose;
   let result;
   try {
     result = await runCall(request ?? {});
@@ -139,7 +175,7 @@ async function callLlm(request = {}) {
   if (!result || result.ok !== true || typeof result.text !== "string") {
     const reason = result && typeof result.reason === "string" ? result.reason : "bad_response";
     const failure = { ok: false, reason };
-    logCall(failure, started);
+    logCall(failure, started, purpose);
     return failure;
   }
   const success = {
@@ -147,7 +183,7 @@ async function callLlm(request = {}) {
     text: result.text,
     usage: result.usage ?? { inputTokens: 0, outputTokens: 0 }
   };
-  logCall(success, started);
+  logCall(success, started, purpose);
   return success;
 }
 

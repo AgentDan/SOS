@@ -118,6 +118,14 @@ test("ergo is an allowed talk topic and an unknown topic is dropped", async () =
   });
   assert.equal(system.includes("ergo (удобн)"), true);
   assert.equal(system.includes("cheaper|ergo|smalltalk|faq"), true);
+  assert.equal(system.includes("add (добав) → «добав кресл»"), true);
+  assert.equal(system.includes("cheaper (дешевл) → «дешевл»"), true);
+  assert.equal(
+    system.includes(
+      "лишнее, не нужно, ни к чему = remove; скромнее, подешевле, бюджетнее = talk cheaper; удобно ли мне = talk ergo"
+    ),
+    true
+  );
   assert.deepEqual(intent, { type: "talk", source: "text", payload: { topic: "ergo" } });
 
   const unknown = await parseWithLlm({

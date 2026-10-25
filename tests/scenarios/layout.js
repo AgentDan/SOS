@@ -24,7 +24,7 @@ async function runLayout() {
   const clientId = `scenario-layout-${Date.now()}-1`;
   const dir = path.join(CLIENTS_DIR, clientId);
   try {
-    const desk = runTurn({ clientId, questionId: "q_work_type", optionId: "coding" });
+    const desk = await runTurn({ clientId, questionId: "q_work_type", optionId: "coding" });
     if (desk.status !== 200) errors.push(`desk → ${desk.body?.error ?? desk.status}`);
 
     for (const text of ["добавь монитор", "добавь второй монитор"]) {

@@ -125,14 +125,14 @@ function compare(profile, expect) {
 
 let sequence = 0;
 
-function runScenario(slug, scenario) {
+async function runScenario(slug, scenario) {
   sequence += 1;
   const clientId = `scenario-${slug}-${Date.now()}-${sequence}`;
   const dir = path.join(CLIENTS_DIR, clientId);
 
   try {
     for (const step of scenario.steps ?? []) {
-      const result = runTurn({
+      const result = await runTurn({
         clientId,
         questionId: step.questionId,
         optionId: step.optionId
@@ -211,7 +211,7 @@ async function main() {
   for (const { slug, data } of loadScenarios()) {
     let errors;
     try {
-      errors = runScenario(slug, data);
+      errors = await runScenario(slug, data);
     } catch (err) {
       errors = [err instanceof Error ? err.message : String(err)];
     }

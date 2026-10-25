@@ -295,7 +295,7 @@ async function play(clientId, errors, trace) {
     try {
       if (step.buttons) {
         for (const button of step.buttons) {
-          const outcome = runTurn({
+          const outcome = await runTurn({
             clientId,
             questionId: button.questionId,
             optionId: button.optionId

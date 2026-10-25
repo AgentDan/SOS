@@ -24,7 +24,22 @@ function validateAiRules(aiRules, errors) {
     checkType("ai-rules", draft.output.offerCheaper, "boolean", "output.offerCheaper", errors);
     checkType("ai-rules", draft.output.noPressure, "boolean", "output.noPressure", errors);
     checkType("ai-rules", draft.output.tier, "string", "output.tier", errors);
+    optionalBoolean(draft.output.aiVoice, "output.aiVoice", errors);
+    optionalStrings(draft.output.bannedStems, "output.bannedStems", errors);
+    optionalStrings(draft.output.pressureStems, "output.pressureStems", errors);
+    optionalStrings(draft.output.aiSkipCodes, "output.aiSkipCodes", errors);
   }
+}
+
+function optionalBoolean(value, label, errors) {
+  if (value === undefined) return;
+  checkType("ai-rules", value, "boolean", label, errors);
+}
+
+function optionalStrings(value, label, errors) {
+  if (value === undefined) return;
+  const ok = Array.isArray(value) && value.every((item) => typeof item === "string" && item.length > 0);
+  if (!ok) errors.push(`ai-rules: ${label} must be an array of non-empty strings`);
 }
 
 export { validateAiRules };
