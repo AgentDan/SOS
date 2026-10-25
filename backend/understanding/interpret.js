@@ -34,7 +34,9 @@
  *    Два разных слова одного типа тоже попадают в skus. Один товар — массив
  *    из одного элемента. Нет товаров — поля skus нет.
  * 3. Другая команда из commands → command { action, sku? }. sku — товар, чьё
- *    слово стоит в тексте раньше остальных. Нет артикула — поля sku нет.
+ *    слово стоит в тексте раньше остальных. На одной позиции сначала более
+ *    длинная фраза, затем размер из words рядом с названием, затем более
+ *    ранний товар. Нет артикула — поля sku нет.
  *    direction, amount и unit скелет не заполняет.
  * 4. Слово из topics.cheaper → talk { topic: "cheaper" }.
  * 5. Слово из topics.ergo → talk { topic: "ergo" }.
@@ -46,9 +48,17 @@
  * Мульти-совпадения внутри шага решает первое слово по позиции в тексте,
  * как у команд и FAQ. Более ранний шаг побеждает, даже если его слово
  * в тексте стоит позже: «дешевле» в одной фразе с эргономикой остаётся cheaper.
- * Внутри шагов 3 и 6 при равной позиции в тексте побеждает запись,
- * которая раньше в словаре. У distance на одном индексе то же правило,
- * дальше берутся следующие вхождения.
+ * Внутри шага 6 при равной позиции побеждает запись, которая раньше в словаре.
+ * У товаров на одной позиции побеждает более длинная фраза, затем товар,
+ * чьё число из words стоит целым токеном рядом с этим названием, затем
+ * более ранний порядок в каталоге. У distance то же разрешение, дальше
+ * берутся следующие вхождения.
+ * Слово из одних цифр не занимает позицию, если другое изделие делит с ним
+ * название. «200» не совпадает с токеном «2000». Рядом — до трёх токенов
+ * после названия или один токен перед ним; «см», «мм», «cm» и «mm» между
+ * числом и названием не считаются. Нет такого соседа по названию — цифровое
+ * слово ищется как обычная фраза. Другое слово этого товара в том же окне
+ * тоже выбирает артикул и само остаётся отдельным совпадением.
  */
 
 function isPlainObject(value) {
@@ -112,22 +122,192 @@ function findAllBoundaries(text, phrase) {
   return indexes;
 }
 
-function productHits(text, products) {
-  const byIndex = new Map();
-  if (!Array.isArray(products)) return [];
+const SIZE_UNITS = new Set(["см", "мм", "cm", "mm"]);
+
+function isSizeWord(phrase) {
+  return /^\d+$/u.test(phrase);
+}
+
+function prepareProducts(products) {
+  const prepared = [];
   products.forEach((entry, order) => {
     if (!isPlainObject(entry) || typeof entry.sku !== "string" || !Array.isArray(entry.words)) return;
+    const names = [];
+    const sizes = [];
     for (const word of entry.words) {
       if (typeof word !== "string") continue;
       const phrase = normalize(word);
       if (!phrase) continue;
-      for (const index of findAllBoundaries(text, phrase)) {
-        const current = byIndex.get(index);
-        if (!current || order < current.order) byIndex.set(index, { index, sku: entry.sku, order });
+      if (isSizeWord(phrase)) sizes.push(phrase);
+      else names.push(phrase);
+    }
+    prepared.push({ sku: entry.sku, order, names, sizes, shared: false });
+  });
+
+  const owners = new Map();
+  for (const product of prepared) {
+    for (const name of product.names) {
+      const group = owners.get(name) ?? [];
+      if (!group.includes(product)) group.push(product);
+      owners.set(name, group);
+    }
+  }
+  for (const group of owners.values()) {
+    if (group.length < 2) continue;
+    for (const product of group) product.shared = true;
+  }
+  return prepared;
+}
+
+function matchPhrases(product) {
+  return product.shared ? product.names : [...product.names, ...product.sizes];
+}
+
+function rememberHit(byIndex, candidate) {
+  const list = byIndex.get(candidate.index);
+  if (!list) {
+    byIndex.set(candidate.index, [candidate]);
+    return;
+  }
+  const found = list.findIndex((item) => item.sku === candidate.sku);
+  if (found < 0) list.push(candidate);
+  else if (candidate.length > list[found].length) list[found] = candidate;
+}
+
+function textTokens(text) {
+  const tokens = [];
+  const pattern = /\S+/g;
+  for (let match = pattern.exec(text); match; match = pattern.exec(text)) {
+    tokens.push({ text: match[0], index: match.index });
+  }
+  return tokens;
+}
+
+function nameSpan(tokens, charIndex, phrase) {
+  const start = tokens.findIndex((token) => token.index === charIndex);
+  if (start < 0) return null;
+  const count = phrase.split(" ").length;
+  return { start, end: Math.min(tokens.length - 1, start + count - 1) };
+}
+
+function tokenDistance(tokens, span, at) {
+  if (at >= span.start && at <= span.end) return null;
+  let distance = 0;
+  if (at < span.start) {
+    for (let index = span.start - 1; index >= at; index -= 1) {
+      if (SIZE_UNITS.has(tokens[index].text)) continue;
+      distance += 1;
+      if (distance > 1) return null;
+    }
+    return distance > 0 ? distance : null;
+  }
+  for (let index = span.end + 1; index <= at; index += 1) {
+    if (SIZE_UNITS.has(tokens[index].text)) continue;
+    distance += 1;
+    if (distance > 3) return null;
+  }
+  return distance > 0 ? distance : null;
+}
+
+function nearestSize(item, tokens, span) {
+  const sizes = new Set(item.sizes);
+  let best = null;
+  for (let at = 0; at < tokens.length; at += 1) {
+    if (!sizes.has(tokens[at].text)) continue;
+    const distance = tokenDistance(tokens, span, at);
+    if (distance == null) continue;
+    if (!best || distance < best.distance || (distance === best.distance && at < best.at)) {
+      best = { distance, at };
+    }
+  }
+  return best;
+}
+
+function distinctive(name, tied) {
+  return tied.some((item) => !item.names.includes(name));
+}
+
+function nearestExtra(item, tied, text, tokens, span) {
+  let best = null;
+  for (const name of item.names) {
+    if (name === item.phrase || !distinctive(name, tied)) continue;
+    for (const index of findAllBoundaries(text, name)) {
+      const at = tokens.findIndex((token) => token.index === index);
+      if (at < 0) continue;
+      const distance = tokenDistance(tokens, span, at);
+      if (distance == null) continue;
+      if (!best || distance < best.distance || (distance === best.distance && name.length > best.length)) {
+        best = { distance, length: name.length };
       }
     }
-  });
-  return [...byIndex.values()].sort((left, right) => left.index - right.index || left.order - right.order);
+  }
+  return best;
+}
+
+function pickHit(list, text, tokens) {
+  let maxLength = 0;
+  for (const item of list) if (item.length > maxLength) maxLength = item.length;
+  const tied = list.filter((item) => item.length === maxLength).sort((left, right) => left.order - right.order);
+  if (tied.length === 1 || !tied[0].shared) return tied[0];
+
+  let sizePick = null;
+  for (const item of tied) {
+    const span = nameSpan(tokens, item.index, item.phrase);
+    if (!span) continue;
+    const place = nearestSize(item, tokens, span);
+    if (!place) continue;
+    const better =
+      !sizePick ||
+      place.distance < sizePick.distance ||
+      (place.distance === sizePick.distance && place.at < sizePick.at) ||
+      (place.distance === sizePick.distance && place.at === sizePick.at && item.order < sizePick.order);
+    if (better) sizePick = { distance: place.distance, at: place.at, order: item.order, item };
+  }
+  if (sizePick) return sizePick.item;
+
+  let extraPick = null;
+  for (const item of tied) {
+    const span = nameSpan(tokens, item.index, item.phrase);
+    if (!span) continue;
+    const extra = nearestExtra(item, tied, text, tokens, span);
+    if (!extra) continue;
+    const better =
+      !extraPick ||
+      extra.distance < extraPick.distance ||
+      (extra.distance === extraPick.distance && extra.length > extraPick.length) ||
+      (extra.distance === extraPick.distance && extra.length === extraPick.length && item.order < extraPick.order);
+    if (better) extraPick = { distance: extra.distance, length: extra.length, order: item.order, item };
+  }
+  if (extraPick) return extraPick.item;
+  return tied[0];
+}
+
+function productHits(text, products) {
+  if (!Array.isArray(products)) return [];
+  const byIndex = new Map();
+  for (const product of prepareProducts(products)) {
+    for (const phrase of matchPhrases(product)) {
+      for (const index of findAllBoundaries(text, phrase)) {
+        rememberHit(byIndex, {
+          index,
+          sku: product.sku,
+          order: product.order,
+          length: phrase.length,
+          phrase,
+          names: product.names,
+          sizes: product.sizes,
+          shared: product.shared
+        });
+      }
+    }
+  }
+  const tokens = textTokens(text);
+  const hits = [];
+  for (const list of byIndex.values()) {
+    const winner = pickHit(list, text, tokens);
+    hits.push({ index: winner.index, sku: winner.sku, order: winner.order });
+  }
+  return hits.sort((left, right) => left.index - right.index || left.order - right.order);
 }
 
 function matchingCommand(text, commands) {

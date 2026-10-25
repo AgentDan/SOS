@@ -323,3 +323,120 @@ test("distance names two objects in mention order and leaves other commands alon
     payload: { action: "distance" }
   });
 });
+
+const sizedDesks = {
+  commands: [
+    { action: "add", words: ["добавь", "поставь"] },
+    { action: "replace", words: ["замени"] },
+    { action: "remove", words: ["убери"] },
+    { action: "distance", words: ["расстоя"] }
+  ],
+  products: [
+    { sku: "DESK-TOP-1400", words: ["стол", "столешниц", "1400", "140"] },
+    { sku: "DESK-TOP-1800", words: ["стол", "столешниц", "1800", "180"] },
+    { sku: "DESK-TOP-2000", words: ["стол", "столешниц", "2000", "200", "2 метр", "двухметров"] },
+    { sku: "MON-613-366", words: ["монитор", "экран"] },
+    { sku: "MON-613-367", words: ["монитор", "экран"] },
+    { sku: "MOUSE-65", words: ["мыш"] },
+    { sku: "KB-440", words: ["клавиатур"] },
+    { sku: "SPK-100", words: ["колонк", "динамик"] },
+    { sku: "CHAIR-460", words: ["кресл"] }
+  ]
+};
+
+test("a named desk size beats the earlier catalog desk", () => {
+  const desk2000 = [
+    "добавь стол 200",
+    "поставь стол шириной 200 см",
+    "добавь 200 см стол",
+    "добавь 200 стол",
+    "добавь двухметровый стол",
+    "добавь стол 2 метра"
+  ];
+  for (const phrase of desk2000) {
+    assert.deepEqual(interpret(text(phrase), sizedDesks), command("add", "DESK-TOP-2000"), phrase);
+  }
+  assert.deepEqual(interpret(text("замени стол на 200"), sizedDesks), command("replace", "DESK-TOP-2000"));
+  assert.deepEqual(interpret(text("замени на стол 2000"), sizedDesks), command("replace", "DESK-TOP-2000"));
+  assert.deepEqual(interpret(text("добавь стол 180"), sizedDesks), command("add", "DESK-TOP-1800"));
+  assert.deepEqual(interpret(text("добавь стол на 1800"), sizedDesks), command("add", "DESK-TOP-1800"));
+  assert.deepEqual(interpret(text("добавь стол 140"), sizedDesks), command("add", "DESK-TOP-1400"));
+  assert.deepEqual(interpret(text("добавь стол 1400"), sizedDesks), command("add", "DESK-TOP-1400"));
+  assert.deepEqual(interpret(text("добавь стол"), sizedDesks), command("add", "DESK-TOP-1400"));
+  assert.deepEqual(interpret(text("замени стол"), sizedDesks), command("replace", "DESK-TOP-1400"));
+  assert.deepEqual(interpret(text("мой рост 180, добавь стол"), sizedDesks), command("add", "DESK-TOP-1400"));
+});
+
+test("a size token is the whole number and does not take its own position", () => {
+  const shortFirst = {
+    commands: [{ action: "add", words: ["добавь"] }],
+    products: [
+      { sku: "DESK-SHORT", words: ["стол", "200"] },
+      { sku: "DESK-LONG", words: ["стол", "2000"] }
+    ]
+  };
+  const longFirst = {
+    commands: [{ action: "add", words: ["добавь"] }],
+    products: [
+      { sku: "DESK-LONG", words: ["стол", "2000"] },
+      { sku: "DESK-SHORT", words: ["стол", "200"] }
+    ]
+  };
+  assert.equal(interpret(text("добавь стол 200"), shortFirst).payload.sku, "DESK-SHORT");
+  assert.equal(interpret(text("добавь стол 2000"), shortFirst).payload.sku, "DESK-LONG");
+  assert.equal(interpret(text("добавь стол 200"), longFirst).payload.sku, "DESK-SHORT");
+  assert.equal(interpret(text("добавь стол 2000"), longFirst).payload.sku, "DESK-LONG");
+
+  assert.deepEqual(interpret(text("расстояние до стола 200"), sizedDesks), {
+    type: "command",
+    source: "text",
+    payload: { action: "distance", skus: ["DESK-TOP-2000"] }
+  });
+  assert.deepEqual(interpret(text("расстояние до стола 2000"), sizedDesks), {
+    type: "command",
+    source: "text",
+    payload: { action: "distance", skus: ["DESK-TOP-2000"] }
+  });
+  assert.deepEqual(interpret(text("расстояние между столом 140 и столом 200"), sizedDesks), {
+    type: "command",
+    source: "text",
+    payload: { action: "distance", skus: ["DESK-TOP-1400", "DESK-TOP-2000"] }
+  });
+  assert.deepEqual(interpret(text("расстояние между столом 2000 и монитором"), sizedDesks), {
+    type: "command",
+    source: "text",
+    payload: { action: "distance", skus: ["DESK-TOP-2000", "MON-613-366"] }
+  });
+  assert.deepEqual(interpret(text("добавь 200"), sizedDesks), command("add"));
+  assert.deepEqual(interpret(text("добавь 1800"), sizedDesks), command("add"));
+});
+
+test("a longer phrase at the same position beats an earlier catalog desk", () => {
+  const vocab = {
+    commands: [{ action: "add", words: ["добавь"] }],
+    products: [
+      { sku: "DESK-TOP-1400", words: ["стол"] },
+      { sku: "DESK-TOP-2000", words: ["стол", "стол 2000"] }
+    ]
+  };
+  assert.deepEqual(interpret(text("добавь стол 2000"), vocab), command("add", "DESK-TOP-2000"));
+  assert.deepEqual(interpret(text("добавь стол"), vocab), command("add", "DESK-TOP-1400"));
+});
+
+test("a digit word still matches when the product is the only one of its name", () => {
+  const vocab = {
+    commands: [{ action: "add", words: ["добавь"] }],
+    products: [{ sku: "DESK-TOP-1800", words: ["стол", "1800", "180"] }]
+  };
+  assert.deepEqual(interpret(text("добавь 1800"), vocab), command("add", "DESK-TOP-1800"));
+  assert.deepEqual(interpret(text("добавь 180"), vocab), command("add", "DESK-TOP-1800"));
+  assert.deepEqual(interpret(text("добавь стол"), vocab), command("add", "DESK-TOP-1800"));
+});
+
+test("monitors, a mouse, a keyboard and speakers keep their skus", () => {
+  assert.deepEqual(interpret(text("добавь монитор"), sizedDesks), command("add", "MON-613-366"));
+  assert.deepEqual(interpret(text("добавь 2 монитора"), sizedDesks), command("add", "MON-613-366"));
+  assert.deepEqual(interpret(text("добавь мышь"), sizedDesks), command("add", "MOUSE-65"));
+  assert.deepEqual(interpret(text("убери клавиатуру"), sizedDesks), command("remove", "KB-440"));
+  assert.deepEqual(interpret(text("поставь колонки"), sizedDesks), command("add", "SPK-100"));
+});

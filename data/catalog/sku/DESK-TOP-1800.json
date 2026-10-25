@@ -1,7 +1,7 @@
 {
   "sku": "DESK-TOP-1800",
   "type": "desk_top",
-  "movable": false,
+  "movable": true,
   "name": "Desk top 1800x800",
   "label": "стол 180",
   "dimensions": {
