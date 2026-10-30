@@ -2,7 +2,7 @@ import { sectionLabel } from "./sections.js";
 
 const NAV_MAIN = [
   { id: "home", text: "Главная", route: { screen: "overview" } },
-  { id: "catalog", text: "Каталог", route: { screen: "section", name: "catalog" } },
+  { id: "catalog", text: "Каталог", route: { screen: "catalog" } },
   { id: "questionnaire", text: "Анкета", route: { screen: "section", name: "questionnaire" } },
   { id: "dialog", text: "Диалог", route: { screen: "section", name: "consultant" } },
   { id: "ergonomics", text: "Эргономика", route: { screen: "section", name: "ergonomics" } },
@@ -22,7 +22,8 @@ const SCREEN_TITLES = {
   knobs: "Ручки",
   models: "Модели",
   map: "Карта связей",
-  journal: "Версии и журнал"
+  journal: "Версии и журнал",
+  catalog: "Каталог"
 };
 
 const DIALOG_SECTIONS = new Set(["consultant", "director", "sales", "commands", "ai-rules"]);
@@ -37,6 +38,7 @@ function activeNavId(route) {
     return "sections";
   }
   if (route.screen === "overview") return "home";
+  if (route.screen === "catalog") return "catalog";
   if (
     route.screen === "map" ||
     route.screen === "journal" ||

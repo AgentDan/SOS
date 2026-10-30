@@ -10,6 +10,7 @@ import { AppFrame } from "./ui/AppFrame.jsx";
 import { Btn } from "./ui/Btn.jsx";
 import { Pill } from "./ui/Pill.jsx";
 import { Shell } from "./ui/Shell.jsx";
+import { Catalog } from "./screens/Catalog.jsx";
 import { Knobs } from "./screens/Knobs.jsx";
 import { Login } from "./screens/Login.jsx";
 import { LinkMap } from "./screens/LinkMap.jsx";
@@ -27,7 +28,10 @@ const NAV = [
 
 function parseHash() {
   const raw = location.hash.replace(/^#\/?/, "");
-  const [head, ...rest] = raw.split("/");
+  const cut = raw.indexOf("?");
+  const path = cut >= 0 ? raw.slice(0, cut) : raw;
+  const params = new URLSearchParams(cut >= 0 ? raw.slice(cut + 1) : "");
+  const [head, ...rest] = path.split("/");
   const name = rest.join("/");
   if (head === "sections" && name) {
     let decoded = name;
@@ -43,16 +47,35 @@ function parseHash() {
   if (head === "models") return { screen: "models" };
   if (head === "map") return { screen: "map" };
   if (head === "journal") return { screen: "journal" };
+  if (head === "catalog") {
+    const tab = params.get("tab");
+    const create = params.get("create") === "1";
+    return {
+      screen: "catalog",
+      tab: tab === "types" || tab === "needs" ? tab : "products",
+      sku: create ? "" : params.get("sku") || "",
+      create
+    };
+  }
   return { screen: "overview" };
 }
 
 function hrefFor(route) {
+  if (!route || typeof route !== "object") return "#/overview";
   if (route.screen === "section") return `#/sections/${encodeURIComponent(route.name)}`;
   if (route.screen === "sections") return "#/sections";
   if (route.screen === "knobs") return "#/knobs";
   if (route.screen === "models") return "#/models";
   if (route.screen === "map") return "#/map";
   if (route.screen === "journal") return "#/journal";
+  if (route.screen === "catalog") {
+    const params = new URLSearchParams();
+    if (route.tab === "types" || route.tab === "needs") params.set("tab", route.tab);
+    if (route.create) params.set("create", "1");
+    else if (route.sku) params.set("sku", route.sku);
+    const query = params.toString();
+    return query ? `#/catalog?${query}` : "#/catalog";
+  }
   return "#/overview";
 }
 
@@ -282,6 +305,9 @@ function App() {
   else if (route.screen === "models") screen = <Models key={screenKey} onDirty={markDirty} />;
   else if (route.screen === "map") screen = <LinkMap key={screenKey} openSection={openSection} />;
   else if (route.screen === "journal") screen = <Versions key={screenKey} />;
+  else if (route.screen === "catalog") {
+    screen = <Catalog key={screenKey} route={route} onDirty={markDirty} requestGo={requestGo} />;
+  }
 
   return (
     <AppFrame>

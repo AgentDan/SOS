@@ -5,6 +5,7 @@ import { NAV_LEGACY, NAV_MAIN, activeNavId, screenTitle } from "./nav.js";
 const PAIRS = [
   [{ screen: "overview" }, "home"],
   [{ screen: "section", name: "catalog" }, "catalog"],
+  [{ screen: "catalog" }, "catalog"],
   [{ screen: "section", name: "questionnaire" }, "questionnaire"],
   [{ screen: "section", name: "consultant" }, "dialog"],
   [{ screen: "section", name: "director" }, "dialog"],
@@ -52,6 +53,7 @@ test("screenTitle names screens and uses section labels", () => {
   assert.equal(screenTitle({ screen: "models" }), "Модели");
   assert.equal(screenTitle({ screen: "map" }), "Карта связей");
   assert.equal(screenTitle({ screen: "journal" }), "Версии и журнал");
+  assert.equal(screenTitle({ screen: "catalog" }), "Каталог");
   assert.equal(screenTitle({ screen: "section", name: "catalog" }), "Каталог");
   assert.equal(screenTitle({ screen: "section", name: "director" }), "Режиссёр");
   assert.equal(screenTitle({ screen: "section", name: "sales" }), "Продажа");

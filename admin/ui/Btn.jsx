@@ -12,7 +12,9 @@ function Btn({
   const look =
     kind === "primary"
       ? "border border-accent bg-accent text-white focus-visible:outline-ink"
-      : "border border-line bg-surface text-ink focus-visible:outline-accent";
+      : kind === "danger"
+        ? "border border-bad bg-bad-soft text-bad focus-visible:outline-bad"
+        : "border border-line bg-surface text-ink focus-visible:outline-accent";
   const pad = size === "sm" ? "px-2.5 py-1 text-sm" : "px-3 py-2 text-base";
   return (
     <button
