@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { getSection, isAbort } from "../api/admin-api.js";
-import { buildLinkMap, chainOf, diffMaps, fitScale, linkKey, onlyHere } from "../lib/link-map.js";
+import { buildLinkMap, chainOf, diffMaps, fitScale, groupProducts, linkKey, onlyHere, searchNodes, summarizeProblems } from "../lib/link-map.js";
+import { makeSampleData } from "../lib/link-map-sample.js";
 import { problemLines } from "../lib/messages.js";
 import { sectionLabel } from "../lib/sections.js";
 import { Banner } from "../components/Banner.jsx";
@@ -208,6 +209,25 @@ const ROW_GAP = 12;
 const PAD = 24;
 const HEADER = 36;
 const GUTTER = 48;
+const OPTION_ROW = 24;
+const QUESTION_HEAD = 56;
+const FOLD_AFTER = 8;
+const FOLD_SHOW = 6;
+const PRODUCT_INLINE_MAX = 30;
+const LARGE_NODES = 120;
+const PRODUCT_PAGE = 50;
+const SEARCH_PAGE = 20;
+
+const PRODUCT_VIEWS = [
+  ["auto", "авто"],
+  ["show", "показать"],
+  ["fold", "свернуть"]
+];
+
+const DATA_SOURCES = [
+  ["real", "Реальные"],
+  ["sample", "Тестовые"]
+];
 
 function kindMeta(kind) {
   return KINDS.find((item) => item.id === kind) || KINDS[0];
@@ -414,10 +434,78 @@ function membersOf(chain, links) {
   return ids;
 }
 
-function layout(nodes) {
+function questionNodeId(node) {
+  const raw = node && node.data && typeof node.data.questionId === "string" ? node.data.questionId : "";
+  if (raw) return `question:${raw}`;
+  const key = node && typeof node.key === "string" ? node.key : "";
+  const cut = key.indexOf(":");
+  if (cut > 0) return `question:${key.slice(0, cut)}`;
+  return "";
+}
+
+function questionExpanded(questionId, options, openQuestions, chainIds) {
+  if (options.length <= FOLD_AFTER) return true;
+  if (openQuestions && openQuestions[questionId]) return true;
+  if (!chainIds) return false;
+  for (let index = FOLD_SHOW; index < options.length; index += 1) {
+    if (chainIds.has(options[index].id)) return true;
+  }
+  return false;
+}
+
+function optionLeads(links) {
+  const needs = new Map();
+  const affects = new Set();
+  for (const link of links) {
+    if (!link || typeof link.from !== "string" || !link.from.startsWith("option:")) continue;
+    if (link.kind === "infers") {
+      affects.add(link.from);
+      if (!needs.has(link.from)) needs.set(link.from, new Set());
+      if (typeof link.to === "string") needs.get(link.from).add(link.to);
+    } else if (link.kind === "picks-scenario") {
+      affects.add(link.from);
+    }
+  }
+  const out = new Map();
+  for (const id of affects) out.set(id, needs.has(id) ? needs.get(id).size : 0);
+  return out;
+}
+
+function productCountLabel(count) {
+  return `${count} ${plural(count, "товар", "товара", "товаров")}`;
+}
+
+function productsAreInline(count, mode) {
+  if (mode === "show") return true;
+  if (mode === "fold") return false;
+  return count <= PRODUCT_INLINE_MAX;
+}
+
+function toneClass(status, exclusive) {
+  if (status === "added") return "border-[#1f6b4a] bg-[#e7f6ee] text-[#0f6b3c] dark:border-[#7dcea0] dark:bg-[#143024] dark:text-[#d8f5e4]";
+  if (status === "removed") return "border-dashed border-[#8e1d1d] bg-[#fde8e8] text-[#8e1d1d] dark:border-[#ffb4b4] dark:bg-[#3a1c1c] dark:text-[#ffd0d0]";
+  if (status === "changed") return "border-[#7a4e00] bg-[#fff4d6] text-[#7a4e00] dark:border-[#ffe0a3] dark:bg-[#3a2e12] dark:text-[#ffe0a3]";
+  if (exclusive) return "border-[#b7791f] bg-[#fffdf8] text-[#1e1b16] dark:border-[#f0c36b] dark:bg-[#1e232b] dark:text-[#f3efe6]";
+  return "border-[#ddd4c6] bg-[#fffdf8] text-[#1e1b16] dark:border-[#343b46] dark:bg-[#1e232b] dark:text-[#f3efe6]";
+}
+
+function layout(nodes, options = {}) {
+  const openQuestions = options.openQuestions || {};
+  const chainIds = options.chainIds || null;
+  const foldedProducts = Boolean(options.foldedProducts);
+  const optionsByQuestion = new Map();
+  for (const node of nodes) {
+    if (!node || node.kind !== "option") continue;
+    const parent = questionNodeId(node);
+    if (!parent) continue;
+    if (!optionsByQuestion.has(parent)) optionsByQuestion.set(parent, []);
+    optionsByQuestion.get(parent).push(node);
+  }
   const columns = [];
   const grouped = new Map();
   for (const kind of KINDS) {
+    if (kind.id === "option") continue;
+    if (kind.id === "product" && foldedProducts) continue;
     const list = nodes.filter((node) => node.kind === kind.id);
     if (list.length === 0) continue;
     columns.push(kind);
@@ -426,14 +514,29 @@ function layout(nodes) {
   const positions = new Map();
   let bottom = PAD + HEADER;
   columns.forEach((kind, column) => {
-    grouped.get(kind.id).forEach((node, row) => {
-      const y = PAD + HEADER + row * (NODE_H + ROW_GAP);
-      positions.set(node.id, { x: PAD + column * (NODE_W + COL_GAP), y, w: NODE_W, h: NODE_H });
-      bottom = Math.max(bottom, y + NODE_H);
-    });
+    const x = PAD + column * (NODE_W + COL_GAP);
+    let y = PAD + HEADER;
+    for (const node of grouped.get(kind.id)) {
+      let height = NODE_H;
+      if (kind.id === "question") {
+        const opts = optionsByQuestion.get(node.id) || [];
+        if (opts.length > 0) {
+          const open = questionExpanded(node.id, opts, openQuestions, chainIds);
+          const shown = open ? opts.length : FOLD_SHOW;
+          const extra = open ? 0 : 1;
+          height = QUESTION_HEAD + (shown + extra) * OPTION_ROW;
+          for (let index = 0; index < shown; index += 1) {
+            positions.set(opts[index].id, { x, y: y + QUESTION_HEAD + index * OPTION_ROW, w: NODE_W, h: OPTION_ROW });
+          }
+        }
+      }
+      positions.set(node.id, { x, y, w: NODE_W, h: height });
+      bottom = Math.max(bottom, y + height);
+      y += height + ROW_GAP;
+    }
   });
   const width = PAD * 2 + Math.max(columns.length, 1) * NODE_W + Math.max(columns.length - 1, 0) * COL_GAP + GUTTER;
-  return { columns, grouped, positions, width, height: Math.max(bottom + PAD, PAD + HEADER + NODE_H) };
+  return { columns, grouped, positions, optionsByQuestion, width, height: Math.max(bottom + PAD, PAD + HEADER + NODE_H) };
 }
 
 function portY(box, index, count) {
@@ -676,7 +779,151 @@ function LinkJump({ link, end, nodesById, mode, linkStatus, onPick }) {
   );
 }
 
-function NodeCard({ node, mode, model, linkStatus, onPick, onOpen }) {
+function productShelf(node, model, groups) {
+  if (!groups || !node) return null;
+  if (node.kind === "type") {
+    return { rows: (groups.byType.get(node.id) || []).map((id) => ({ id, matched: false })), check: false, highlight: "" };
+  }
+  if (node.kind === "need") {
+    const typeLink = model.links.find((link) => link.kind === "needs-type" && link.from === node.id);
+    const pool = typeLink ? groups.byType.get(typeLink.to) || [] : [];
+    const matched = new Set(groups.byNeed.get(node.id) || []);
+    const ids = pool.length > 0 ? pool : [...matched];
+    return { rows: ids.map((id) => ({ id, matched: matched.has(id) })), check: true, highlight: "" };
+  }
+  if (node.kind === "product") {
+    const typeLink = model.links.find((link) => link.kind === "is-type" && link.to === node.id);
+    const ids = typeLink ? [...(groups.byType.get(typeLink.from) || [])] : [];
+    if (!ids.includes(node.id)) ids.unshift(node.id);
+    return { rows: ids.map((id) => ({ id, matched: false })), check: false, highlight: node.id };
+  }
+  return null;
+}
+
+function productRecord(node) {
+  const data = dataOf(node) || {};
+  const dimensions = data.dimensions && typeof data.dimensions === "object" ? data.dimensions : {};
+  const width = typeof dimensions.width === "number" && Number.isFinite(dimensions.width) ? dimensions.width : null;
+  const depth = typeof dimensions.depth === "number" && Number.isFinite(dimensions.depth) ? dimensions.depth : null;
+  const height = typeof dimensions.height === "number" && Number.isFinite(dimensions.height) ? dimensions.height : null;
+  const price = typeof data.priceEur === "number" && Number.isFinite(data.priceEur) ? data.priceEur : null;
+  const sku = typeof data.sku === "string" && data.sku ? data.sku : node.key || node.id;
+  const name = typeof data.name === "string" && data.name ? data.name : node.label || sku;
+  const words = Array.isArray(data.words) ? data.words.filter((item) => typeof item === "string").join(" ") : "";
+  return {
+    id: node.id,
+    sku,
+    name,
+    width,
+    price,
+    size: [width, depth, height].map((item) => (item == null ? "—" : String(item))).join(" × "),
+    priceText: price == null ? "—" : `${price} €`,
+    blob: `${sku} ${name} ${node.label || ""} ${words}`.toLowerCase()
+  };
+}
+
+function ProductTable({ rows, nodesById, mode, nodeStatus, check, highlight }) {
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState({ key: "sku", dir: 1 });
+  const [shown, setShown] = useState(PRODUCT_PAGE);
+  const records = [];
+  for (const row of rows) {
+    const node = nodesById.get(row.id);
+    if (!node) continue;
+    records.push({
+      ...productRecord(node),
+      matched: Boolean(row.matched),
+      status: mode === "diff" ? nodeStatus(node.id) : null
+    });
+  }
+  const needle = query.trim().toLowerCase();
+  const filtered = needle ? records.filter((row) => row.blob.includes(needle)) : records;
+  const sorted = [...filtered].sort((left, right) => {
+    if (check && left.matched !== right.matched) return left.matched ? -1 : 1;
+    const leftValue = left[sort.key];
+    const rightValue = right[sort.key];
+    if (leftValue == null && rightValue == null) return 0;
+    if (leftValue == null) return 1;
+    if (rightValue == null) return -1;
+    if (typeof leftValue === "number" && typeof rightValue === "number") return (leftValue - rightValue) * sort.dir;
+    return String(leftValue).localeCompare(String(rightValue), "ru") * sort.dir;
+  });
+  const highlightAt = highlight ? sorted.findIndex((row) => row.id === highlight) : -1;
+  const visibleCount = Math.max(shown, highlightAt + 1);
+  const page = sorted.slice(0, visibleCount);
+  function toggleSort(key) {
+    setSort((current) => (current.key === key ? { key, dir: current.dir * -1 } : { key, dir: 1 }));
+  }
+  const head = "sticky top-0 bg-[#fffdf8] px-2 py-1.5 text-left text-[12px] font-[650] text-[#5e584e] dark:bg-[#1e232b] dark:text-[#b7b0a4]";
+  function HeadButton({ id, children }) {
+    const arrow = sort.key === id ? (sort.dir > 0 ? " ↑" : " ↓") : "";
+    return (
+      <button type="button" className={`cursor-pointer bg-transparent p-0 text-left text-[12px] font-[650] ${FOCUS}`} onClick={() => toggleSort(id)}>
+        {children}
+        {arrow}
+      </button>
+    );
+  }
+  return (
+    <div>
+      <h3 className="mt-0 mb-2 text-[14px] font-[650]">Товары</h3>
+      <label className="mb-2 grid gap-1 text-[13px]">
+        <span className={MUTED}>Поиск по товарам</span>
+        <input className={FIELD} type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
+      </label>
+      {page.length === 0 ? <p className={`m-0 text-[14px] ${MUTED}`}>{records.length === 0 ? "Товаров нет" : "Ничего не найдено"}</p> : null}
+      {page.length > 0 ? (
+        <div className="max-h-80 overflow-auto rounded-lg border border-[#ddd4c6] dark:border-[#343b46]">
+          <table className="w-full border-separate border-spacing-0 text-left">
+            <thead>
+              <tr>
+                {mode === "diff" ? <th className={head}> </th> : null}
+                {check ? <th className={head}>Подходит</th> : null}
+                <th className={head} aria-sort={sort.key === "sku" ? (sort.dir > 0 ? "ascending" : "descending") : "none"}>
+                  <HeadButton id="sku">Артикул</HeadButton>
+                </th>
+                <th className={head}>Название</th>
+                <th className={head} aria-sort={sort.key === "width" ? (sort.dir > 0 ? "ascending" : "descending") : "none"}>
+                  <HeadButton id="width">Ширина × глубина × высота</HeadButton>
+                </th>
+                <th className={head} aria-sort={sort.key === "price" ? (sort.dir > 0 ? "ascending" : "descending") : "none"}>
+                  <HeadButton id="price">Цена</HeadButton>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {page.map((row) => {
+                const mark = nodeMark(row.status);
+                const self = row.id === highlight;
+                return (
+                  <tr key={row.id} className={self ? "bg-[#e7f6ee] dark:bg-[#143024]" : ""}>
+                    {mode === "diff" ? <td className={`px-2 py-1.5 font-[650] ${statusClass(row.status)}`}>{mark || " "}</td> : null}
+                    {check ? <td className="px-2 py-1.5 text-center">{row.matched ? <span aria-label="подходит">✓</span> : ""}</td> : null}
+                    <td className="px-2 py-1.5 text-[13px] whitespace-nowrap">{row.sku}</td>
+                    <td className="px-2 py-1.5 text-[13px] break-words">{row.name}</td>
+                    <td className="px-2 py-1.5 text-[13px] whitespace-nowrap">{row.size}</td>
+                    <td className="px-2 py-1.5 text-[13px] whitespace-nowrap">{row.priceText}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+      {sorted.length > page.length ? (
+        <button
+          type="button"
+          className={`mt-2 cursor-pointer rounded-lg border border-[#ddd4c6] bg-[#fffdf8] px-3 py-1.5 text-[14px] dark:border-[#343b46] dark:bg-[#1e232b] ${FOCUS}`}
+          onClick={() => setShown((current) => current + PRODUCT_PAGE)}
+        >
+          Показать ещё
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function NodeCard({ node, mode, model, linkStatus, groups, onPick, onOpen }) {
   const publishedNode = model.publishedById.get(node.id) || null;
   const draftNode = model.draftById.get(node.id) || null;
   const status = mode === "diff" ? model.diff.nodes.get(node.id) || "same" : null;
@@ -686,6 +933,7 @@ function NodeCard({ node, mode, model, linkStatus, onPick, onOpen }) {
   const incoming = model.links.filter((link) => link.to === node.id);
   const outgoing = model.links.filter((link) => link.from === node.id);
   const confidence = node.kind === "need" ? needConfidence(node.id, model.links) : "";
+  const shelf = productShelf(node, model, groups);
   return (
     <div className="grid gap-4">
       <div className="min-w-0">
@@ -698,6 +946,17 @@ function NodeCard({ node, mode, model, linkStatus, onPick, onOpen }) {
         {status ? <p className={`mt-2 mb-0 text-[14px] font-[650] ${statusClass(status)}`}>{statusText(status)}</p> : null}
       </div>
       {mode === "diff" ? <DiffFields publishedNode={publishedNode} draftNode={draftNode} /> : <FieldTable data={dataOf(single) || {}} />}
+      {shelf ? (
+        <ProductTable
+          key={node.id}
+          rows={shelf.rows}
+          nodesById={model.nodesById}
+          mode={mode}
+          nodeStatus={(id) => model.diff.nodes.get(id) || "same"}
+          check={shelf.check}
+          highlight={shelf.highlight}
+        />
+      ) : null}
       <div>
         <h3 className="mt-0 mb-1 text-[14px] font-[650]">Приходит из</h3>
         {incoming.length === 0 ? <p className={`m-0 text-[14px] ${MUTED}`}>Ничего не приходит</p> : null}
@@ -930,12 +1189,340 @@ function LinkTable({ links, nodesById, mode, linkStatus, onPick, isolated, query
   );
 }
 
+function QuestionNode({ node, box, options, positions, leads, mode, nodeStatus, pinned, hover, members, onlyIds, onToggle, onHover, onExpand }) {
+  const shown = options.filter((option) => positions.has(option.id));
+  const hidden = options.length - shown.length;
+  const status = mode === "diff" ? nodeStatus(node.id) : null;
+  const mark = nodeMark(status);
+  const dimmed = Boolean(members && !members.has(node.id));
+  const pressed = pinned === node.id;
+  const preview = !pinned && hover === node.id;
+  const focusId = pinned || hover;
+  const exclusive = Boolean(onlyIds && onlyIds.has(node.id) && node.id !== focusId);
+  const meta = kindMeta("question");
+  const words = [status ? statusWords(status) : "", exclusive ? "только здесь" : ""].filter(Boolean).join(", ");
+  return (
+    <div
+      className={`absolute z-10 overflow-hidden rounded-[12px] border shadow-[0_1px_2px_rgba(40,32,20,0.08)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.35)] ${toneClass(status, exclusive)} ${pressed || preview ? meta.ring : ""}`}
+      style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
+      onMouseLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) onHover(null);
+      }}
+    >
+      <span className={`pointer-events-none absolute top-0 bottom-0 left-0 w-1 ${meta.stripe}`} aria-hidden="true" />
+      <button
+        id={`map-node-${node.id}`}
+        type="button"
+        title={node.label}
+        aria-pressed={pressed}
+        aria-label={`${meta.one} «${node.label}»${words ? `, ${words}` : ""}`}
+        className={`absolute top-0 right-0 left-0 cursor-pointer bg-transparent px-2 py-1 text-left ${dimmed ? "opacity-[0.35]" : ""} ${FOCUS}`}
+        style={{ height: QUESTION_HEAD }}
+        onClick={() => onToggle(node.id)}
+        onMouseEnter={() => onHover(node.id)}
+        onFocus={() => {
+          if (!pinned) onHover(node.id);
+        }}
+        onBlur={(event) => {
+          if (!event.currentTarget.parentElement.contains(event.relatedTarget)) onHover(null);
+        }}
+      >
+        {exclusive ? (
+          <span className="absolute top-1.5 right-1.5 rounded-md bg-[#fff4d6] px-1 py-0.5 text-[10px] font-[650] leading-none text-[#7a4e00] dark:bg-[#3a2e12] dark:text-[#ffe0a3]">
+            только здесь
+          </span>
+        ) : null}
+        <span className={`flex h-full min-w-0 flex-col justify-center gap-0.5 pl-2 ${exclusive ? "pr-16" : "pr-1"}`}>
+          <span className={`text-[11px] font-[650] uppercase tracking-[0.04em] ${MUTED}`}>
+            {mark ? <span className="mr-1 normal-case">{mark}</span> : null}
+            {meta.one}
+          </span>
+          <span className="line-clamp-2 text-[13px] leading-[1.15] font-[650]">{node.label}</span>
+        </span>
+      </button>
+      {shown.map((option) => {
+        const row = positions.get(option.id);
+        const optionStatus = mode === "diff" ? nodeStatus(option.id) : null;
+        const optionMark = nodeMark(optionStatus);
+        const optionDimmed = Boolean(members && !members.has(option.id));
+        const optionPressed = pinned === option.id;
+        const optionPreview = !pinned && hover === option.id;
+        const optionExclusive = Boolean(onlyIds && onlyIds.has(option.id) && option.id !== focusId);
+        const optionMeta = kindMeta("option");
+        const optionWords = [optionStatus ? statusWords(optionStatus) : "", optionExclusive ? "только здесь" : ""].filter(Boolean).join(", ");
+        const lead = leads && leads.has(option.id) ? leads.get(option.id) : null;
+        let rowTone = "bg-transparent";
+        if (optionStatus === "added") rowTone = "bg-[#e7f6ee] text-[#0f6b3c] dark:bg-[#143024] dark:text-[#d8f5e4]";
+        else if (optionStatus === "removed") rowTone = "bg-[#fde8e8] text-[#8e1d1d] dark:bg-[#3a1c1c] dark:text-[#ffd0d0]";
+        else if (optionStatus === "changed") rowTone = "bg-[#fff4d6] text-[#7a4e00] dark:bg-[#3a2e12] dark:text-[#ffe0a3]";
+        else if (optionExclusive) rowTone = "bg-[#fff4d6] text-[#7a4e00] dark:bg-[#3a2e12] dark:text-[#ffe0a3]";
+        return (
+          <button
+            key={option.id}
+            id={`map-node-${option.id}`}
+            type="button"
+            title={option.label}
+            aria-pressed={optionPressed}
+            aria-label={`${optionMeta.one} «${option.label}»${optionWords ? `, ${optionWords}` : ""}`}
+            className={`absolute right-0 left-1 flex cursor-pointer items-center gap-1 border-t border-[#eee6da] px-1.5 text-left dark:border-[#2a313b] ${rowTone} ${
+              optionDimmed ? "opacity-[0.35]" : ""
+            } ${optionPressed || optionPreview ? "shadow-[inset_0_0_0_2px_#0f766e] dark:shadow-[inset_0_0_0_2px_#6fd3c8]" : ""} ${FOCUS}`}
+            style={{ top: row.y - box.y, height: OPTION_ROW }}
+            onClick={() => onToggle(option.id)}
+            onMouseEnter={() => onHover(option.id)}
+            onFocus={() => {
+              if (!pinned) onHover(option.id);
+            }}
+            onBlur={(event) => {
+              if (!event.currentTarget.parentElement.contains(event.relatedTarget)) onHover(null);
+            }}
+          >
+            {optionMark ? <span className="shrink-0 text-[11px] font-[650]">{optionMark}</span> : null}
+            <span className="min-w-0 flex-1 truncate text-[12px]">{option.label}</span>
+            <span className={`shrink-0 text-[10px] ${MUTED}`}>{lead == null ? "—" : `ведёт к ${lead}`}</span>
+          </button>
+        );
+      })}
+      {hidden > 0 ? (
+        <button
+          type="button"
+          className={`absolute right-0 left-1 cursor-pointer border-t border-[#eee6da] px-2 text-left text-[12px] dark:border-[#2a313b] ${MUTED} ${FOCUS}`}
+          style={{ top: box.h - OPTION_ROW, height: OPTION_ROW }}
+          onClick={() => onExpand(node.id)}
+        >
+          ещё {hidden}…
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function NodeSearch({ nodes, onSelect, large, registerCloser }) {
+  const listId = useId();
+  const rootRef = useRef(null);
+  const listRef = useRef(null);
+  const openRef = useRef(false);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [cursor, setCursor] = useState(0);
+  const [showAll, setShowAll] = useState(false);
+  openRef.current = open;
+  const hits = searchNodes(nodes, query);
+  const visible = showAll ? hits : hits.slice(0, SEARCH_PAGE);
+  const more = hits.length - visible.length;
+  const groups = [];
+  let running = 0;
+  for (const kind of KINDS) {
+    const items = [];
+    for (const node of visible) {
+      if (node.kind !== kind.id) continue;
+      items.push({ node, index: running });
+      running += 1;
+    }
+    if (items.length > 0) groups.push({ kind, items });
+  }
+  const maxIndex = Math.max(0, visible.length + (more > 0 ? 1 : 0) - 1);
+  const activeId = cursor < visible.length && visible[cursor] ? `${listId}-${visible[cursor].id}` : undefined;
+
+  useEffect(() => {
+    if (!registerCloser) return undefined;
+    return registerCloser(() => {
+      if (!openRef.current) return false;
+      setOpen(false);
+      return true;
+    });
+  }, [registerCloser]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function onDown(event) {
+      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !listRef.current) return;
+    const active = listRef.current.querySelector("[data-active='true']");
+    if (active) active.scrollIntoView({ block: "nearest" });
+  }, [cursor, open, showAll, query]);
+
+  function choose(id) {
+    setOpen(false);
+    onSelect(id);
+  }
+
+  function onKeyDown(event) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!query.trim()) return;
+      setOpen(true);
+      setCursor((current) => Math.min(maxIndex, current + 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+      setCursor((current) => Math.max(0, current - 1));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      if (!query.trim()) return;
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      if (more > 0 && cursor === visible.length) {
+        setShowAll(true);
+        return;
+      }
+      const node = visible[cursor];
+      if (node) choose(node.id);
+    } else if (event.key === "Escape") {
+      if (!open) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+    }
+  }
+
+  const showList = open && query.trim().length > 0;
+  return (
+    <div ref={rootRef} className={large ? "relative w-full max-w-xl" : "relative w-[min(220px,100%)]"}>
+      <input
+        className={large ? `${FIELD} py-3 text-[18px]` : FIELD}
+        type="search"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={showList}
+        aria-controls={listId}
+        aria-activedescendant={showList ? activeId : undefined}
+        aria-label="Найти узел"
+        placeholder="Найти узел…"
+        value={query}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setCursor(0);
+          setShowAll(false);
+          setOpen(true);
+        }}
+        onFocus={() => {
+          if (query.trim()) setOpen(true);
+        }}
+        onKeyDown={onKeyDown}
+      />
+      {showList ? (
+        <div
+          id={listId}
+          ref={listRef}
+          role="listbox"
+          aria-label="Результаты поиска"
+          className="absolute z-30 mt-1 max-h-80 w-full min-w-[220px] overflow-auto rounded-xl border border-[#ddd4c6] bg-[#fffdf8] p-1 shadow-[0_8px_24px_rgba(40,32,20,0.12)] dark:border-[#343b46] dark:bg-[#1e232b] dark:shadow-none"
+        >
+          {hits.length === 0 ? <p className={`m-0 px-2 py-1.5 text-[14px] ${MUTED}`}>Ничего не найдено</p> : null}
+          {groups.map((group) => (
+            <div key={group.kind.id}>
+              <p className={`m-0 px-2 pt-1.5 pb-0.5 text-[11px] font-[650] uppercase tracking-[0.04em] ${MUTED}`}>{group.kind.title}</p>
+              {group.items.map((item) => (
+                <button
+                  key={item.node.id}
+                  id={`${listId}-${item.node.id}`}
+                  type="button"
+                  role="option"
+                  aria-selected={item.index === cursor}
+                  data-active={item.index === cursor ? "true" : "false"}
+                  className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[14px] ${
+                    item.index === cursor ? "bg-[#e7f6ee] dark:bg-[#143024]" : ""
+                  } ${FOCUS}`}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onMouseEnter={() => setCursor(item.index)}
+                  onClick={() => choose(item.node.id)}
+                >
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${group.kind.dot}`} aria-hidden="true" />
+                  <span className="min-w-0 truncate">{item.node.label}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+          {more > 0 ? (
+            <button
+              type="button"
+              data-active={cursor === visible.length ? "true" : "false"}
+              className={`mt-1 w-full cursor-pointer rounded-lg px-2 py-1.5 text-left text-[14px] font-[650] ${
+                cursor === visible.length ? "bg-[#e7f6ee] dark:bg-[#143024]" : ""
+              } ${FOCUS}`}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setCursor(visible.length)}
+              onClick={() => setShowAll(true)}
+            >
+              ещё {more}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function EntryPanel({ nodes, problems, onSelect, onShowAll, registerCloser }) {
+  const questions = nodes.filter((node) => node.kind === "question").length;
+  const needs = nodes.filter((node) => node.kind === "need").length;
+  const products = nodes.filter((node) => node.kind === "product").length;
+  const scenarios = nodes.filter((node) => node.kind === "scenario");
+  const holes = summarizeProblems(problems).filter((row) => row.count > 0);
+  return (
+    <div className="grid max-w-3xl gap-4 rounded-xl border border-[#ddd4c6] bg-[#fffdf8] p-4 dark:border-[#343b46] dark:bg-[#1e232b]">
+      <h2 className="m-0 text-[1.25rem] leading-tight font-[650]">Данных много. Найдите узел или выберите сценарий</h2>
+      <NodeSearch nodes={nodes} onSelect={onSelect} large registerCloser={registerCloser} />
+      {scenarios.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {scenarios.map((node) => (
+            <button
+              key={node.id}
+              type="button"
+              className={`cursor-pointer rounded-lg border border-[#ddd4c6] bg-[#fffdf8] px-3 py-1.5 text-[14px] dark:border-[#343b46] dark:bg-[#191d24] ${FOCUS}`}
+              onClick={() => onSelect(node.id)}
+            >
+              {node.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <p className="m-0 text-[15px]">
+        Вопросов {questions}, потребностей {needs}, товаров {products}
+      </p>
+      {holes.length === 0 ? <p className={`m-0 ${MUTED}`}>Дыр нет</p> : null}
+      {holes.length > 0 ? (
+        <ul className="m-0 grid list-none gap-1 p-0">
+          {holes.map((row) => (
+            <li key={row.id} className="text-[14px]">
+              {row.label}: {row.count}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <div>
+        <button
+          type="button"
+          className={`cursor-pointer rounded-lg border border-[#ddd4c6] bg-[#fffdf8] px-3 py-2 text-[14px] font-[650] dark:border-[#343b46] dark:bg-[#191d24] ${FOCUS}`}
+          onClick={onShowAll}
+        >
+          Показать всю схему
+        </button>
+        <p className={`mt-1 mb-0 text-[13px] ${MUTED}`}>может быть тяжело</p>
+      </div>
+    </div>
+  );
+}
+
 function Scheme({
   nodes,
   links,
   columns,
   grouped,
   positions,
+  optionsByQuestion,
+  leads,
+  foldedProducts,
+  productCounts,
   width,
   height,
   scale,
@@ -949,7 +1536,8 @@ function Scheme({
   linkKeys,
   onlyIds,
   onToggle,
-  onHover
+  onHover,
+  onExpand
 }) {
   const geometry = linkGeometry(links, positions);
   const chainOn = Boolean(members);
@@ -960,7 +1548,7 @@ function Scheme({
   });
   const svgLabel = chainOn
     ? "Схема связей. Яркие линии — цепочка выбранного узла, остальные приглушены."
-    : "Схема связей: сценарии, вопросы, ответы, потребности, типы и товары.";
+    : "Схема связей: сценарии, вопросы с ответами, потребности, типы и товары.";
   return (
     <div
       ref={frameRef}
@@ -971,15 +1559,25 @@ function Scheme({
     >
       <div style={{ width: width * scale, height: height * scale }}>
         <div className="relative" style={{ width, height, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-          {columns.map((kind, column) => {
+          {columns.map((kind) => {
             const list = grouped.get(kind.id);
-            const bandH = list.length * NODE_H + (list.length - 1) * ROW_GAP;
+            let top = Infinity;
+            let bottom = 0;
+            let left = PAD;
+            for (const node of list) {
+              const box = positions.get(node.id);
+              if (!box) continue;
+              left = box.x;
+              top = Math.min(top, box.y);
+              bottom = Math.max(bottom, box.y + box.h);
+            }
+            if (top === Infinity) return null;
             return (
               <div
                 key={`${kind.id}-band`}
                 aria-hidden="true"
                 className="absolute rounded-xl bg-[#e7e1d6]/70 dark:bg-[#14171c]"
-                style={{ left: PAD + column * (NODE_W + COL_GAP) - 8, top: PAD + HEADER - 8, width: NODE_W + 16, height: bandH + 16 }}
+                style={{ left: left - 8, top: top - 8, width: NODE_W + 16, height: bottom - top + 16 }}
               />
             );
           })}
@@ -1035,8 +1633,31 @@ function Scheme({
             </p>
           ))}
           {nodes.map((node) => {
+            if (node.kind === "option") return null;
             const box = positions.get(node.id);
             if (!box) return null;
+            const nested = node.kind === "question" ? optionsByQuestion.get(node.id) || [] : [];
+            if (nested.length > 0) {
+              return (
+                <QuestionNode
+                  key={node.id}
+                  node={node}
+                  box={box}
+                  options={nested}
+                  positions={positions}
+                  leads={leads}
+                  mode={mode}
+                  nodeStatus={nodeStatus}
+                  pinned={pinned}
+                  hover={hover}
+                  members={members}
+                  onlyIds={onlyIds}
+                  onToggle={onToggle}
+                  onHover={onHover}
+                  onExpand={onExpand}
+                />
+              );
+            }
             const meta = kindMeta(node.kind);
             const status = mode === "diff" ? nodeStatus(node.id) : null;
             const mark = nodeMark(status);
@@ -1045,7 +1666,7 @@ function Scheme({
             const preview = !pinned && hover === node.id;
             const focusId = pinned || hover;
             const exclusive = Boolean(onlyIds && onlyIds.has(node.id) && node.id !== focusId);
-            const footer = nodeFooter(node, links);
+            const footer = foldedProducts && node.kind === "type" ? productCountLabel((productCounts && productCounts.get(node.id)) || 0) : nodeFooter(node, links);
             const words = [status ? statusWords(status) : "", exclusive ? "только здесь" : ""].filter(Boolean).join(", ");
             let border = "border-[#ddd4c6] bg-[#fffdf8] text-[#1e1b16] dark:border-[#343b46] dark:bg-[#1e232b] dark:text-[#f3efe6]";
             if (status === "added") {
@@ -1100,6 +1721,21 @@ function Scheme({
   );
 }
 
+function SourceSwitch({ source, onChange }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className={`text-[14px] ${MUTED}`}>Данные:</span>
+      <div role="group" aria-label="Данные" className={SEG}>
+        {DATA_SOURCES.map(([id, text]) => (
+          <button key={id} type="button" aria-pressed={source === id} className={source === id ? SEG_ON : SEG_OFF} onClick={() => onChange(id)}>
+            {text}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function LinkMap({ openSection = () => {} }) {
   const [view, setView] = useState({ kind: "loading" });
   const [mode, setMode] = useState("published");
@@ -1112,10 +1748,20 @@ function LinkMap({ openSection = () => {} }) {
   const [scale, setScale] = useState(1);
   const [panelHidden, setPanelHidden] = useState(false);
   const [kinds, setKinds] = useState(() => Object.fromEntries(KINDS.map((item) => [item.id, true])));
+  const [source, setSource] = useState("real");
+  const [showAll, setShowAll] = useState(false);
+  const [productView, setProductView] = useState("auto");
+  const [openQuestions, setOpenQuestions] = useState({});
   const focusRef = useRef(false);
   const frameRef = useRef(null);
   const scaleTouched = useRef(false);
   const contentWidthRef = useRef(0);
+  const searchClosers = useRef(new Set());
+  const registerCloser = useCallback((fn) => {
+    searchClosers.current.add(fn);
+    return () => searchClosers.current.delete(fn);
+  }, []);
+  const sample = useMemo(() => makeSampleData(), []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1160,6 +1806,11 @@ function LinkMap({ openSection = () => {} }) {
   useEffect(() => {
     function onKey(event) {
       if (event.key !== "Escape") return;
+      let closed = false;
+      for (const fn of searchClosers.current) {
+        if (fn()) closed = true;
+      }
+      if (closed) return;
       setPinned(null);
       setHover(null);
     }
@@ -1167,7 +1818,13 @@ function LinkMap({ openSection = () => {} }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const model = view.kind === "ready" ? assemble(view.questionnaire, view.catalog, mode) : null;
+  const model = useMemo(() => {
+    if (source === "sample") return assemble(sample.questionnaire, sample.catalog, mode);
+    if (view.kind !== "ready") return null;
+    return assemble(view.questionnaire, view.catalog, mode);
+  }, [source, sample, view, mode]);
+  const groups = useMemo(() => (model ? groupProducts(model.nodes, model.links) : null), [model]);
+  const leads = useMemo(() => (model ? optionLeads(model.links) : new Map()), [model]);
 
   useEffect(() => {
     if (!pinned || !model) return;
@@ -1176,25 +1833,56 @@ function LinkMap({ openSection = () => {} }) {
 
   useEffect(() => {
     if (!focusRef.current || !pinned || presentation !== "graph") return;
-    const el = document.getElementById(`map-node-${pinned}`);
+    let el = document.getElementById(`map-node-${pinned}`);
+    if (!el && groups && pinned.startsWith("product:")) {
+      for (const [typeId, ids] of groups.byType) {
+        if (!ids.includes(pinned)) continue;
+        el = document.getElementById(`map-node-${typeId}`);
+        break;
+      }
+    }
     if (!el) return;
     el.scrollIntoView({ block: "nearest", inline: "nearest" });
-    el.focus();
+    if (typeof el.focus === "function") el.focus();
     focusRef.current = false;
-  }, [pinned, presentation, kinds, mode, onlySelected, scale]);
+  }, [pinned, presentation, kinds, mode, onlySelected, scale, showAll, productView, openQuestions, source, groups]);
 
-  function reveal(id) {
+  function ensureVisible(id) {
     if (!model) return;
     const node = model.nodesById.get(id);
-    if (node && kinds[node.kind] === false) {
+    if (!node) return;
+    if (kinds[node.kind] === false) {
       setKinds((current) => ({ ...current, [node.kind]: true }));
+    }
+    if (node.kind === "option") {
+      const parent = questionNodeId(node);
+      if (parent) setOpenQuestions((current) => (current[parent] ? current : { ...current, [parent]: true }));
     }
   }
 
   function pick(id) {
-    reveal(id);
+    ensureVisible(id);
     setHover(null);
     setPinned(id);
+  }
+
+  function pickFromSearch(id) {
+    ensureVisible(id);
+    setOnlySelected(true);
+    focusRef.current = true;
+    setPresentation("graph");
+    setHover(null);
+    setPinned(id);
+  }
+
+  function chooseSource(next) {
+    if (next === source) return;
+    scaleTouched.current = false;
+    setShowAll(false);
+    setPinned(null);
+    setHover(null);
+    setOpenQuestions({});
+    setSource(next);
   }
 
   function bump(delta) {
@@ -1217,8 +1905,11 @@ function LinkMap({ openSection = () => {} }) {
     setPanelHidden((current) => !current);
   }
 
+  const large = Boolean(model && model.nodes.length > LARGE_NODES);
+  const schemeOn = presentation === "graph" && (!large || Boolean(pinned) || showAll);
+
   useLayoutEffect(() => {
-    if (scaleTouched.current || view.kind !== "ready" || presentation !== "graph") return undefined;
+    if (scaleTouched.current || !schemeOn) return undefined;
     const frame = frameRef.current;
     if (!frame) return undefined;
     function apply() {
@@ -1234,13 +1925,26 @@ function LinkMap({ openSection = () => {} }) {
     const observer = new ResizeObserver(() => apply());
     observer.observe(frame);
     return () => observer.disconnect();
-  }, [view.kind, mode, presentation, panelHidden]);
+  }, [schemeOn, view.kind, mode, presentation, panelHidden, productView, source]);
 
-  if (view.kind === "loading") return <Loading text="Загружаем карту связей…" />;
-  if (view.kind === "error" || view.kind === "crash") {
+  if (source === "real" && view.kind === "loading") {
     return (
       <div className="min-w-0 max-w-full">
         <h1 className="mt-0 mb-3 text-[1.6rem] leading-tight font-[650]">Карта связей</h1>
+        <div className="mb-3">
+          <SourceSwitch source={source} onChange={chooseSource} />
+        </div>
+        <Loading text="Загружаем карту связей…" />
+      </div>
+    );
+  }
+  if (source === "real" && (view.kind === "error" || view.kind === "crash")) {
+    return (
+      <div className="min-w-0 max-w-full">
+        <h1 className="mt-0 mb-3 text-[1.6rem] leading-tight font-[650]">Карта связей</h1>
+        <div className="mb-3">
+          <SourceSwitch source={source} onChange={chooseSource} />
+        </div>
         {view.kind === "crash" ? <Banner kind="error" text="Не получилось открыть карту связей" /> : <ErrorBlock lines={view.lines} />}
       </div>
     );
@@ -1252,17 +1956,29 @@ function LinkMap({ openSection = () => {} }) {
   const activeNode = activeId ? model.nodesById.get(activeId) : null;
   const onlyIds = activeNode && activeNode.kind === "scenario" ? onlyHere(activeNode.id, model.nodes, model.links) : null;
   const kindOn = (node) => Boolean(node) && kinds[node.kind] !== false;
+  const productCount = model.nodes.filter((node) => node.kind === "product").length;
+  const productsInline = productsAreInline(productCount, productView);
   let graphNodes = model.nodes.filter((node) => kindOn(node));
+  if (!productsInline) graphNodes = graphNodes.filter((node) => node.kind !== "product");
   if (pinned && onlySelected && members) graphNodes = graphNodes.filter((node) => members.has(node.id));
-  const graphLinks = model.links.filter((link) => {
+  let graphLinks = model.links.filter((link) => {
     const from = model.nodesById.get(link.from);
     const to = model.nodesById.get(link.to);
     if (!kindOn(from) || !kindOn(to)) return false;
+    if (!productsInline && (from.kind === "product" || to.kind === "product")) return false;
     if (pinned && onlySelected && members) return members.has(link.from) && members.has(link.to) && chain.linkKeys.has(linkKey(link));
     return true;
   });
-  const placed = layout(graphNodes);
-  contentWidthRef.current = placed.width;
+  graphLinks = graphLinks.filter((link) => {
+    if (link.kind === "has-option") return false;
+    if (!productsInline && (link.kind === "is-type" || link.kind === "matches")) return false;
+    if (large && (!activeId || !chain || !chain.linkKeys.has(linkKey(link)))) return false;
+    return true;
+  });
+  const placed = schemeOn
+    ? layout(graphNodes, { openQuestions, chainIds: members, foldedProducts: !productsInline })
+    : null;
+  if (placed) contentWidthRef.current = placed.width;
   const visibleNodes = model.nodes.filter((node) => kindOn(node));
   const visibleLinks = model.links.filter((link) => kindOn(model.nodesById.get(link.from)) && kindOn(model.nodesById.get(link.to)));
   const linked = new Set();
@@ -1304,6 +2020,16 @@ function LinkMap({ openSection = () => {} }) {
         />
       </div>
     );
+  } else if (presentation === "graph" && large && !pinned && !showAll) {
+    body = (
+      <EntryPanel
+        nodes={model.nodes}
+        problems={model.problemsEmpty ? [] : model.problems}
+        onSelect={pickFromSearch}
+        onShowAll={() => setShowAll(true)}
+        registerCloser={registerCloser}
+      />
+    );
   } else if (graphNodes.length === 0) {
     body = <p className={`m-0 ${MUTED}`}>В цепочке нет узлов отмеченных видов.</p>;
   } else {
@@ -1314,6 +2040,10 @@ function LinkMap({ openSection = () => {} }) {
         columns={placed.columns}
         grouped={placed.grouped}
         positions={placed.positions}
+        optionsByQuestion={placed.optionsByQuestion}
+        leads={leads}
+        foldedProducts={!productsInline}
+        productCounts={groups.byType}
         width={placed.width}
         height={placed.height}
         scale={scale}
@@ -1328,6 +2058,7 @@ function LinkMap({ openSection = () => {} }) {
         onlyIds={onlyIds}
         onToggle={(id) => setPinned((current) => (current === id ? null : id))}
         onHover={setHover}
+        onExpand={(id) => setOpenQuestions((current) => ({ ...current, [id]: true }))}
       />
     );
   }
@@ -1336,6 +2067,7 @@ function LinkMap({ openSection = () => {} }) {
     <div className="min-w-0 max-w-full text-[15px]">
       <h1 className="mt-0 mb-1 text-[1.6rem] leading-tight font-[650]">Карта связей</h1>
       <p className={`mt-0 mb-3 ${MUTED}`}>Откуда берётся решение консультанта. Здесь только просмотр.</p>
+      {source === "sample" ? <Banner kind="warn" text="Показаны тестовые данные, не из системы" /> : null}
       <div className="sticky top-0 z-[3] mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[#ddd4c6] bg-[#f3f0e8] py-3 dark:border-[#343b46] dark:bg-[#14171c]">
         <div className="flex flex-wrap items-center gap-2">
           <div role="group" aria-label="Слой данных" className={SEG}>
@@ -1345,6 +2077,7 @@ function LinkMap({ openSection = () => {} }) {
               </button>
             ))}
           </div>
+          <SourceSwitch source={source} onChange={chooseSource} />
           <div role="group" aria-label="Вид карты" className={SEG}>
             {VIEWS.map(([id, text]) => (
               <button
@@ -1360,7 +2093,8 @@ function LinkMap({ openSection = () => {} }) {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {presentation === "graph" ? (
+          <NodeSearch nodes={model.nodes} onSelect={pickFromSearch} registerCloser={registerCloser} />
+          {schemeOn ? (
             <div role="group" aria-label="Масштаб схемы" className={SEG}>
               <button type="button" className={`${SEG_OFF} disabled:cursor-not-allowed disabled:opacity-40`} aria-label="Уменьшить" disabled={scale <= SCALE_MIN} onClick={() => bump(-0.1)}>
                 −
@@ -1422,7 +2156,7 @@ function LinkMap({ openSection = () => {} }) {
           );
         })}
         <Holes problems={model.problems} empty={model.problemsEmpty} hint={holeHint} open={holesOpen} onToggle={() => setHolesOpen((current) => !current)} onPick={(id) => {
-          reveal(id);
+          ensureVisible(id);
           focusRef.current = true;
           setPresentation("graph");
           setHover(null);
@@ -1444,7 +2178,21 @@ function LinkMap({ openSection = () => {} }) {
         ) : null}
       </div>
       <div className={`grid min-w-0 items-start gap-4 ${panelHidden ? "" : "min-[900px]:grid-cols-[minmax(0,1fr)_360px]"}`}>
-        <div className="min-w-0">{body}</div>
+        <div className="min-w-0">
+          {presentation === "graph" && !model.layerEmpty && model.nodes.length > 0 ? (
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className={`text-[14px] ${MUTED}`}>Товары:</span>
+              <div role="group" aria-label="Показ товаров" className={SEG}>
+                {PRODUCT_VIEWS.map(([id, text]) => (
+                  <button key={id} type="button" aria-pressed={productView === id} className={productView === id ? SEG_ON : SEG_OFF} onClick={() => setProductView(id)}>
+                    {text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {body}
+        </div>
         <aside
           className={`min-w-0 rounded-xl border border-[#ddd4c6] bg-[#fffdf8] p-4 shadow-[0_1px_2px_rgba(40,32,20,0.06)] dark:border-[#343b46] dark:bg-[#1e232b] dark:shadow-none min-[900px]:sticky min-[900px]:top-3 min-[900px]:max-h-[calc(100vh-1.5rem)] min-[900px]:overflow-auto ${
             panelHidden ? "min-[900px]:hidden" : ""
@@ -1461,7 +2209,7 @@ function LinkMap({ openSection = () => {} }) {
             </button>
           </div>
           {pinnedNode ? (
-            <NodeCard node={pinnedNode} mode={mode} model={model} linkStatus={linkStatus} onPick={pick} onOpen={openSection} />
+            <NodeCard node={pinnedNode} mode={mode} model={model} linkStatus={linkStatus} groups={groups} onPick={pick} onOpen={openSection} />
           ) : (
             <div className="grid gap-4">
               <p className="m-0 text-[15px]">Нажмите на узел, чтобы увидеть цепочку</p>

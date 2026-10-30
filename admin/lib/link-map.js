@@ -694,4 +694,87 @@ function fitScale(containerWidth, contentWidth, min, max) {
   return Math.min(ceil, Math.max(floor, container / content));
 }
 
-export { buildLinkMap, diffMaps, describeLink, linkKey, chainOf, onlyHere, fitScale };
+function searchBlob(node) {
+  const parts = [];
+  if (typeof node.label === "string") parts.push(node.label);
+  if (typeof node.id === "string") parts.push(node.id);
+  if (typeof node.key === "string") parts.push(node.key);
+  const data = isRecord(node.data) ? node.data : null;
+  if (!data) return parts.join("\n").toLowerCase();
+  if (typeof data.sku === "string") parts.push(data.sku);
+  if (typeof data.label === "string") parts.push(data.label);
+  if (typeof data.name === "string") parts.push(data.name);
+  if (typeof data.textFallback === "string") parts.push(data.textFallback);
+  if (Array.isArray(data.words)) {
+    for (const word of data.words) {
+      if (typeof word === "string") parts.push(word);
+    }
+  }
+  return parts.join("\n").toLowerCase();
+}
+
+function searchNodes(nodes, query, limit) {
+  const needle = typeof query === "string" ? query.trim().toLowerCase() : "";
+  if (!needle) return [];
+  const hits = [];
+  for (const node of asArray(nodes)) {
+    if (!isRecord(node)) continue;
+    if (!searchBlob(node).includes(needle)) continue;
+    hits.push(node);
+  }
+  if (typeof limit !== "number" || !Number.isFinite(limit)) return hits;
+  const cap = Math.max(0, Math.floor(limit));
+  return hits.slice(0, cap);
+}
+
+function pushGroup(map, key, id, allowed) {
+  if (typeof key !== "string" || key.length === 0) return;
+  if (typeof id !== "string" || !allowed.has(id)) return;
+  if (!map.has(key)) map.set(key, []);
+  const list = map.get(key);
+  if (!list.includes(id)) list.push(id);
+}
+
+function groupProducts(nodes, links) {
+  const byType = new Map();
+  const byNeed = new Map();
+  const products = new Set();
+  for (const node of asArray(nodes)) {
+    if (!isRecord(node) || node.kind !== "product" || typeof node.id !== "string" || node.id.length === 0) continue;
+    products.add(node.id);
+  }
+  for (const link of asArray(links)) {
+    if (!isRecord(link) || typeof link.from !== "string" || typeof link.to !== "string") continue;
+    if (link.kind === "is-type") pushGroup(byType, link.from, link.to, products);
+    else if (link.kind === "matches") pushGroup(byNeed, link.from, link.to, products);
+  }
+  return { byType, byNeed };
+}
+
+function summarizeProblems(problems) {
+  const rows = [
+    { id: "need-without-product", label: "Потребностей без товара", count: 0 },
+    { id: "need-without-answer", label: "Потребностей без вывода", count: 0 },
+    { id: "answer-idle", label: "Ответов, ни на что не влияющих", count: 0 },
+    { id: "type-empty", label: "Типов без товаров", count: 0 },
+    { id: "scenario-empty", label: "Сценариев без вопросов", count: 0 },
+    { id: "error", label: "Ошибок", count: 0 }
+  ];
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  for (const item of asArray(problems)) {
+    if (!isRecord(item) || typeof item.text !== "string") continue;
+    if (item.level === "error") {
+      byId.get("error").count += 1;
+      continue;
+    }
+    const text = item.text;
+    if (text.includes("не подходит ни один товар")) byId.get("need-without-product").count += 1;
+    else if (text.includes("не выводит ни один ответ")) byId.get("need-without-answer").count += 1;
+    else if (text.includes("ни на что не влияет")) byId.get("answer-idle").count += 1;
+    else if (text.includes("без товаров")) byId.get("type-empty").count += 1;
+    else if (text.includes("без вопросов")) byId.get("scenario-empty").count += 1;
+  }
+  return rows;
+}
+
+export { buildLinkMap, diffMaps, describeLink, linkKey, chainOf, onlyHere, fitScale, searchNodes, groupProducts, summarizeProblems };

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildLinkMap, chainOf, describeLink, diffMaps, fitScale, linkKey, onlyHere } from "./link-map.js";
+import { buildLinkMap, chainOf, describeLink, diffMaps, fitScale, groupProducts, linkKey, onlyHere, searchNodes, summarizeProblems } from "./link-map.js";
 
 function brief(link) {
   return [link.kind, link.from, link.to, link.label];
@@ -444,6 +444,122 @@ test("chainOf and onlyHere tolerate empty and unknown input", () => {
   assert.equal(unknown.linkKeys.size, 0);
   assert.equal(onlyHere(null, null, null).size, 0);
   assert.equal(onlyHere("nope", [], [{ kind: "applies", from: "scenario:nope", to: "question:q", label: "" }]).has("question:q"), true);
+});
+
+test("searchNodes matches label, id, sku and words without case", () => {
+  const nodes = [
+    {
+      id: "product:MON-1",
+      kind: "product",
+      key: "MON-1",
+      label: "Монитор 27",
+      data: { sku: "MON-1", name: "Monitor", words: ["монитор", "экран"] }
+    },
+    {
+      id: "product:KB-1",
+      kind: "product",
+      key: "KB-1",
+      label: "Клавиатура",
+      data: { sku: "KB-1", words: ["клавиатура"] }
+    },
+    { id: "option:q:play", kind: "option", key: "q:play", label: "Играю", data: { label: "Играю" } }
+  ];
+
+  assert.deepEqual(searchNodes(nodes, ""), []);
+  assert.deepEqual(searchNodes(nodes, "   "), []);
+  assert.deepEqual(searchNodes(null, "монитор"), []);
+  assert.deepEqual(searchNodes(nodes, null), []);
+  assert.deepEqual(
+    searchNodes(nodes, "МОН").map((node) => node.id),
+    ["product:MON-1"]
+  );
+  assert.deepEqual(
+    searchNodes(nodes, "mon-1").map((node) => node.id),
+    ["product:MON-1"]
+  );
+  assert.deepEqual(
+    searchNodes(nodes, "ИГРАЮ").map((node) => node.id),
+    ["option:q:play"]
+  );
+  assert.deepEqual(
+    searchNodes(nodes, "product:kb-1").map((node) => node.id),
+    ["product:KB-1"]
+  );
+  const many = searchNodes(nodes, "а");
+  assert.ok(many.length >= 2);
+  assert.equal(searchNodes(nodes, "а", 1).length, 1);
+  assert.equal(searchNodes(nodes, "а", 1)[0].id, many[0].id);
+  assert.deepEqual(searchNodes(nodes, "а", 0), []);
+  assert.doesNotThrow(() => {
+    searchNodes([null, "bad", { label: 4 }, {}], "а", Number.NaN);
+    searchNodes({}, "а");
+  });
+});
+
+test("groupProducts buckets products by type and by need", () => {
+  const map = buildLinkMap({
+    questionnaire: {},
+    catalog: {
+      types: [
+        { id: "desk", label: "Стол" },
+        { id: "monitor", label: "Монитор" }
+      ],
+      needs: [{ id: "screen", name: "Экран", criteria: { type: "monitor" } }],
+      products: [
+        { sku: "MON-1", type: "monitor", label: "Монитор" },
+        { sku: "MON-2", type: "monitor", label: "Монитор 2" }
+      ]
+    }
+  });
+  const groups = groupProducts(map.nodes, map.links);
+  assert.deepEqual(groups.byType.get("type:monitor"), ["product:MON-1", "product:MON-2"]);
+  assert.equal(groups.byType.has("type:desk"), false);
+  assert.deepEqual(groups.byNeed.get("need:screen"), ["product:MON-1", "product:MON-2"]);
+
+  const empty = groupProducts(null, null);
+  assert.equal(empty.byType.size, 0);
+  assert.equal(empty.byNeed.size, 0);
+  assert.doesNotThrow(() => groupProducts([null, { kind: "product" }], [null, { kind: "is-type" }, { kind: "matches", from: 1, to: 2 }]));
+});
+
+test("summarizeProblems counts hole kinds and ignores empty input", () => {
+  const empty = summarizeProblems(undefined);
+  assert.deepEqual(
+    empty.map((row) => row.count),
+    [0, 0, 0, 0, 0, 0]
+  );
+  assert.equal(summarizeProblems(null).every((row) => row.count === 0), true);
+  assert.equal(summarizeProblems([null, { level: "warn" }, "bad"]).every((row) => row.count === 0), true);
+
+  const map = buildLinkMap({
+    questionnaire: {
+      scenarios: [
+        { id: "used", name: "Живой" },
+        { id: "alone", name: "Один" }
+      ],
+      questions: [
+        {
+          id: "idle",
+          textFallback: "Пустой вопрос",
+          options: [{ id: "x", label: "Икс" }],
+          appliesToScenarios: ["used"]
+        }
+      ],
+      defaultScenario: "used"
+    },
+    catalog: {
+      types: [{ id: "box", label: "Коробка" }],
+      needs: [{ id: "quiet", name: "Тишина", criteria: { type: "box" } }],
+      products: []
+    }
+  });
+  const summary = Object.fromEntries(summarizeProblems(map.problems).map((row) => [row.id, row.count]));
+  assert.equal(summary["need-without-product"], 1);
+  assert.equal(summary["need-without-answer"], 1);
+  assert.equal(summary["answer-idle"], 1);
+  assert.equal(summary["type-empty"], 1);
+  assert.equal(summary["scenario-empty"], 1);
+  assert.equal(summary.error, 0);
 });
 
 test("fitScale stays within the requested bounds", () => {
