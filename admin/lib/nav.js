@@ -3,7 +3,7 @@ import { sectionLabel } from "./sections.js";
 const NAV_MAIN = [
   { id: "home", text: "Главная", route: { screen: "overview" } },
   { id: "catalog", text: "Каталог", route: { screen: "catalog" } },
-  { id: "questionnaire", text: "Анкета", route: { screen: "section", name: "questionnaire" } },
+  { id: "questionnaire", text: "Анкета", route: { screen: "questionnaire" } },
   { id: "dialog", text: "Диалог", route: { screen: "dialog", name: "consultant" } },
   { id: "ergonomics", text: "Эргономика", route: { screen: "section", name: "ergonomics" } },
   { id: "map", text: "Карта связей", route: { screen: "map" } },
@@ -24,7 +24,8 @@ const SCREEN_TITLES = {
   map: "Карта связей",
   journal: "Версии и журнал",
   catalog: "Каталог",
-  dialog: "Диалог"
+  dialog: "Диалог",
+  questionnaire: "Анкета"
 };
 
 const DIALOG_SECTIONS = ["consultant", "director", "sales", "commands", "ai-rules"];
@@ -35,6 +36,7 @@ function dialogSectionName(name) {
 
 function activeNavId(route) {
   if (!route || typeof route !== "object") return "sections";
+  if (route.screen === "questionnaire") return "questionnaire";
   if (route.screen === "dialog") return "dialog";
   if (route.screen === "section") {
     if (route.name === "catalog" || route.name === "questionnaire" || route.name === "ergonomics") {

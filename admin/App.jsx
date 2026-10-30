@@ -17,6 +17,7 @@ import { Login } from "./screens/Login.jsx";
 import { LinkMap } from "./screens/LinkMap.jsx";
 import { Models } from "./screens/Models.jsx";
 import { Overview } from "./screens/Overview.jsx";
+import { Questionnaire } from "./screens/Questionnaire.jsx";
 import { SectionEditor } from "./screens/SectionEditor.jsx";
 import { Sections } from "./screens/Sections.jsx";
 import { Versions } from "./screens/Versions.jsx";
@@ -27,8 +28,9 @@ const NAV = [
   ...NAV_LEGACY.map((item) => ({ ...item, group: "legacy" }))
 ];
 
-function parseHash() {
-  const raw = location.hash.replace(/^#\/?/, "");
+function parseHash(hash) {
+  const source = typeof hash === "string" ? hash : location.hash;
+  const raw = source.replace(/^#\/?/, "");
   const cut = raw.indexOf("?");
   const path = cut >= 0 ? raw.slice(0, cut) : raw;
   const params = new URLSearchParams(cut >= 0 ? raw.slice(cut + 1) : "");
@@ -67,6 +69,7 @@ function parseHash() {
     }
     return { screen: "dialog", name: dialogSectionName(decoded) };
   }
+  if (head === "questionnaire") return { screen: "questionnaire", q: params.get("q") || "" };
   return { screen: "overview" };
 }
 
@@ -87,7 +90,17 @@ function hrefFor(route) {
     const query = params.toString();
     return query ? `#/catalog?${query}` : "#/catalog";
   }
+  if (route.screen === "questionnaire") {
+    const params = new URLSearchParams();
+    if (route.q) params.set("q", route.q);
+    const query = params.toString();
+    return query ? `#/questionnaire?${query}` : "#/questionnaire";
+  }
   return "#/overview";
+}
+
+function staysOnQuestionnaire(prevHash, nextHash) {
+  return parseHash(prevHash).screen === "questionnaire" && parseHash(nextHash).screen === "questionnaire";
 }
 
 function sameHash(hash, next) {
@@ -162,12 +175,13 @@ function App() {
         hashRef.current = location.hash;
         return;
       }
-      if (dirtyRef.current && !confirmAction(LEAVE_TEXT)) {
+      const stay = staysOnQuestionnaire(hashRef.current, location.hash);
+      if (!stay && dirtyRef.current && !confirmAction(LEAVE_TEXT)) {
         suppressRef.current = true;
         location.hash = hashRef.current;
         return;
       }
-      dirtyRef.current = false;
+      if (!stay) dirtyRef.current = false;
       const next = parseHash();
       hashRef.current = location.hash;
       setRoute(next);
@@ -272,9 +286,11 @@ function App() {
 
   function requestGo(nextRoute) {
     const next = hrefFor(nextRoute);
-    if (dirtyRef.current && !confirmAction(LEAVE_TEXT)) return;
-    dirtyRef.current = false;
+    const stay = staysOnQuestionnaire(location.hash, next);
+    if (!stay && dirtyRef.current && !confirmAction(LEAVE_TEXT)) return;
+    if (!stay) dirtyRef.current = false;
     if (sameHash(location.hash, next)) {
+      if (stay) return;
       setRoute(parseHash());
       setVisit((value) => value + 1);
       return;
@@ -333,6 +349,8 @@ function App() {
     screen = <Catalog key={screenKey} route={route} onDirty={markDirty} requestGo={requestGo} />;
   } else if (route.screen === "dialog") {
     screen = <Dialog key={screenKey} name={route.name} onDirty={markDirty} />;
+  } else if (route.screen === "questionnaire") {
+    screen = <Questionnaire key={screenKey} route={route} onDirty={markDirty} />;
   }
 
   return (
