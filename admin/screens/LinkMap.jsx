@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getSection, isAbort } from "../api/admin-api.js";
-import { buildLinkMap, chainOf, diffMaps, linkKey, onlyHere } from "../lib/link-map.js";
+import { buildLinkMap, chainOf, diffMaps, fitScale, linkKey, onlyHere } from "../lib/link-map.js";
 import { problemLines } from "../lib/messages.js";
 import { sectionLabel } from "../lib/sections.js";
 import { Banner } from "../components/Banner.jsx";
@@ -197,9 +197,13 @@ const FIELD_LABELS = {
   accessoryGapMm: "Зазор аксессуаров, мм"
 };
 
-const NODE_W = 232;
+const NODE_W = 200;
 const NODE_H = 72;
-const COL_GAP = 120;
+const COL_GAP = 72;
+const SCALE_MIN = 0.3;
+const SCALE_MAX = 1.5;
+const SCALE_FIT_MAX = 1;
+const SCALE_AUTO_MIN = 0.6;
 const ROW_GAP = 12;
 const PAD = 24;
 const HEADER = 36;
@@ -690,7 +694,6 @@ function NodeCard({ node, mode, model, linkStatus, onPick, onOpen }) {
           <span className={MUTED}>{meta.one}</span>
         </p>
         <h2 className="mt-1 mb-1 text-[18px] font-[650] leading-tight break-words">{node.label}</h2>
-        <p className={`m-0 break-words text-[13px] ${MUTED}`}>Идентификатор: {node.key}</p>
         {confidence ? <p className={`mt-1 mb-0 text-[13px] ${MUTED}`}>Уверенность: {confidence}</p> : null}
         {status ? <p className={`mt-2 mb-0 text-[14px] font-[650] ${statusClass(status)}`}>{statusText(status)}</p> : null}
       </div>
@@ -1107,9 +1110,12 @@ function LinkMap({ openSection = () => {} }) {
   const [holesOpen, setHolesOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [scale, setScale] = useState(1);
+  const [panelHidden, setPanelHidden] = useState(false);
   const [kinds, setKinds] = useState(() => Object.fromEntries(KINDS.map((item) => [item.id, true])));
   const focusRef = useRef(false);
   const frameRef = useRef(null);
+  const scaleTouched = useRef(false);
+  const contentWidthRef = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1192,11 +1198,43 @@ function LinkMap({ openSection = () => {} }) {
   }
 
   function bump(delta) {
+    scaleTouched.current = true;
     setScale((current) => {
       const next = Math.round((current + delta) * 100) / 100;
-      return Math.min(1.5, Math.max(0.5, next));
+      return Math.min(SCALE_MAX, Math.max(SCALE_MIN, next));
     });
   }
+
+  function fit() {
+    scaleTouched.current = true;
+    const frame = frameRef.current;
+    if (!frame || contentWidthRef.current <= 0) return;
+    const next = fitScale(frame.clientWidth, contentWidthRef.current, SCALE_MIN, SCALE_FIT_MAX);
+    setScale(Math.round(next * 100) / 100);
+  }
+
+  function togglePanel() {
+    setPanelHidden((current) => !current);
+  }
+
+  useLayoutEffect(() => {
+    if (scaleTouched.current || view.kind !== "ready" || presentation !== "graph") return undefined;
+    const frame = frameRef.current;
+    if (!frame) return undefined;
+    function apply() {
+      if (scaleTouched.current) return;
+      const content = contentWidthRef.current;
+      const width = frame.clientWidth;
+      if (content <= 0 || width <= 0) return;
+      const raw = fitScale(width, content, SCALE_AUTO_MIN, SCALE_FIT_MAX);
+      const next = Math.floor(raw * 100) / 100;
+      setScale((current) => (current === next ? current : next));
+    }
+    apply();
+    const observer = new ResizeObserver(() => apply());
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [view.kind, mode, presentation, panelHidden]);
 
   if (view.kind === "loading") return <Loading text="Загружаем карту связей…" />;
   if (view.kind === "error" || view.kind === "crash") {
@@ -1224,6 +1262,7 @@ function LinkMap({ openSection = () => {} }) {
     return true;
   });
   const placed = layout(graphNodes);
+  contentWidthRef.current = placed.width;
   const visibleNodes = model.nodes.filter((node) => kindOn(node));
   const visibleLinks = model.links.filter((link) => kindOn(model.nodesById.get(link.from)) && kindOn(model.nodesById.get(link.to)));
   const linked = new Set();
@@ -1239,13 +1278,6 @@ function LinkMap({ openSection = () => {} }) {
   const nodeStatus = (id) => model.diff.nodes.get(id) || "same";
   const linkStatus = (link) => model.diff.links.get(linkKey(link)) || "same";
   const holeHint = mode === "diff" && !model.problemsEmpty ? "По черновику: он станет рабочим после публикации." : "";
-
-  function fit() {
-    const frame = frameRef.current;
-    if (!frame || placed.width <= 0) return;
-    const next = Math.min(1.5, Math.max(0.5, frame.clientWidth / placed.width));
-    setScale(Math.round(next * 100) / 100);
-  }
 
   let body;
   if (model.layerEmpty) {
@@ -1330,17 +1362,26 @@ function LinkMap({ openSection = () => {} }) {
         <div className="flex flex-wrap items-center gap-2">
           {presentation === "graph" ? (
             <div role="group" aria-label="Масштаб схемы" className={SEG}>
-              <button type="button" className={`${SEG_OFF} disabled:cursor-not-allowed disabled:opacity-40`} aria-label="Уменьшить" disabled={scale <= 0.5} onClick={() => bump(-0.1)}>
+              <button type="button" className={`${SEG_OFF} disabled:cursor-not-allowed disabled:opacity-40`} aria-label="Уменьшить" disabled={scale <= SCALE_MIN} onClick={() => bump(-0.1)}>
                 −
               </button>
               <span className="px-1 text-[13px] tabular-nums">{Math.round(scale * 100)}%</span>
-              <button type="button" className={`${SEG_OFF} disabled:cursor-not-allowed disabled:opacity-40`} aria-label="Увеличить" disabled={scale >= 1.5} onClick={() => bump(0.1)}>
+              <button type="button" className={`${SEG_OFF} disabled:cursor-not-allowed disabled:opacity-40`} aria-label="Увеличить" disabled={scale >= SCALE_MAX} onClick={() => bump(0.1)}>
                 +
               </button>
               <button type="button" className={SEG_OFF} onClick={fit}>
                 Вписать
               </button>
             </div>
+          ) : null}
+          {panelHidden ? (
+            <button
+              type="button"
+              className={`hidden min-[900px]:inline-flex ${SEG_OFF} rounded-[10px] border border-[#ddd4c6] dark:border-[#343b46]`}
+              onClick={togglePanel}
+            >
+              Показать панель
+            </button>
           ) : null}
           {pinned ? (
             <button
@@ -1402,12 +1443,23 @@ function LinkMap({ openSection = () => {} }) {
           </p>
         ) : null}
       </div>
-      <div className="grid min-w-0 items-start gap-4 min-[900px]:grid-cols-[minmax(0,1fr)_360px]">
+      <div className={`grid min-w-0 items-start gap-4 ${panelHidden ? "" : "min-[900px]:grid-cols-[minmax(0,1fr)_360px]"}`}>
         <div className="min-w-0">{body}</div>
         <aside
-          className="min-w-0 rounded-xl border border-[#ddd4c6] bg-[#fffdf8] p-4 shadow-[0_1px_2px_rgba(40,32,20,0.06)] dark:border-[#343b46] dark:bg-[#1e232b] dark:shadow-none min-[900px]:sticky min-[900px]:top-3 min-[900px]:max-h-[calc(100vh-1.5rem)] min-[900px]:overflow-auto"
+          className={`min-w-0 rounded-xl border border-[#ddd4c6] bg-[#fffdf8] p-4 shadow-[0_1px_2px_rgba(40,32,20,0.06)] dark:border-[#343b46] dark:bg-[#1e232b] dark:shadow-none min-[900px]:sticky min-[900px]:top-3 min-[900px]:max-h-[calc(100vh-1.5rem)] min-[900px]:overflow-auto ${
+            panelHidden ? "min-[900px]:hidden" : ""
+          }`}
           aria-label="Карточка узла"
         >
+          <div className="mb-3 hidden min-[900px]:block">
+            <button
+              type="button"
+              className={`cursor-pointer rounded-lg border border-[#ddd4c6] bg-[#fffdf8] px-3 py-1.5 text-[14px] dark:border-[#343b46] dark:bg-[#1e232b] ${FOCUS}`}
+              onClick={togglePanel}
+            >
+              Скрыть панель
+            </button>
+          </div>
           {pinnedNode ? (
             <NodeCard node={pinnedNode} mode={mode} model={model} linkStatus={linkStatus} onPick={pick} onOpen={openSection} />
           ) : (

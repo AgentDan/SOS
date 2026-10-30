@@ -681,4 +681,17 @@ function onlyHere(scenarioId, nodes, links) {
   return only;
 }
 
-export { buildLinkMap, diffMaps, describeLink, linkKey, chainOf, onlyHere };
+function fitScale(containerWidth, contentWidth, min, max) {
+  const lo = typeof min === "number" && Number.isFinite(min) ? min : 0;
+  const hi = typeof max === "number" && Number.isFinite(max) ? max : 1;
+  const floor = Math.min(lo, hi);
+  const ceil = Math.max(lo, hi);
+  const container = typeof containerWidth === "number" ? containerWidth : Number.NaN;
+  const content = typeof contentWidth === "number" ? contentWidth : Number.NaN;
+  if (!Number.isFinite(container) || !Number.isFinite(content) || container <= 0 || content <= 0) {
+    return Math.min(ceil, Math.max(floor, 1));
+  }
+  return Math.min(ceil, Math.max(floor, container / content));
+}
+
+export { buildLinkMap, diffMaps, describeLink, linkKey, chainOf, onlyHere, fitScale };

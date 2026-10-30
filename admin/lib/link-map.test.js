@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildLinkMap, chainOf, describeLink, diffMaps, linkKey, onlyHere } from "./link-map.js";
+import { buildLinkMap, chainOf, describeLink, diffMaps, fitScale, linkKey, onlyHere } from "./link-map.js";
 
 function brief(link) {
   return [link.kind, link.from, link.to, link.label];
@@ -444,4 +444,24 @@ test("chainOf and onlyHere tolerate empty and unknown input", () => {
   assert.equal(unknown.linkKeys.size, 0);
   assert.equal(onlyHere(null, null, null).size, 0);
   assert.equal(onlyHere("nope", [], [{ kind: "applies", from: "scenario:nope", to: "question:q", label: "" }]).has("question:q"), true);
+});
+
+test("fitScale stays within the requested bounds", () => {
+  assert.equal(fitScale(2000, 1000, 0.3, 1), 1);
+  assert.equal(fitScale(1000, 1000, 0.3, 1), 1);
+  assert.equal(fitScale(800, 1000, 0.3, 1), 0.8);
+  assert.equal(fitScale(200, 1000, 0.3, 1), 0.3);
+  assert.equal(fitScale(800, 1656, 0.6, 1), 0.6);
+  assert.ok(fitScale(5000, 400, 0.3, 1) <= 1);
+  assert.doesNotThrow(() => {
+    fitScale(0, 100, 0.3, 1);
+    fitScale(100, 0, 0.3, 1);
+    fitScale(-20, 100, 0.3, 1);
+    fitScale(null, undefined, 0.3, 1);
+    fitScale(Number.NaN, 100, 0.3, 1);
+    fitScale(100, "wide", 0.3, 1);
+  });
+  assert.equal(fitScale(0, 0, 0.3, 1), 1);
+  assert.equal(fitScale(null, null, 0.3, 1), 1);
+  assert.equal(fitScale(Number.NaN, -5, 0.3, 1), 1);
 });
