@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isAbort, listSections, setUnauthorizedHandler } from "./api/admin-api.js";
 import { loginFailure } from "./lib/messages.js";
-import { sectionLabel } from "./lib/sections.js";
+import { NAV_LEGACY, NAV_MAIN, activeNavId, screenTitle } from "./lib/nav.js";
 import { clearToken, getToken } from "./session/token.js";
 import { confirmAction } from "./components/confirm.jsx";
 import { Loading } from "./components/Loading.jsx";
+import { AppFrame } from "./ui/AppFrame.jsx";
+import { Shell } from "./ui/Shell.jsx";
 import { Journal } from "./screens/Journal.jsx";
 import { Knobs } from "./screens/Knobs.jsx";
 import { Login } from "./screens/Login.jsx";
@@ -16,12 +18,8 @@ import { Sections } from "./screens/Sections.jsx";
 
 const LEAVE_TEXT = "Есть несохранённые правки. Уйти без сохранения?";
 const NAV = [
-  ["overview", "Обзор"],
-  ["sections", "Разделы"],
-  ["knobs", "Ручки"],
-  ["models", "Модели"],
-  ["map", "Карта связей"],
-  ["journal", "Журнал"]
+  ...NAV_MAIN.map((item) => ({ ...item, group: "main" })),
+  ...NAV_LEGACY.map((item) => ({ ...item, group: "legacy" }))
 ];
 
 function parseHash() {
@@ -59,17 +57,8 @@ function sameHash(hash, next) {
   return hash === next || ((hash === "" || hash === "#") && next === "#/overview");
 }
 
-function titleFor(route) {
-  if (route.screen === "section") return `Админка — ${sectionLabel(route.name)}`;
-  const names = {
-    overview: "Обзор",
-    sections: "Разделы",
-    knobs: "Ручки",
-    models: "Модели",
-    map: "Карта связей",
-    journal: "Журнал"
-  };
-  return `Админка — ${names[route.screen] || "Обзор"}`;
+function documentTitle(route) {
+  return `Админка — ${screenTitle(route)}`;
 }
 
 function App() {
@@ -163,11 +152,11 @@ function App() {
     hashRef.current = location.hash;
     const next = parseHash();
     setRoute(next);
-    document.title = titleFor(next);
+    document.title = documentTitle(next);
   }, [mode]);
 
   useEffect(() => {
-    if (mode === "app") document.title = titleFor(route);
+    if (mode === "app") document.title = documentTitle(route);
   }, [mode, route]);
 
   function requestGo(nextRoute) {
@@ -194,17 +183,22 @@ function App() {
     requestGo({ screen: "section", name: sectionName });
   }
 
+  function goNav(id) {
+    const item = NAV.find((entry) => entry.id === id);
+    if (item) requestGo(item.route);
+  }
+
   if (mode === "boot") {
     return (
-      <div className="box-border min-h-screen bg-[#f3f0e8] [color-scheme:light] text-[16px] leading-[1.45] text-[#1e1b16] font-[system-ui,sans-serif] dark:bg-[#14171c] dark:text-[#f3efe6] dark:[color-scheme:dark] [&_*]:box-border">
+      <AppFrame>
         <Loading text="Проверяем вход…" />
-      </div>
+      </AppFrame>
     );
   }
 
   if (mode === "login") {
     return (
-      <div className="box-border min-h-screen bg-[#f3f0e8] [color-scheme:light] text-[16px] leading-[1.45] text-[#1e1b16] font-[system-ui,sans-serif] dark:bg-[#14171c] dark:text-[#f3efe6] dark:[color-scheme:dark] [&_*]:box-border">
+      <AppFrame>
         <Login
           message={loginMessage}
           onSuccess={() => {
@@ -212,11 +206,10 @@ function App() {
             setMode("app");
           }}
         />
-      </div>
+      </AppFrame>
     );
   }
 
-  const active = route.screen === "section" ? "sections" : route.screen;
   const screenKey = `${route.screen}:${route.name || ""}:${visit}`;
   let screen = <Overview key={screenKey} openSection={openSection} />;
   if (route.screen === "section") screen = <SectionEditor key={screenKey} name={route.name} onDirty={markDirty} />;
@@ -227,45 +220,11 @@ function App() {
   else if (route.screen === "journal") screen = <Journal key={screenKey} />;
 
   return (
-    <div className="box-border min-h-screen bg-[#f3f0e8] [color-scheme:light] text-[16px] leading-[1.45] text-[#1e1b16] font-[system-ui,sans-serif] dark:bg-[#14171c] dark:text-[#f3efe6] dark:[color-scheme:dark] [&_*]:box-border">
-      <div className="grid min-h-screen grid-cols-[220px_minmax(0,1fr)] max-[800px]:grid-cols-1">
-        <aside className="sticky top-0 z-[2] flex min-h-screen flex-col gap-2 self-start border-r border-[#ddd4c6] dark:border-[#343b46] bg-[#e7e1d6] dark:bg-[#191d24] px-4 py-5 max-[800px]:min-h-0 max-[800px]:flex-row max-[800px]:flex-wrap max-[800px]:items-center max-[800px]:border-r-0 max-[800px]:border-b">
-          <p className="mt-0 mb-0 text-xl font-bold">deskOS</p>
-          <p className="mt-0 mb-3 text-[#5e584e] dark:text-[#b7b0a4] max-[800px]:hidden">админка</p>
-          <nav className="flex flex-col gap-1 max-[800px]:flex-row max-[800px]:flex-wrap">
-            {NAV.map(([screenName, text]) => {
-              const on = screenName === active;
-              return (
-                <button
-                  key={screenName}
-                  type="button"
-                  data-screen={screenName}
-                  className={
-                    on
-                      ? "cursor-pointer rounded-lg border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] px-3 py-2 text-left font-[650] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
-                      : "cursor-pointer rounded-lg border border-transparent bg-transparent px-3 py-2 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
-                  }
-                  aria-current={on ? "page" : undefined}
-                  onClick={() => requestGo({ screen: screenName })}
-                >
-                  {text}
-                </button>
-              );
-            })}
-          </nav>
-          <button
-            type="button"
-            className="mt-auto cursor-pointer rounded-lg border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e] max-[800px]:mt-0 max-[800px]:ml-auto"
-            onClick={logout}
-          >
-            Выйти
-          </button>
-        </aside>
-        <main id="content" className="min-w-0 px-8 pt-7 pb-12 max-[900px]:px-4 max-[900px]:pt-5 max-[900px]:pb-10">
-          {screen}
-        </main>
-      </div>
-    </div>
+    <AppFrame>
+      <Shell nav={NAV} activeId={activeNavId(route)} onGo={goNav} onLogout={logout} title={screenTitle(route)}>
+        {screen}
+      </Shell>
+    </AppFrame>
   );
 }
 

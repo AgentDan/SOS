@@ -1,3 +1,56 @@
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
+
+/* Цвета одной палитры. Светлая и тёмная тема следуют системе, компоненты читают токены. */
+:root {
+  color-scheme: light;
+  --paper: #f5f3ee;
+  --side: #efece5;
+  --surface: #ffffff;
+  --line: #e6e1d8;
+  --ink: #1c1a17;
+  --muted: #625c52;
+  --accent: #1f6b4a;
+  --accent-soft: #e4f0ea;
+  --warn: #7a4e00;
+  --warn-soft: #fff4d6;
+  --bad: #8e1d1d;
+  --bad-soft: #fdeded;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --paper: #14171c;
+    --side: #191d24;
+    --surface: #1e232b;
+    --line: #343b46;
+    --ink: #f3efe6;
+    --muted: #b7b0a4;
+    --accent: #3d9a6e;
+    --accent-soft: #163226;
+    --warn: #ffe0a3;
+    --warn-soft: #3a2e12;
+    --bad: #ffb4b4;
+    --bad-soft: #3a1c1c;
+  }
+}
+
+@custom-variant narrow (@media (width <= 800px));
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-side: var(--side);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --font-sans: Inter, system-ui, sans-serif;
+}
