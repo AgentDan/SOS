@@ -360,7 +360,15 @@ function Matrix({ draft, needs, questions, grouped, disabled, onCycle }) {
 
 function Questionnaire({ route = {}, onDirty = () => {} }) {
   const selectedId = typeof route.q === "string" ? route.q : "";
-  const [tab, setTab] = useState("questions");
+  const routeTab = route.tab === "scenarios" || route.tab === "phases" ? route.tab : "";
+  const routeMark = `${routeTab}\n${selectedId}`;
+  const [tab, setTab] = useState(routeTab || "questions");
+  const [appliedRoute, setAppliedRoute] = useState(routeMark);
+  if (appliedRoute !== routeMark) {
+    setAppliedRoute(routeMark);
+    if (routeTab) setTab(routeTab);
+    else if (selectedId) setTab("questions");
+  }
   const [phase, setPhase] = useState("loading");
   const [loadError, setLoadError] = useState(null);
   const [catalogWarning, setCatalogWarning] = useState(false);

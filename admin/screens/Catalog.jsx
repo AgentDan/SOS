@@ -192,7 +192,8 @@ function Catalog({ route = {}, onDirty = () => {}, requestGo }) {
   const tab = route.tab === "types" || route.tab === "needs" ? route.tab : "products";
   const routeSku = typeof route.sku === "string" ? route.sku : "";
   const routeCreate = Boolean(route.create);
-  const routeKey = routeCreate ? "new" : routeSku;
+  const routeItem = typeof route.item === "string" ? route.item : "";
+  const routeKey = `${routeCreate ? "new" : routeSku}\n${routeItem}`;
 
   const [phase, setPhase] = useState("loading");
   const [loadError, setLoadError] = useState(null);
@@ -269,6 +270,22 @@ function Catalog({ route = {}, onDirty = () => {}, requestGo }) {
       if (need) {
         activeNeedForm = needToForm(need);
         activeNeedSaved = activeNeedForm;
+      }
+    }
+    if (tab === "types" && routeItem) {
+      const pickedType = findBy(draft.types, "id", routeItem);
+      if (pickedType) {
+        activeTypeForm = typeToForm(pickedType);
+        activeTypeSaved = activeTypeForm;
+        setTypeId(routeItem);
+      }
+    }
+    if (tab === "needs" && routeItem) {
+      const pickedNeed = findBy(draft.needs, "id", routeItem);
+      if (pickedNeed) {
+        activeNeedForm = needToForm(pickedNeed);
+        activeNeedSaved = activeNeedForm;
+        setNeedId(routeItem);
       }
     }
     setAppliedTab(tab);

@@ -1,5 +1,5 @@
-/* Меню слева и верхняя панель. Содержимое экрана приходит снаружи. */
-function Shell({ nav = [], activeId, onGo, onLogout, title, topRight, children }) {
+/* Меню слева и верхняя панель. Поиск и содержимое экрана приходят снаружи. */
+function Shell({ nav = [], activeId, onGo, onLogout, title, search, topRight, children }) {
   const main = nav.filter((item) => item.group !== "legacy");
   const legacy = nav.filter((item) => item.group === "legacy");
 
@@ -48,9 +48,10 @@ function Shell({ nav = [], activeId, onGo, onLogout, title, topRight, children }
         </button>
       </aside>
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-line bg-paper px-8 py-2 max-[900px]:px-4 narrow:static">
+        <header className="sticky top-0 z-20 flex min-h-12 flex-wrap items-center gap-3 border-b border-line bg-paper px-8 py-2 max-[900px]:px-4 narrow:static">
           <p className="m-0 min-w-0 text-sm text-muted">{title}</p>
-          {topRight ? <div className="flex max-w-full flex-wrap items-center justify-end gap-2">{topRight}</div> : null}
+          {search ? <div className="flex min-w-0 flex-1 justify-center px-2 narrow:flex-none narrow:px-0">{search}</div> : <span className="flex-1" />}
+          {topRight ? <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">{topRight}</div> : null}
         </header>
         <main
           id="content"
