@@ -269,6 +269,34 @@ test("replace with the same sku is same_sku", () => {
   assert.deepEqual(board.calls, []);
 });
 
+test("replace treats a named desk that is not on the scene as the replacement", () => {
+  const local = {
+    ...placed,
+    products: [...placed.products, { sku: "DESK-TOP-2000", type: "desk_top", dimensions: { width: 2000 } }]
+  };
+  const { result, board } = run(command("replace", "DESK-TOP-2000"), ["DESK-LEGS-1400", "DESK-TOP-1800"], {
+    catalog: local
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.say.code, "command_replaced");
+  assert.deepEqual(board.calls, [{ op: "replace", sku: "DESK-TOP-1800", withSku: "DESK-TOP-2000" }]);
+});
+
+test("replace treats a named monitor that is not on the scene as the replacement", () => {
+  const local = {
+    ...placed,
+    products: [...placed.products, { sku: "MON-715-427", type: "monitor", dimensions: { width: 715 } }]
+  };
+  const { result, board } = run(
+    command("replace", "MON-715-427"),
+    ["DESK-LEGS-1400", "DESK-TOP-1800", "MON-613-366"],
+    { catalog: local }
+  );
+  assert.equal(result.ok, true);
+  assert.equal(result.say.code, "command_replaced");
+  assert.deepEqual(board.calls, [{ op: "replace", sku: "MON-613-366", withSku: "MON-715-427" }]);
+});
+
 test("replace with withSku uses that sku", () => {
   const { result, board } = run(
     command("replace", "DESK-TOP-1800", { withSku: "DESK-TOP-1400" }),

@@ -11,22 +11,12 @@ const STEPS = [
   { questionId: "q_height", optionId: "h_170" },
   { questionId: "q_hand", optionId: "right" },
   { questionId: "q_work_type", optionId: "coding" },
-  { text: "добавь монитор" },
   { text: "добавь второй монитор" },
   { text: "добавь клавиатуру" },
   { text: "добавь мышь" },
   { text: "поставь колонки" },
   { text: "поставь колонки" }
 ];
-
-const PRICES = {
-  "DESK-LEGS-1400": 79,
-  "DESK-TOP-1800": 259,
-  "MON-613-366": 249,
-  "KB-440": 49,
-  "MOUSE-65": 29,
-  "SPK-100": 59
-};
 
 function rect(place, dimensions) {
   return {
@@ -65,7 +55,6 @@ async function setup(clientId, hand) {
     }
   }
   for (const text of [
-    "добавь монитор",
     "добавь второй монитор",
     "добавь клавиатуру",
     "добавь мышь",
@@ -83,16 +72,42 @@ async function setup(clientId, hand) {
 }
 
 function checkScene(errors, scene, hand) {
-  const mouseX = hand === "left" ? -352.5 : 352.5;
+  const products = readCatalog().products;
+  const types = readCatalog().types;
+  const bySku = new Map(products.map((product) => [product.sku, product]));
+  const deskType = types.find((item) => item?.id === "desk_top");
+  const legs = bySku.get("DESK-LEGS-1400");
+  const top = bySku.get("DESK-TOP-1800");
+  const monitor = bySku.get("MON-613-366");
+  const keyboard = bySku.get("KB-440");
+  const mouse = bySku.get("MOUSE-65");
+  const speaker = bySku.get("SPK-100");
+  const surface = legs.dimensions.height + top.dimensions.height;
+  const topY = legs.dimensions.height;
+  const gap = deskType.rowGapMm;
+  const back = deskType.rowBackMarginMm;
+  const front = deskType.frontMarginMm;
+  const accessoryGap = deskType.accessoryGapMm;
+  const rowTotal = monitor.dimensions.width * 2 + gap;
+  const monitorLeft = -rowTotal / 2 + monitor.dimensions.width / 2;
+  const monitorZ = -top.dimensions.depth / 2 + back + monitor.dimensions.depth / 2;
+  const leftEdge = -rowTotal / 2;
+  const rightEdge = rowTotal / 2;
+  const speakerZ = -top.dimensions.depth / 2 + back + speaker.dimensions.depth / 2;
+  const speakerX = rightEdge + accessoryGap + speaker.dimensions.width / 2;
+  const keyboardZ = top.dimensions.depth / 2 - front - keyboard.dimensions.depth / 2;
+  const mouseX =
+    (hand === "left" ? -1 : 1) *
+    (keyboard.dimensions.width / 2 + accessoryGap + mouse.dimensions.width / 2);
   const expected = [
     { sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0, rotY: 0 },
-    { sku: "DESK-TOP-1800", x: 0, y: 1000, z: 0, rotY: 0 },
-    { sku: "MON-613-366", x: -356.5, y: 1030, z: -197.5, rotY: 0 },
-    { sku: "MON-613-366", x: 356.5, y: 1030, z: -197.5, rotY: 0 },
-    { sku: "KB-440", x: 0, y: 1030, z: 180, rotY: 0 },
-    { sku: "MOUSE-65", x: mouseX, y: 1030, z: 180, rotY: 0 },
-    { sku: "SPK-100", x: -813, y: 1030, z: -245, rotY: 0 },
-    { sku: "SPK-100", x: 813, y: 1030, z: -245, rotY: 0 }
+    { sku: "DESK-TOP-1800", x: 0, y: topY, z: 0, rotY: 0 },
+    { sku: "MON-613-366", x: monitorLeft, y: surface, z: monitorZ, rotY: 0 },
+    { sku: "MON-613-366", x: monitorLeft + monitor.dimensions.width + gap, y: surface, z: monitorZ, rotY: 0 },
+    { sku: "KB-440", x: 0, y: surface, z: keyboardZ, rotY: 0 },
+    { sku: "MOUSE-65", x: mouseX, y: surface, z: keyboardZ, rotY: 0 },
+    { sku: "SPK-100", x: -speakerX, y: surface, z: speakerZ, rotY: 0 },
+    { sku: "SPK-100", x: speakerX, y: surface, z: speakerZ, rotY: 0 }
   ];
   if (JSON.stringify(scene.placements) !== JSON.stringify(expected)) {
     errors.push(`${hand} placements ${JSON.stringify(scene.placements)}`);
@@ -100,9 +115,8 @@ function checkScene(errors, scene, hand) {
   for (const sku of ["KB-440", "MOUSE-65", "SPK-100"]) {
     if (!scene.skus.includes(sku)) errors.push(`${hand}: ${sku} was removed`);
   }
-  const products = readCatalog().products;
   const sizes = new Map(products.map((product) => [product.sku, product.dimensions]));
-  const onDesk = scene.placements.filter((item) => item.y === 1030);
+  const onDesk = scene.placements.filter((item) => item.y === surface);
   let outer = 0;
   for (const place of onDesk) {
     const dimensions = sizes.get(place.sku);
@@ -112,7 +126,9 @@ function checkScene(errors, scene, hand) {
     }
     outer = Math.max(outer, Math.abs(place.x) + dimensions.width / 2);
   }
-  if (outer > 900) errors.push(`${hand}: row extends to ${outer}, desk half is 900`);
+  if (outer > top.dimensions.width / 2) {
+    errors.push(`${hand}: row extends to ${outer}, desk half is ${top.dimensions.width / 2}`);
+  }
   for (let i = 0; i < onDesk.length; i += 1) {
     for (let j = i + 1; j < onDesk.length; j += 1) {
       const a = rect(onDesk[i], sizes.get(onDesk[i].sku));
@@ -120,19 +136,25 @@ function checkScene(errors, scene, hand) {
       if (overlaps(a, b)) errors.push(`${hand}: ${onDesk[i].sku} overlaps ${onDesk[j].sku}`);
     }
   }
+  const copies = {
+    "DESK-LEGS-1400": 1,
+    "DESK-TOP-1800": 1,
+    "MON-613-366": 2,
+    "KB-440": 1,
+    "MOUSE-65": 1,
+    "SPK-100": 2
+  };
+  let expectedSum = 0;
+  for (const [sku, count] of Object.entries(copies)) {
+    expectedSum += bySku.get(sku).priceEur * count;
+  }
   let sum = 0;
   for (const sku of scene.skus) {
-    const price = products.find((product) => product.sku === sku)?.priceEur;
+    const price = bySku.get(sku)?.priceEur;
     if (typeof price !== "number") errors.push(`${hand}: ${sku} has no price`);
     else sum += price;
   }
-  const expectedSum = Object.entries(PRICES).reduce((total, [sku, price]) => {
-    const copies = scene.skus.filter((item) => item === sku).length;
-    return total + price * copies;
-  }, 0);
-  if (sum !== expectedSum || sum !== 79 + 259 + 249 * 2 + 49 + 29 + 59 * 2) {
-    errors.push(`${hand}: order sum ${sum}`);
-  }
+  if (sum !== expectedSum) errors.push(`${hand}: order sum ${sum} ≠ ${expectedSum}`);
 }
 
 async function runAccessories() {

@@ -107,6 +107,10 @@ function compare(profile, expect) {
     );
   }
 
+  if (Object.prototype.hasOwnProperty.call(expect, "scenario") && profile.scenario !== expect.scenario) {
+    errors.push(`scenario ${profile.scenario ?? "null"} ≠ ${expect.scenario ?? "null"}`);
+  }
+
   if (expect.rejectedNeeds) {
     compareList(
       errors,

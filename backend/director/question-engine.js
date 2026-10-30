@@ -12,7 +12,7 @@ function getEligibleQuestions(questionnaire, profile, phaseId) {
     const scenarios = Array.isArray(question.appliesToScenarios)
       ? question.appliesToScenarios
       : [];
-    // TODO: нет вопроса, устанавливающего scenario — добавить в следующей итерации данных
+    // Сценарий ставит pickScenario по правилам анкеты. Пока он null, вопрос не отсекается.
     if (scenarios.length > 0 && scenario !== null && !scenarios.includes(scenario)) {
       return false;
     }

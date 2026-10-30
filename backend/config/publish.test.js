@@ -1,4 +1,4 @@
-import { mkdtempSync, cpSync, renameSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, cpSync, renameSync, rmSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -114,18 +114,22 @@ describe("publish", { concurrency: 1 }, () => {
     const before = readEnvelope("catalog").publishedVersion;
     publish("catalog", "whole catalog");
     const envelope = readEnvelope("catalog");
-    const skus = [
-      "DESK-LEGS-1400",
-      "DESK-TOP-1400",
-      "DESK-TOP-1800",
-      "MON-613-366",
-      "MON-613-367",
-      "CHAIR-460",
-      "character",
-      "KB-440",
-      "MOUSE-65",
-      "SPK-100"
-    ];
+    const typeOrder = new Map(envelope.draft.types.map((type, index) => [type && type.id, index]));
+    const skuDir = path.join(tempData, "catalog", "sku");
+    const loaded = readdirSync(skuDir)
+      .filter((name) => name.endsWith(".json"))
+      .map((name) => JSON.parse(readFileSync(path.join(skuDir, name), "utf8")));
+    const skus = loaded
+      .slice()
+      .sort((a, b) => {
+        const aRank = typeOrder.has(a.type) ? typeOrder.get(a.type) : Number.MAX_SAFE_INTEGER;
+        const bRank = typeOrder.has(b.type) ? typeOrder.get(b.type) : Number.MAX_SAFE_INTEGER;
+        if (aRank !== bRank) return aRank - bRank;
+        if (String(a.sku) < String(b.sku)) return -1;
+        if (String(a.sku) > String(b.sku)) return 1;
+        return 0;
+      })
+      .map((product) => product.sku);
     assert.equal(envelope.publishedVersion, before + 1);
     assert.equal(envelope.draftVersion, readEnvelope("catalog").draftVersion);
     assert.deepEqual(envelope.draft.products.map((item) => item.sku), skus);

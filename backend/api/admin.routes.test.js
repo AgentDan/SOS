@@ -451,7 +451,8 @@ describe("admin API", { concurrency: 1 }, () => {
     assert.equal(humor.values.length, 1);
     assert.equal(humor.values[0].at, "humor");
     assert.equal(humor.values[0].value, readDraft("consultant").humor);
-    assert.equal(price.values.length, 9);
+    const priced = readDraft("catalog").products.filter((item) => typeof item.priceEur === "number");
+    assert.equal(price.values.length, priced.length);
     assert.ok(price.values.every((item) => typeof item.key === "string" && item.at.includes("priceEur")));
 
     const lines = journalEntries().length;
@@ -616,7 +617,7 @@ describe("admin API", { concurrency: 1 }, () => {
     assert.equal(uploaded.json.sizeMm.width, 1400);
     assert.equal(uploaded.json.sizeMm.height, 30);
     assert.equal(uploaded.json.sizeMm.depth, 700);
-    assert.deepEqual(uploaded.json.catalogMm, { width: 1400, height: 30, depth: 700 });
+    assert.deepEqual(uploaded.json.catalogMm, { width: 1400, height: 40, depth: 800 });
     assert.ok(uploaded.json.parts[0].center.every((value) => Math.abs(value) < 1e-6));
     const saved = readFileSync(path.join(tempModels, "DESK-TOP-1400.glb"));
     assert.equal(saved.length, uploaded.json.bytes);

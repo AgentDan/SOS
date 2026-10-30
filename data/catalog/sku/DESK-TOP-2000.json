@@ -1,23 +1,23 @@
 {
   "sku": "DESK-TOP-2000",
   "type": "desk_top",
-  "movable": true,
+  "movable": false,
   "name": "Desk top 2000x800",
   "label": "стол 200",
   "dimensions": {
     "width": 2000,
     "depth": 800,
-    "height": 30
+    "height": 40
   },
   "priceEur": 200,
   "words": [
     "стол",
-    "столешниц"
+    "столешниц",
+    "2000",
+    "200",
+    "двухметров"
   ],
   "media": {
     "model3d": "DESK-TOP-2000.glb"
-  },
-  "placement": {
-    "hostSku": "DESK-LEGS-1400"
   }
 }

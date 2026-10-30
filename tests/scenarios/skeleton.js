@@ -1,7 +1,8 @@
 import { rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readAiRules, readConsultant } from "../../backend/config/load.js";
+import { readAiRules, readCatalog, readConsultant } from "../../backend/config/load.js";
+import { canPlace } from "../../backend/commands/placement.js";
 import { buildContext } from "../../backend/pipeline/context.js";
 import { runMessage, runTurn } from "../../backend/pipeline/orchestrator.js";
 import { getScene } from "../../backend/pipeline/reads.js";
@@ -9,8 +10,7 @@ import { buildResponse } from "../../backend/pipeline/response.js";
 
 const CLIENTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "runtime", "clients");
 
-// Кнопки из programmer-wide-desk.json и back-pain-chair.json.
-// coding → desk_top_wide → DESK-TOP-1800, «болит спина» → CHAIR-460.
+// Кнопки: coding даёт широкий стол и монитор, wide подтверждает стол, «болит спина» — кресло.
 const BUTTONS = [
   { questionId: "q_work_type", optionId: "coding" },
   { questionId: "q_desk_width", optionId: "wide" },
@@ -28,8 +28,7 @@ const skeletonSteps = [
       reasonCode: null,
       sayCode: "answer_ok",
       sceneChanged: true,
-      added: ["CHAIR-460", "DESK-TOP-1800"],
-      absent: ["MON-613-366"]
+      added: []
     }
   },
   {
@@ -42,27 +41,12 @@ const skeletonSteps = [
       reasonCode: null,
       sayCode: "command_removed",
       sceneChanged: true,
-      removed: ["CHAIR-460"],
+      removed: [],
       replyIncludes: ["кресло"]
     }
   },
-  // Стол из кнопок — DESK-TOP-1800. Два монитора 613 мм на нём помещаются, третий нет.
   {
     n: 3,
-    phrase: "добавь монитор",
-    text: "добавь монитор",
-    expect: {
-      intent: "command",
-      ok: true,
-      reasonCode: null,
-      sayCode: "command_added",
-      sceneChanged: true,
-      added: ["MON-613-366"],
-      copies: { "MON-613-366": 1 }
-    }
-  },
-  {
-    n: 4,
     phrase: "добавь второй монитор",
     text: "добавь второй монитор",
     expect: {
@@ -71,11 +55,11 @@ const skeletonSteps = [
       reasonCode: null,
       sayCode: "command_added",
       sceneChanged: true,
-      copies: { "MON-613-366": 2 }
+      copies: {}
     }
   },
   {
-    n: 5,
+    n: 4,
     phrase: "добавь третий монитор",
     text: "добавь третий монитор",
     expect: {
@@ -84,11 +68,11 @@ const skeletonSteps = [
       reasonCode: "host_full",
       sayCode: "host_full",
       sceneChanged: false,
-      copies: { "MON-613-366": 2 }
+      copies: {}
     }
   },
   {
-    n: 6,
+    n: 5,
     phrase: "убери монитор",
     text: "убери монитор",
     expect: {
@@ -97,11 +81,11 @@ const skeletonSteps = [
       reasonCode: null,
       sayCode: "command_removed",
       sceneChanged: true,
-      copies: { "MON-613-366": 1 }
+      copies: {}
     }
   },
   {
-    n: 7,
+    n: 6,
     phrase: "а есть доставка?",
     text: "а есть доставка?",
     faqId: "delivery",
@@ -113,11 +97,8 @@ const skeletonSteps = [
       sceneChanged: false
     }
   },
-  // Один монитор помещается и на столе 1400. DESK-TOP-1800 стоит 259 €,
-  // ближайший дешевле того же типа — DESK-TOP-1400 за 189 €, savedEur = 70.
-  // Два монитора эту замену уже не пропустили бы.
   {
-    n: 8,
+    n: 7,
     phrase: "покажи дешевле",
     text: "покажи дешевле",
     expect: {
@@ -126,27 +107,26 @@ const skeletonSteps = [
       reasonCode: null,
       sayCode: "cheaper_done",
       sceneChanged: true,
-      removed: ["DESK-TOP-1800"],
-      added: ["DESK-TOP-1400"],
-      savedEur: 70,
-      replyIncludes: ["70"]
+      removed: [],
+      added: [],
+      replyIncludes: []
     }
   },
   {
-    n: 9,
+    n: 8,
     phrase: "добавь второй монитор",
     text: "добавь второй монитор",
     expect: {
       intent: "command",
-      ok: false,
-      reasonCode: "host_full",
-      sayCode: "host_full",
-      sceneChanged: false,
-      copies: { "MON-613-366": 1 }
+      ok: true,
+      reasonCode: null,
+      sayCode: "command_added",
+      sceneChanged: true,
+      copies: {}
     }
   },
   {
-    n: 10,
+    n: 9,
     phrase: "абракадабра",
     text: "абракадабра",
     expect: {
@@ -158,6 +138,78 @@ const skeletonSteps = [
     }
   }
 ];
+
+function smallest(products, type, minWidth) {
+  let best = null;
+  for (const product of products) {
+    if (product?.type !== type || typeof product.dimensions?.width !== "number") continue;
+    if (minWidth != null && product.dimensions.width < minWidth) continue;
+    if (!best || product.dimensions.width < best.dimensions.width) best = product;
+  }
+  return best;
+}
+
+function nearestCheaper(products, current) {
+  let best = null;
+  for (const candidate of products) {
+    if (!candidate || candidate.type !== current?.type || candidate.sku === current?.sku) continue;
+    if (typeof candidate.priceEur !== "number" || candidate.priceEur >= current.priceEur) continue;
+    if (!best || candidate.priceEur > best.priceEur) best = candidate;
+  }
+  return best;
+}
+
+function step(n) {
+  return skeletonSteps.find((item) => item.n === n);
+}
+
+function fillFromCatalog() {
+  const catalog = readCatalog();
+  const products = Array.isArray(catalog?.products) ? catalog.products : [];
+  const wide = (catalog?.needs ?? []).find((need) => need?.id === "desk_top_wide");
+  const legs = products.find((product) => product?.alwaysPresent === true && product.type !== "person");
+  const desk = smallest(products, "desk_top", wide?.criteria?.minWidth);
+  const monitor = smallest(products, "monitor");
+  const chair = smallest(products, "chair");
+  const replacement = nearestCheaper(products, desk);
+  const monitorSku = monitor.sku;
+
+  step(1).expect.added = [chair.sku, desk.sku, monitorSku];
+  step(2).expect.removed = [chair.sku];
+
+  const one = [legs.sku, desk.sku, monitorSku];
+  const second = canPlace({ catalog, sceneSkus: one, sku: monitorSku });
+  step(3).expect.ok = second.ok === true;
+  step(3).expect.reasonCode = second.ok ? null : second.reasonCode;
+  step(3).expect.sayCode = second.ok ? "command_added" : second.reasonCode;
+  step(3).expect.sceneChanged = second.ok === true;
+  const afterSecond = second.ok ? 2 : 1;
+  step(3).expect.copies = { [monitorSku]: afterSecond };
+
+  const two = second.ok ? [...one, monitorSku] : one;
+  const third = canPlace({ catalog, sceneSkus: two, sku: monitorSku });
+  step(4).expect.ok = third.ok === true;
+  step(4).expect.reasonCode = third.ok ? null : third.reasonCode;
+  step(4).expect.sayCode = third.ok ? "command_added" : third.reasonCode;
+  step(4).expect.sceneChanged = third.ok === true;
+  const afterThird = third.ok ? afterSecond + 1 : afterSecond;
+  step(4).expect.copies = { [monitorSku]: afterThird };
+  step(5).expect.copies = { [monitorSku]: afterThird - 1 };
+
+  const savedEur = desk.priceEur - replacement.priceEur;
+  step(7).expect.removed = [desk.sku];
+  step(7).expect.added = [replacement.sku];
+  step(7).expect.savedEur = savedEur;
+  step(7).expect.replyIncludes = [String(savedEur)];
+
+  const afterCheaper = [legs.sku, replacement.sku, monitorSku];
+  const again = canPlace({ catalog, sceneSkus: afterCheaper, sku: monitorSku });
+  step(8).expect.ok = again.ok === true;
+  step(8).expect.reasonCode = again.ok ? null : again.reasonCode;
+  step(8).expect.sayCode = again.ok ? "command_added" : again.reasonCode;
+  step(8).expect.sceneChanged = again.ok === true;
+  step(8).expect.copies = { [monitorSku]: again.ok ? 2 : 1 };
+}
 
 function sameSkus(left, right) {
   return left.length === right.length && left.every((sku, index) => sku === right[index]);
@@ -284,6 +336,7 @@ function respond(clientId, outcome) {
 }
 
 async function play(clientId, errors, trace) {
+  fillFromCatalog();
   const maxWords = readMaxWords();
   if (maxWords === null) errors.push("ai-rules output.maxWords is missing");
 

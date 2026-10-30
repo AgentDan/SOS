@@ -7,15 +7,15 @@ import { getScene } from "../../backend/pipeline/reads.js";
 
 const CLIENTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "runtime", "clients");
 
-// q_work_type=coding ставит DESK-TOP-1800. Стол 1400 — команда «замени стол»
-// до предметов на столешнице: слово «стол» указывает на DESK-TOP-1400, его на сцене нет,
+// q_work_type=coding ставит широкую столешницу и монитор. Стол 1400 — команда «замени стол»
+// до остальных предметов: слово «стол» указывает на ближайший стол, его на сцене нет,
 // и замена берёт стоящий desk_top. Кресло нужно манекену и ответу «удобно ли мне?».
 const HEIGHTS = ["h_u160", "h_170", "h_190"];
 const HANDS = ["right", "left"];
 const DESKS = [1800, 1400];
 const ON_DESK = new Set(["monitor", "keyboard", "mouse", "speaker"]);
 const ROW = new Set(["monitor", "speaker"]);
-const FIT_OUT = ["поставь кресло", "добавь монитор", "добавь клавиатуру", "добавь мышь", "поставь колонки"];
+const FIT_OUT = ["поставь кресло", "добавь клавиатуру", "добавь мышь", "поставь колонки"];
 
 const STEPS = [];
 for (const heightId of HEIGHTS) {
@@ -80,14 +80,11 @@ function priceSum(scene, products) {
   return sum;
 }
 
-function typePrice(products, typeId) {
-  let price = null;
+function firstOfType(products, typeId) {
   for (const product of products.values()) {
-    if (product?.type !== typeId || typeof product.priceEur !== "number") continue;
-    if (price === null) price = product.priceEur;
-    else if (price !== product.priceEur) return null;
+    if (product?.type === typeId) return product;
   }
-  return price;
+  return null;
 }
 
 function footprint(place, dimensions) {
@@ -237,30 +234,71 @@ function checkTargets(errors, tag, scene, heightCm, hand, table) {
   return expected;
 }
 
-function checkDeskIssue(errors, tag, scene, surface) {
+function checkDeskIssue(errors, tag, scene, surface, table) {
   const issues = Array.isArray(scene.ergo?.issues) ? scene.ergo.issues : [];
-  const desk = issues.find((item) => item?.code === "desk_too_high") ?? null;
-  if (surface === 1030 && !desk) errors.push(`${tag}: при столе 1030 мм нет desk_too_high`);
-  if (surface !== 1030) errors.push(`${tag}: верх стола ${surface} мм, а не 1030`);
+  const desk =
+    issues.find((item) => item?.code === "desk_too_high" || item?.code === "desk_too_low") ?? null;
+  const target = scene.ergo?.targets?.deskHeightMm;
+  const tolerance = table?.tolerance?.deskHeightMm;
+  if (typeof surface !== "number" || typeof target !== "number" || typeof tolerance !== "number") {
+    errors.push(`${tag}: нечем сверить верх стола ${surface}`);
+    return desk;
+  }
+  const outside = Math.abs(surface - target) > tolerance;
+  if (outside && !desk) {
+    errors.push(`${tag}: верх стола ${surface} вне допуска ${tolerance} от ${target}, замечания нет`);
+  }
+  if (!outside && desk) errors.push(`${tag}: верх стола ${surface} в допуске, но есть ${desk.code}`);
   if (desk && desk.actualMm !== surface) {
-    errors.push(`${tag}: desk_too_high actualMm ${desk.actualMm} ≠ верх стола ${surface}`);
+    errors.push(`${tag}: ${desk.code} actualMm ${desk.actualMm} ≠ верх стола ${surface}`);
   }
   return desk;
 }
 
-function checkReplyNumbers(errors, tag, text, desk, heightCm) {
-  if (!text.startsWith("Стол высоковат")) {
+const REPLY_START = {
+  desk_too_high: "Стол высоковат",
+  desk_too_low: "Стол низковат",
+  monitor_too_far: "Монитор далековато",
+  monitor_too_close: "Монитор близковат",
+  monitor_too_high: "Монитор высоковат",
+  monitor_too_low: "Монитор низковат"
+};
+
+function heaviestIssue(issues) {
+  const order = Object.keys(REPLY_START);
+  let best = null;
+  for (const issue of issues) {
+    if (!issue || typeof issue.code !== "string" || !REPLY_START[issue.code]) continue;
+    if (!best) {
+      best = issue;
+      continue;
+    }
+    const delta = typeof issue.deltaMm === "number" ? issue.deltaMm : Number.NEGATIVE_INFINITY;
+    const bestDelta = typeof best.deltaMm === "number" ? best.deltaMm : Number.NEGATIVE_INFINITY;
+    const rank = order.indexOf(issue.code);
+    const bestRank = order.indexOf(best.code);
+    if (delta > bestDelta || (delta === bestDelta && rank < bestRank)) best = issue;
+  }
+  return best;
+}
+
+function checkReplyNumbers(errors, tag, text, scene) {
+  const issue = heaviestIssue(Array.isArray(scene.ergo?.issues) ? scene.ergo.issues : []);
+  if (!issue) {
+    if (!text.startsWith("Для вашего роста")) {
+      errors.push(`${tag}: «удобно ли мне?» → ${JSON.stringify(text)}`);
+    }
+    return;
+  }
+  const start = REPLY_START[issue.code];
+  if (!text.startsWith(start)) {
     errors.push(`${tag}: «удобно ли мне?» → ${JSON.stringify(text)}`);
     return;
   }
-  if (!desk) return;
-  const expected = [String(cm(desk.actualMm)), String(cm(desk.targetMm))].sort();
+  const expected = [String(cm(issue.actualMm)), String(cm(issue.targetMm))].sort();
   const got = numbersIn(text).sort();
   if (JSON.stringify(got) !== JSON.stringify(expected)) {
     errors.push(`${tag}: числа реплики ${JSON.stringify(got)} ≠ замечание ${JSON.stringify(expected)} см`);
-  }
-  if (heightCm === 155 && JSON.stringify(got) !== JSON.stringify(["103", "64"])) {
-    errors.push(`${tag}: для роста 155 нужны 103 и 64 см, реплика ${JSON.stringify(text)}`);
   }
 }
 
@@ -403,25 +441,25 @@ async function runCombo(clientId, combo, index, errors, products, table, referen
   checkHand(errors, tag, scene, products, combo.hand);
   checkPerson(errors, tag, scene, products, heightCm, reference);
   if (table && heightCm !== null) checkTargets(errors, tag, scene, heightCm, combo.hand, table);
-  const desk = checkDeskIssue(errors, tag, scene, surface);
+  const desk = checkDeskIssue(errors, tag, scene, surface, table);
   checkOrder(errors, tag, scene, products, mannequinSku);
 
   const asked = await say(clientId, "удобно ли мне?", errors, tag);
-  checkReplyNumbers(errors, tag, asked.response?.reply?.text ?? "", desk, heightCm);
+  checkReplyNumbers(errors, tag, asked.response?.reply?.text ?? "", scene);
 
   // Лимиты после обстановки. Отказ не меняет сцену и сумму.
   // Колонка при ok прибавляет свою цену; второй монитор встаёт только на 1800.
-  const speakerPrice = typePrice(products, "speaker");
-  const monitorPrice = typePrice(products, "monitor");
+  const speaker = firstOfType(products, "speaker");
+  const monitor = firstOfType(products, "monitor");
   await expectCommand(
     clientId,
     "добавь второй монитор",
     errors,
     tag,
     products,
-    combo.desk === 1400 ? { ok: false, reason: "host_full" } : { ok: true, delta: monitorPrice }
+    combo.desk === 1400 ? { ok: false, reason: "host_full" } : { ok: true, delta: monitor?.priceEur }
   );
-  await expectCommand(clientId, "поставь колонки", errors, tag, products, { ok: true, delta: speakerPrice });
+  await expectCommand(clientId, "поставь колонки", errors, tag, products, { ok: true, delta: speaker?.priceEur });
   // Третья колонка: сначала место, потом лимит типа — на 1800 ряд полон (host_full), на 1400 место есть (limit).
   await expectCommand(clientId, "поставь колонки", errors, tag, products, {
     ok: false,

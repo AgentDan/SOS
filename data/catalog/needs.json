@@ -15,5 +15,45 @@
     "criteria": {
       "type": "chair"
     }
+  },
+  {
+    "id": "desk_top_any",
+    "name": "Любая столешница",
+    "why": "",
+    "criteria": {
+      "type": "desk_top"
+    }
+  },
+  {
+    "id": "monitor_main",
+    "name": "Монитор",
+    "why": "",
+    "criteria": {
+      "type": "monitor"
+    }
+  },
+  {
+    "id": "keyboard_main",
+    "name": "Клавиатура",
+    "why": "",
+    "criteria": {
+      "type": "keyboard"
+    }
+  },
+  {
+    "id": "mouse_main",
+    "name": "Мышь",
+    "why": "",
+    "criteria": {
+      "type": "mouse"
+    }
+  },
+  {
+    "id": "speakers_main",
+    "name": "Колонки",
+    "why": "",
+    "criteria": {
+      "type": "speaker"
+    }
   }
 ]

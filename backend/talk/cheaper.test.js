@@ -182,14 +182,19 @@ test("an apply refusal is returned as is", () => {
   assert.equal(missing.say.code, "not_found");
 });
 
-test("a host that still carries cargo is left alone", () => {
+test("a host that carries cargo can still get cheaper", () => {
   const board = scene(["TOP", "MON", "CHAIR"]);
   const result = runCheaper({
     catalog: {
+      types: [
+        { id: "top", canHostOn: [] },
+        { id: "monitor", canHostOn: ["top"] },
+        { id: "chair", canHostOn: [] }
+      ],
       products: [
         { sku: "TOP", type: "top", priceEur: 200 },
         { sku: "TOP-LO", type: "top", priceEur: 20 },
-        { sku: "MON", type: "monitor", priceEur: 100, placement: { hostSku: "TOP" } },
+        { sku: "MON", type: "monitor", priceEur: 100 },
         { sku: "CHAIR", type: "chair", priceEur: 80 },
         { sku: "CHAIR-LO", type: "chair", priceEur: 70 }
       ]
@@ -199,21 +204,25 @@ test("a host that still carries cargo is left alone", () => {
   assert.equal(result.ok, true);
   assert.deepEqual(result.facts, {
     topic: "cheaper",
-    sku: "CHAIR",
-    withSku: "CHAIR-LO",
-    savedEur: 10
+    sku: "TOP",
+    withSku: "TOP-LO",
+    savedEur: 180
   });
-  assert.deepEqual(board.calls, [{ op: "replace", sku: "CHAIR", withSku: "CHAIR-LO" }]);
+  assert.deepEqual(board.calls, [{ op: "replace", sku: "TOP", withSku: "TOP-LO" }]);
 });
 
 test("cargo on one copy still allows another copy of the host to get cheaper", () => {
   const board = scene(["TOP", "TOP", "MON"]);
   const result = runCheaper({
     catalog: {
+      types: [
+        { id: "top", canHostOn: [] },
+        { id: "monitor", canHostOn: ["top"] }
+      ],
       products: [
         { sku: "TOP", type: "top", priceEur: 200 },
         { sku: "TOP-LO", type: "top", priceEur: 150 },
-        { sku: "MON", type: "monitor", priceEur: 100, placement: { hostSku: "TOP" } }
+        { sku: "MON", type: "monitor", priceEur: 100 }
       ]
     },
     scene: board

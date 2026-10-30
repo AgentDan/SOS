@@ -3,6 +3,7 @@ import { deriveNeeds } from "../needs/derive-needs.js";
 import { applyConfirmation } from "../profile/apply-confirmation.js";
 import { loadProfile } from "../profile/profile-store.js";
 import { applyFact } from "../profile/apply-facts.js";
+import { pickScenario } from "../profile/pick-scenario.js";
 import { runCommand } from "../commands/commands.js";
 import { canReplace } from "../commands/placement.js";
 import { runTalk } from "../talk/talk.js";
@@ -37,6 +38,7 @@ function applyTurn({ questionnaire, catalog, profile, questionId, optionId }) {
   if (!checked.ok) return { status: checked.status, body: checked.body, profile };
 
   applyFact(profile, questionId, optionId);
+  profile.scenario = pickScenario(questionnaire, profile);
   profile.needs = deriveNeeds({ questionnaire, catalog, profile });
   return { status: 200, body: { ok: true }, profile };
 }

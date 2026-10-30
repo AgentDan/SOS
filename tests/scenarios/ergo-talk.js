@@ -7,17 +7,16 @@ import { buildResponse } from "../../backend/pipeline/response.js";
 
 const CLIENTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "runtime", "clients");
 
-// h_170 в анкете — 175 см. «Программирую» ставит столешницу 1800 на ножки.
-// Монитор и кресло добавляются командами. Стол на ножках 1000 мм высоковат.
+// h_170 в анкете — 175 см. «Программирую» ставит столешницу и монитор.
+// Кресло добавляется командой. Замечание — расстояние до монитора.
 const SETUP = [
   { questionId: "q_height", optionId: "h_170" },
-  { questionId: "q_work_type", optionId: "coding" },
-  { text: "добавь монитор" }
+  { questionId: "q_work_type", optionId: "coding" }
 ];
 
 const STEPS = [...SETUP, { text: "поставь кресло" }, { text: "удобно ли мне?" }];
 
-const DESK_REPLY = "Стол высоковат: 103 см, для вашего роста лучше около 73 см.";
+const DESK_REPLY = "Монитор далековато: 70 см от глаз, лучше около 60 см.";
 const NO_DATA_REPLY = "Пока не могу оценить: нужны рост, стол и кресло.";
 
 function respond(clientId, outcome) {
@@ -54,12 +53,12 @@ async function runErgoTalk() {
   try {
     const fitted = await play(withChair, STEPS, errors, "удобно ли мне?");
     const fittedText = fitted?.reply?.text ?? "";
-    if (!fittedText.startsWith("Стол высоковат")) {
+    if (!fittedText.startsWith("Монитор далековато")) {
       errors.push(`reply ${JSON.stringify(fittedText)} code ${fitted?.result?.say?.code ?? "none"}`);
     } else if (fittedText !== DESK_REPLY) {
       errors.push(`reply ${JSON.stringify(fittedText)}`);
     }
-    if (fitted?.result?.say?.code !== "ergo_desk_too_high") {
+    if (fitted?.result?.say?.code !== "ergo_monitor_too_far") {
       errors.push(`say.code ${fitted?.result?.say?.code ?? "none"}`);
     }
 

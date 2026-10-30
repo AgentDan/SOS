@@ -208,10 +208,12 @@ describe("runMessage ai", { concurrency: 1 }, () => {
       await withAiVoice(async () => {
         const desk = await runTurn({ clientId, questionId: "q_work_type", optionId: "coding" });
         assert.equal(desk.status, 200);
-        for (const text of ["добавь монитор", "добавь второй монитор"]) {
-          const added = await runMessage({ clientId, text, llm: async (request) => warmReply(request) });
-          assert.equal(added.result.ok, true, text);
-        }
+        const added = await runMessage({
+          clientId,
+          text: "добавь второй монитор",
+          llm: async (request) => warmReply(request)
+        });
+        assert.equal(added.result.ok, true, "добавь второй монитор");
         let seen;
         const outcome = await runMessage({
           clientId,

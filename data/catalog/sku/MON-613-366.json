@@ -3,21 +3,19 @@
   "type": "monitor",
   "movable": true,
   "name": "Monitor 27-inch",
-  "label": "монитор",
+  "label": "монитор 27",
   "dimensions": {
     "width": 613,
-    "depth": 205,
-    "height": 366
+    "depth": 212,
+    "height": 451
   },
   "priceEur": 249,
   "words": [
     "монитор",
-    "экран"
+    "экран",
+    "27"
   ],
   "media": {
     "model3d": "MON-613-366.glb"
-  },
-  "placement": {
-    "hostSku": "DESK-TOP-1400"
   }
 }

@@ -112,7 +112,7 @@ test("applyIntent answer without a new product leaves the scene unchanged", () =
     intent: {
       type: "answer",
       source: "button",
-      payload: { questionId: "q_work_type", optionId: "design" }
+      payload: { questionId: "q_hand", optionId: "right" }
     }
   });
 
@@ -321,20 +321,27 @@ test("runMessage cheaper replaces a dearer desk already on the scene", async () 
   });
   const outcome = await runMessage({ clientId, text: "покажи дешевле" });
   const products = readCatalog().products;
-  const price = (sku) => products.find((item) => item.sku === sku).priceEur;
+  const current = products.find((item) => item.sku === "DESK-TOP-1800");
+  let replacement = null;
+  for (const candidate of products) {
+    if (!candidate || candidate.type !== current.type || candidate.sku === current.sku) continue;
+    if (typeof candidate.priceEur !== "number" || candidate.priceEur >= current.priceEur) continue;
+    if (!replacement || candidate.priceEur > replacement.priceEur) replacement = candidate;
+  }
+  const savedEur = current.priceEur - replacement.priceEur;
   assert.equal(outcome.status, 200);
   assert.deepEqual(outcome.body, { ok: true });
   acceptedResult(outcome.result);
   assert.equal(outcome.result.ok, true);
   assert.equal(outcome.result.kind, "talk");
   assert.equal(outcome.result.say.code, "cheaper_done");
-  assert.equal(outcome.result.facts.sku, "DESK-TOP-1800");
-  assert.equal(outcome.result.facts.withSku, "DESK-TOP-1400");
-  assert.equal(outcome.result.facts.savedEur, price("DESK-TOP-1800") - price("DESK-TOP-1400"));
+  assert.equal(outcome.result.facts.sku, current.sku);
+  assert.equal(outcome.result.facts.withSku, replacement.sku);
+  assert.equal(outcome.result.facts.savedEur, savedEur);
   assert.deepEqual(outcome.profile.sceneEdits.at(-1), {
     op: "replace",
-    sku: "DESK-TOP-1800",
-    withSku: "DESK-TOP-1400"
+    sku: current.sku,
+    withSku: replacement.sku
   });
   assert.notEqual(outcome.result.reasonCode, "not_implemented");
 });

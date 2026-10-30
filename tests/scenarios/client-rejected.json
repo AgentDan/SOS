@@ -2,13 +2,15 @@
   "name": "клиент отказался от предложенного широкого стола",
   "steps": [
     { "questionId": "q_work_type", "optionId": "coding" },
-    { "questionId": "q_desk_width", "optionId": "wide" },
     { "questionId": "confirm_desk_top_wide", "optionId": "reject" }
   ],
   "expect": {
-    "needs": [],
+    "scenario": "home_office",
+    "needs": [
+      { "id": "monitor_main", "confidence": "high" }
+    ],
     "pendingConfirmations": [],
-    "skus": [],
+    "skus": ["MON-613-366"],
     "rejectedNeeds": ["desk_top_wide"],
     "status": "in_progress"
   }

@@ -1,0 +1,18 @@
+{
+  "name": "офис → любая столешница и периферия",
+  "steps": [
+    { "questionId": "q_work_type", "optionId": "office" }
+  ],
+  "expect": {
+    "scenario": "home_office",
+    "needs": [
+      { "id": "desk_top_any", "confidence": "medium" },
+      { "id": "monitor_main", "confidence": "high" },
+      { "id": "keyboard_main", "confidence": "high" },
+      { "id": "mouse_main", "confidence": "high" }
+    ],
+    "pendingConfirmations": ["desk_top_any"],
+    "skus": ["DESK-TOP-1400", "MON-613-366", "KB-440", "MOUSE-65"],
+    "status": "in_progress"
+  }
+}

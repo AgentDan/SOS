@@ -3,21 +3,19 @@
   "type": "monitor",
   "movable": true,
   "name": "Monitor 32-inch",
-  "label": "монитор",
+  "label": "монитор 32",
   "dimensions": {
     "width": 715,
-    "depth": 427,
-    "height": 213
+    "depth": 212,
+    "height": 427
   },
-  "priceEur": 320,
+  "priceEur": 349,
   "words": [
     "монитор",
-    "экран"
+    "экран",
+    "32"
   ],
   "media": {
     "model3d": "MON-715-427.glb"
-  },
-  "placement": {
-    "hostSku": "DESK-TOP-1400"
   }
 }

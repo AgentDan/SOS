@@ -1,0 +1,17 @@
+{
+  "name": "одна столешница на тип потребности",
+  "steps": [
+    { "questionId": "q_work_type", "optionId": "coding" },
+    { "questionId": "q_desk_width", "optionId": "narrow" }
+  ],
+  "expect": {
+    "scenario": "home_office",
+    "needs": [
+      { "id": "desk_top_any", "confidence": "high" },
+      { "id": "monitor_main", "confidence": "high" }
+    ],
+    "pendingConfirmations": [],
+    "skus": ["DESK-TOP-1400", "MON-613-366"],
+    "status": "in_progress"
+  }
+}

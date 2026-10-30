@@ -120,13 +120,15 @@ test("need criteria type must exist in catalog types", () => {
 
 test("inference resultNeed must exist in catalog needs", () => {
   const data = validPair();
-  data.questionnaire.draft.inference[0].resultNeed = "missing_need";
+  const rule = data.questionnaire.draft.inference[0];
+  const id = rule.id;
+  rule.resultNeed = "missing_need";
   assert.throws(
     () => validateDialogData(data),
     (err) =>
       err instanceof Error &&
-      /questionnaire: inference "inf_wide_desk" resultNeed "missing_need" does not exist in catalog\.draft\.needs/.test(
-        err.message
+      err.message.includes(
+        `questionnaire: inference "${id}" resultNeed "missing_need" does not exist in catalog.draft.needs`
       )
   );
 });

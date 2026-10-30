@@ -21,14 +21,36 @@ function copiesOf(skus, sku) {
   return skus.filter((item) => item === sku).length;
 }
 
-function hostsCargo(catalog, sku, skus) {
-  return skus.some((item) => findProduct(catalog, item)?.placement?.hostSku === sku);
+function catalogTypes(catalog) {
+  const types = catalog?.types ?? catalog?.draft?.types ?? [];
+  return Array.isArray(types) ? types : [];
 }
 
-function lastSupport(catalog, sku, skus) {
+function findType(catalog, typeId) {
+  return catalogTypes(catalog).find((type) => type?.id === typeId);
+}
+
+function hostsCargo(catalog, sku, skus) {
+  const hostType = findProduct(catalog, sku)?.type;
+  if (typeof hostType !== "string" || hostType.length === 0) return false;
+  return skus.some((item) => {
+    const cargoType = findProduct(catalog, item)?.type;
+    if (typeof cargoType !== "string") return false;
+    const type = findType(catalog, cargoType);
+    return Array.isArray(type?.canHostOn) && type.canHostOn.includes(hostType);
+  });
+}
+
+function lastSupport(catalog, sku, skus, withSku) {
   if (copiesOf(skus, sku) > 1) return false;
   const product = findProduct(catalog, sku);
-  return product?.alwaysPresent === true || hostsCargo(catalog, sku, skus);
+  if (product?.alwaysPresent === true) return true;
+  if (!hostsCargo(catalog, sku, skus)) return false;
+  if (typeof withSku === "string" && withSku.length > 0) {
+    const next = findProduct(catalog, withSku);
+    if (next && product && next.type === product.type) return false;
+  }
+  return true;
 }
 
 function succeed(catalog, profile, change, before) {
@@ -70,7 +92,9 @@ function applySceneChange({ catalog, profile, change, before }) {
   if (op === "replace") {
     if (!findProduct(catalog, change.withSku)) return failed("unknown_sku", start);
     if (!start.includes(change.sku)) return failed("not_found", start);
-    if (lastSupport(catalog, change.sku, start)) return failed("cannot_remove_support", start);
+    if (lastSupport(catalog, change.sku, start, change.withSku)) {
+      return failed("cannot_remove_support", start);
+    }
     return succeed(catalog, profile, change, start);
   }
 

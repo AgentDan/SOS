@@ -252,6 +252,50 @@ function validateQuestionnaire(questionnaire, errors) {
       }
     }
   }
+
+  const scenarioRules = draft.scenarioRules;
+  if (!Array.isArray(scenarioRules)) {
+    errors.push("questionnaire: missing \"scenarioRules\" array");
+  } else {
+    scenarioRules.forEach((rule, index) => {
+      const label = `scenarioRules[${index}]`;
+      const questionId = rule && rule.when && rule.when.questionId;
+      const optionId = rule && rule.when && rule.when.optionId;
+      const scenario = rule && rule.scenario;
+
+      if (isBlank(questionId)) {
+        errors.push(`questionnaire: ${label} is missing required field "when.questionId"`);
+      } else if (!questionsById.has(questionId)) {
+        errors.push(`questionnaire: ${label} references unknown question "${questionId}"`);
+      } else if (isBlank(optionId)) {
+        errors.push(`questionnaire: ${label} is missing required field "when.optionId"`);
+      } else {
+        const options = Array.isArray(questionsById.get(questionId).options)
+          ? questionsById.get(questionId).options
+          : [];
+        const exists = options.some((option) => option && option.id === optionId);
+        if (!exists) {
+          errors.push(
+            `questionnaire: ${label} references unknown option "${optionId}" in "${questionId}"`
+          );
+        }
+      }
+
+      if (isBlank(scenario)) {
+        errors.push(`questionnaire: ${label} is missing required field "scenario"`);
+      } else if (!scenarioIds.has(scenario)) {
+        errors.push(`questionnaire: ${label} references unknown scenario "${scenario}"`);
+      }
+    });
+  }
+
+  if (isBlank(draft.defaultScenario)) {
+    errors.push("questionnaire: missing \"defaultScenario\"");
+  } else if (!scenarioIds.has(draft.defaultScenario)) {
+    errors.push(
+      `questionnaire: defaultScenario "${draft.defaultScenario}" is not a known scenario`
+    );
+  }
 }
 
 export { validateQuestionnaire };

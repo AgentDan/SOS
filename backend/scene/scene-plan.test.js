@@ -132,16 +132,17 @@ test("computeScenePlan without sceneEdits matches the needs-only plan", () => {
   assert.equal(skus.includes("CHAIR-460"), false);
 });
 
-test("accessories stay out of needs and remain when a command added them", () => {
+test("accessory needs stay off the scene until they are resolved or a command adds them", () => {
   const catalog = loadCatalog();
   const products = catalog.draft.products;
   for (const type of ["keyboard", "mouse", "speaker"]) {
     const items = products.filter((product) => product.type === type);
     assert.ok(items.length > 0);
     for (const item of items) assert.notEqual(item.alwaysPresent, true);
-  }
-  for (const need of catalog.draft.needs) {
-    assert.equal(["keyboard", "mouse", "speaker"].includes(need.criteria?.type), false);
+    assert.equal(
+      catalog.draft.needs.some((need) => need.criteria?.type === type),
+      true
+    );
   }
   const planned = computeScenePlan(catalog, {
     needs: [
@@ -163,6 +164,20 @@ test("accessories stay out of needs and remain when a command added them", () =>
   assert.ok(kept.includes("KB-440"));
   assert.ok(kept.includes("MOUSE-65"));
   assert.ok(kept.includes("SPK-100"));
+});
+
+test("the questionnaire monitor is one copy and an add makes the second", () => {
+  const catalog = loadCatalog();
+  const monitor = catalog.draft.products.find((product) => product.type === "monitor");
+  const planned = computeScenePlan(catalog, {
+    needs: [{ id: "monitor_main", resolvedSku: monitor.sku }]
+  });
+  assert.equal(planned.filter((sku) => sku === monitor.sku).length, 1);
+  const second = computeScenePlan(catalog, {
+    needs: [{ id: "monitor_main", resolvedSku: monitor.sku }],
+    sceneEdits: [{ op: "add", sku: monitor.sku }]
+  });
+  assert.equal(second.filter((sku) => sku === monitor.sku).length, 2);
 });
 
 test("computeScenePlan applies sceneEdits after the needs plan", () => {

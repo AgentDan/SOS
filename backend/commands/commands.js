@@ -78,6 +78,14 @@ function runRemove({ sku, sceneSkus, apply, catalog, action }) {
 }
 
 function runReplace({ sku, withSku, sceneSkus, apply, catalog, action }) {
+  let replacement = withSku;
+  if (replacement === undefined && !sceneSkus.includes(sku)) {
+    const named = findProduct(catalog, sku);
+    const hasSameType =
+      named && sceneSkus.some((item) => findProduct(catalog, item)?.type === named.type);
+    if (hasSameType) replacement = sku;
+  }
+
   const target = resolveTarget(sku, sceneSkus, catalog);
   if (!target) return refused("not_found", factsOf(action, sku), { sku });
 
@@ -90,7 +98,6 @@ function runReplace({ sku, withSku, sceneSkus, apply, catalog, action }) {
   }
 
   const remaining = withoutCopy(sceneSkus, target);
-  let replacement = withSku;
   if (replacement !== undefined) {
     if (typeof replacement !== "string" || !findProduct(catalog, replacement)) {
       return refused("unknown_sku", factsOf(action, target, { withSku: replacement }), {

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readCatalog, readQuestionnaire } from "../config/load.js";
+import { resolveNeed } from "../needs/matching.js";
 import { applyTurn } from "./orchestrator.js";
 
 const questionnaire = readQuestionnaire();
@@ -45,8 +46,10 @@ test("a stated answer updates fields and needs", () => {
     source: "stated",
     confidence: "high"
   });
+  assert.equal(result.profile.scenario, "home_office");
   assert.deepEqual(result.profile.needs, [
-    { id: "desk_top_wide", confidence: "medium", resolvedSku: "DESK-TOP-1800" }
+    { id: "desk_top_wide", confidence: "medium", resolvedSku: resolveNeed(catalog, "desk_top_wide") },
+    { id: "monitor_main", confidence: "high", resolvedSku: resolveNeed(catalog, "monitor_main") }
   ]);
 });
 
@@ -81,7 +84,9 @@ test("reject drops the pending need", () => {
   assert.equal(result.status, 200);
   assert.deepEqual(result.body, { ok: true });
   assert.deepEqual(result.profile.rejectedNeeds, ["desk_top_wide"]);
-  assert.deepEqual(result.profile.needs, []);
+  assert.deepEqual(result.profile.needs, [
+    { id: "monitor_main", confidence: "high", resolvedSku: resolveNeed(catalog, "monitor_main") }
+  ]);
 });
 
 test("unknown question is rejected", () => {

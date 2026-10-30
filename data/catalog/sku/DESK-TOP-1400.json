@@ -1,23 +1,22 @@
 {
   "sku": "DESK-TOP-1400",
   "type": "desk_top",
-  "movable": true,
-  "name": "Desk top 1400x700",
+  "movable": false,
+  "name": "Desk top 1400x800",
   "label": "стол 140",
   "dimensions": {
     "width": 1400,
-    "depth": 700,
-    "height": 30
+    "depth": 800,
+    "height": 40
   },
   "priceEur": 189,
   "words": [
     "стол",
-    "столешниц"
+    "столешниц",
+    "1400",
+    "140"
   ],
   "media": {
     "model3d": "DESK-TOP-1400.glb"
-  },
-  "placement": {
-    "hostSku": "DESK-LEGS-1400"
   }
 }

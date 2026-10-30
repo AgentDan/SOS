@@ -37,6 +37,8 @@
  *    слово стоит в тексте раньше остальных. На одной позиции сначала более
  *    длинная фраза, затем размер из words рядом с названием, затем более
  *    ранний товар. Нет артикула — поля sku нет.
+ *    Для replace, если упоминаний товара два и они разные, payload.withSku —
+ *    второе. Одинаковые упоминания withSku не ставят.
  *    direction, amount и unit скелет не заполняет.
  * 4. Слово из topics.cheaper → talk { topic: "cheaper" }.
  * 5. Слово из topics.ergo → talk { topic: "ergo" }.
@@ -354,6 +356,9 @@ function fromText(text, vocabulary) {
     }
     const payload = { action: command.action };
     if (hits.length > 0) payload.sku = hits[0].sku;
+    if (command.action === "replace" && hits.length >= 2 && hits[0].sku !== hits[1].sku) {
+      payload.withSku = hits[1].sku;
+    }
     return { type: "command", source: "text", payload };
   }
 

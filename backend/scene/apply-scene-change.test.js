@@ -225,7 +225,7 @@ test("remove of a host that still carries cargo fails", () => {
   assert.ok(result.skus.includes("MON-613-366"));
 });
 
-test("replace of a host that still carries cargo fails", () => {
+test("replace of a desk that carries cargo with another desk is ok", () => {
   const catalog = loadCatalog();
   const profile = emptyProfile();
   applySceneChange({ catalog, profile, change: { op: "add", sku: "DESK-TOP-1400" } });
@@ -235,9 +235,11 @@ test("replace of a host that still carries cargo fails", () => {
     profile,
     change: { op: "replace", sku: "DESK-TOP-1400", withSku: "DESK-TOP-1800" }
   });
-  assert.equal(result.reasonCode, "cannot_remove_support");
-  assert.ok(result.skus.includes("DESK-TOP-1400"));
-  assert.ok(!result.skus.includes("DESK-TOP-1800"));
+  assert.equal(result.ok, true);
+  assert.equal(result.reasonCode, null);
+  assert.ok(result.skus.includes("DESK-TOP-1800"));
+  assert.equal(result.skus.includes("DESK-TOP-1400"), false);
+  assert.ok(result.skus.includes("MON-613-366"));
 });
 
 test("a second copy of a host can leave while cargo stays on the first", () => {

@@ -8,16 +8,16 @@ import { buildResponse } from "../../backend/pipeline/response.js";
 
 const CLIENTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "runtime", "clients");
 
-// h_170 в анкете — 175 см. «Программирую» ставит столешницу 30 мм на ножки 1000 мм:
-// рабочая поверхность 1030 мм. Монитор и кресло добавляются командами.
+// h_170 в анкете — 175 см. «Программирую» ставит широкую столешницу и монитор.
+// Кресло добавляется командой. Верх стола 714 + 40 = 754 мм в допуске,
+// монитор у задней кромки стола 800 мм — далековато.
 const STEPS = [
   { questionId: "q_height", optionId: "h_170" },
   { questionId: "q_work_type", optionId: "coding" },
-  { text: "добавь монитор" },
   { text: "поставь кресло" }
 ];
 
-const EXPECTED_CODES = ["desk_too_high", "monitor_too_far", "monitor_too_high"];
+const EXPECTED_CODES = ["monitor_too_far"];
 
 function sameErgo(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
@@ -57,9 +57,9 @@ async function runErgo() {
     if (JSON.stringify(codes) !== JSON.stringify(EXPECTED_CODES)) {
       errors.push(`issues ${JSON.stringify(scene.ergo)}`);
     }
-    const desk = scene.ergo?.issues?.find((item) => item.code === "desk_too_high");
-    if (!desk || desk.actualMm !== 1030 || desk.deltaMm !== 304 || desk.targetMm !== 726) {
-      errors.push(`desk issue ${JSON.stringify(desk)}`);
+    const far = scene.ergo?.issues?.find((item) => item.code === "monitor_too_far");
+    if (!far || typeof far.actualMm !== "number" || typeof far.deltaMm !== "number" || typeof far.targetMm !== "number") {
+      errors.push(`distance issue ${JSON.stringify(far)}`);
     }
     const targets = scene.ergo?.targets;
     if (

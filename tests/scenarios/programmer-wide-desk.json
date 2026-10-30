@@ -5,11 +5,13 @@
     { "questionId": "q_desk_width", "optionId": "wide" }
   ],
   "expect": {
+    "scenario": "home_office",
     "needs": [
-      { "id": "desk_top_wide", "confidence": "medium" }
+      { "id": "desk_top_wide", "confidence": "high" },
+      { "id": "monitor_main", "confidence": "high" }
     ],
-    "pendingConfirmations": ["desk_top_wide"],
-    "skus": ["DESK-TOP-1800"],
+    "pendingConfirmations": [],
+    "skus": ["DESK-TOP-1800", "MON-613-366"],
     "status": "in_progress"
   }
 }

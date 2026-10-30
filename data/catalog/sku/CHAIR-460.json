@@ -5,9 +5,9 @@
   "name": "Chair 460x520",
   "label": "кресло",
   "dimensions": {
-    "width": 460,
-    "depth": 520,
-    "height": 900
+    "width": 550,
+    "depth": 610,
+    "height": 1040
   },
   "priceEur": 129,
   "words": [

@@ -32,11 +32,6 @@ function nearestCheaper(products, current, price) {
   return replacement;
 }
 
-function carriesCargo(sku, bySku, sceneSkus) {
-  if (sceneSkus.filter((item) => item === sku).length > 1) return false;
-  return sceneSkus.some((item) => bySku.get(item)?.placement?.hostSku === sku);
-}
-
 function runCheaper({ catalog, scene, canReplace }) {
   const products = catalogProducts(catalog);
   const sceneSkus = Array.isArray(scene?.skus) ? scene.skus : [];
@@ -51,7 +46,6 @@ function runCheaper({ catalog, scene, canReplace }) {
   for (const sku of sceneSkus) {
     const current = bySku.get(sku);
     if (!current || current.alwaysPresent === true || current.type === "person") continue;
-    if (carriesCargo(sku, bySku, sceneSkus)) continue;
     if (typeof current.type !== "string" || current.type.length === 0) continue;
     const price = priceOf(current);
     if (price === null) continue;

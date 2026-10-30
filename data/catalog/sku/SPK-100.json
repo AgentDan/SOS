@@ -16,8 +16,5 @@
   ],
   "media": {
     "model3d": "SPK-100.glb"
-  },
-  "placement": {
-    "hostSku": "DESK-TOP-1400"
   }
 }

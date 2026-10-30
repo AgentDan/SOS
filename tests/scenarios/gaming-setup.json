@@ -1,0 +1,20 @@
+{
+  "name": "игра → игровая станция",
+  "steps": [
+    { "questionId": "q_work_type", "optionId": "gaming" },
+    { "questionId": "q_speakers", "optionId": "yes" }
+  ],
+  "expect": {
+    "scenario": "gaming_setup",
+    "needs": [
+      { "id": "desk_top_wide", "confidence": "high" },
+      { "id": "monitor_main", "confidence": "high" },
+      { "id": "keyboard_main", "confidence": "high" },
+      { "id": "mouse_main", "confidence": "high" },
+      { "id": "speakers_main", "confidence": "high" }
+    ],
+    "pendingConfirmations": [],
+    "skus": ["DESK-TOP-1800", "MON-613-366", "KB-440", "MOUSE-65", "SPK-100"],
+    "status": "in_progress"
+  }
+}
