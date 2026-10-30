@@ -48,9 +48,9 @@ function Shell({ nav = [], activeId, onGo, onLogout, title, topRight, children }
         </button>
       </aside>
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 flex min-h-12 items-center justify-between gap-3 border-b border-line bg-paper px-8 py-2 max-[900px]:px-4 narrow:static">
-          <p className="m-0 text-sm text-muted">{title}</p>
-          {topRight ? <div className="flex items-center gap-2">{topRight}</div> : null}
+        <header className="sticky top-0 z-20 flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-line bg-paper px-8 py-2 max-[900px]:px-4 narrow:static">
+          <p className="m-0 min-w-0 text-sm text-muted">{title}</p>
+          {topRight ? <div className="flex max-w-full flex-wrap items-center justify-end gap-2">{topRight}</div> : null}
         </header>
         <main
           id="content"

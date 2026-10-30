@@ -29,4 +29,4 @@ function labelSections(list) {
     }));
 }
 
-export { sectionLabel, labelSections };
+export { SECTIONS, sectionLabel, labelSections };

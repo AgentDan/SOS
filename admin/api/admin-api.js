@@ -9,9 +9,28 @@ function adminApiError(status, body) {
 }
 
 let onUnauthorized = () => {};
+const writeListeners = new Set();
 
 function setUnauthorizedHandler(handler) {
   onUnauthorized = typeof handler === "function" ? handler : () => {};
+}
+
+function onWrite(listener) {
+  if (typeof listener !== "function") return () => {};
+  writeListeners.add(listener);
+  return () => {
+    writeListeners.delete(listener);
+  };
+}
+
+function notifyWrite() {
+  for (const listener of [...writeListeners]) {
+    try {
+      listener();
+    } catch {
+      // Подписчик не должен срывать уже успешный запрос.
+    }
+  }
 }
 
 function isAbort(err) {
@@ -60,6 +79,7 @@ async function request(path, { method = "GET", body, rawBody, contentType, signa
     throw adminApiError(401, payload);
   }
   if (!response.ok) throw adminApiError(response.status, payload);
+  if (String(method).toUpperCase() !== "GET") notifyWrite();
   return payload;
 }
 
@@ -124,6 +144,7 @@ function uploadModel(sku, data, options) {
 
 export {
   setUnauthorizedHandler,
+  onWrite,
   isAbort,
   listSections,
   getSection,

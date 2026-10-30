@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isAbort, listSections, setUnauthorizedHandler } from "./api/admin-api.js";
+import { isAbort, listSections, onWrite, setUnauthorizedHandler } from "./api/admin-api.js";
 import { loginFailure } from "./lib/messages.js";
 import { NAV_LEGACY, NAV_MAIN, activeNavId, screenTitle } from "./lib/nav.js";
+import { sectionCountText, unpublished } from "./lib/versions.js";
 import { clearToken, getToken } from "./session/token.js";
 import { confirmAction } from "./components/confirm.jsx";
 import { Loading } from "./components/Loading.jsx";
 import { AppFrame } from "./ui/AppFrame.jsx";
+import { Btn } from "./ui/Btn.jsx";
+import { Pill } from "./ui/Pill.jsx";
 import { Shell } from "./ui/Shell.jsx";
-import { Journal } from "./screens/Journal.jsx";
 import { Knobs } from "./screens/Knobs.jsx";
 import { Login } from "./screens/Login.jsx";
 import { LinkMap } from "./screens/LinkMap.jsx";
@@ -15,6 +17,7 @@ import { Models } from "./screens/Models.jsx";
 import { Overview } from "./screens/Overview.jsx";
 import { SectionEditor } from "./screens/SectionEditor.jsx";
 import { Sections } from "./screens/Sections.jsx";
+import { Versions } from "./screens/Versions.jsx";
 
 const LEAVE_TEXT = "Есть несохранённые правки. Уйти без сохранения?";
 const NAV = [
@@ -61,11 +64,34 @@ function documentTitle(route) {
   return `Админка — ${screenTitle(route)}`;
 }
 
+function PublishStatus({ list, onOpen }) {
+  const pending = Array.isArray(list) ? unpublished(list) : null;
+  return (
+    <>
+      {pending == null ? null : pending.length === 0 ? (
+        <Pill tone="ok">Всё опубликовано</Pill>
+      ) : (
+        <Pill tone="warn">
+          <span title={pending.map((item) => item.label).join(", ")}>
+            {`Не опубликовано: ${sectionCountText(pending.length)}`}
+          </span>
+        </Pill>
+      )}
+      <Btn kind="primary" className="whitespace-nowrap" onClick={onOpen}>
+        Проверить и опубликовать
+      </Btn>
+    </>
+  );
+}
+
 function App() {
   const [mode, setMode] = useState(() => (getToken() ? "boot" : "login"));
   const [loginMessage, setLoginMessage] = useState("");
   const [route, setRoute] = useState(parseHash);
   const [visit, setVisit] = useState(0);
+  const [sectionList, setSectionList] = useState(null);
+  const [writeTick, setWriteTick] = useState(0);
+  const [wakeTick, setWakeTick] = useState(0);
   const dirtyRef = useRef(false);
   const modeRef = useRef(mode);
   const hashRef = useRef(location.hash);
@@ -159,6 +185,44 @@ function App() {
     if (mode === "app") document.title = documentTitle(route);
   }, [mode, route]);
 
+  useEffect(() => {
+    if (mode !== "app") return undefined;
+    return onWrite(() => setWriteTick((value) => value + 1));
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "app") return undefined;
+    function onWake() {
+      if (document.visibilityState === "hidden") return;
+      setWakeTick((value) => value + 1);
+    }
+    window.addEventListener("focus", onWake);
+    document.addEventListener("visibilitychange", onWake);
+    return () => {
+      window.removeEventListener("focus", onWake);
+      document.removeEventListener("visibilitychange", onWake);
+    };
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "app") return undefined;
+    const controller = new AbortController();
+    let alive = true;
+    listSections({ signal: controller.signal }).then(
+      (value) => {
+        if (!alive) return;
+        setSectionList(Array.isArray(value) ? value : []);
+      },
+      (err) => {
+        if (!alive || isAbort(err)) return;
+      }
+    );
+    return () => {
+      alive = false;
+      controller.abort();
+    };
+  }, [mode, route, writeTick, wakeTick]);
+
   function requestGo(nextRoute) {
     const next = hrefFor(nextRoute);
     if (dirtyRef.current && !confirmAction(LEAVE_TEXT)) return;
@@ -217,11 +281,26 @@ function App() {
   else if (route.screen === "knobs") screen = <Knobs key={screenKey} openSection={openSection} />;
   else if (route.screen === "models") screen = <Models key={screenKey} onDirty={markDirty} />;
   else if (route.screen === "map") screen = <LinkMap key={screenKey} openSection={openSection} />;
-  else if (route.screen === "journal") screen = <Journal key={screenKey} />;
+  else if (route.screen === "journal") screen = <Versions key={screenKey} />;
 
   return (
     <AppFrame>
-      <Shell nav={NAV} activeId={activeNavId(route)} onGo={goNav} onLogout={logout} title={screenTitle(route)}>
+      <Shell
+        nav={NAV}
+        activeId={activeNavId(route)}
+        onGo={goNav}
+        onLogout={logout}
+        title={screenTitle(route)}
+        topRight={
+          <PublishStatus
+            list={sectionList}
+            onOpen={() => {
+              if (route.screen === "journal") return;
+              requestGo({ screen: "journal" });
+            }}
+          />
+        }
+      >
         {screen}
       </Shell>
     </AppFrame>

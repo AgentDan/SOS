@@ -1,6 +1,7 @@
 /* Переключатель вкладок. Стрелки влево и вправо меняют выбранную вкладку. */
-function Segmented({ label, items = [], value, onChange, className = "" }) {
+function Segmented({ label, items = [], value, onChange, className = "", disabled = false }) {
   function onKeyDown(event) {
+    if (disabled) return;
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     const tabs = [...event.currentTarget.querySelectorAll('[role="tab"]')];
     const index = tabs.indexOf(document.activeElement);
@@ -27,13 +28,16 @@ function Segmented({ label, items = [], value, onChange, className = "" }) {
             type="button"
             role="tab"
             aria-selected={selected}
-            tabIndex={selected ? 0 : -1}
+            tabIndex={disabled ? -1 : selected ? 0 : -1}
+            disabled={disabled}
             className={
               selected
-                ? "cursor-pointer rounded-md bg-surface px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                : "cursor-pointer rounded-md bg-transparent px-3 py-1.5 text-sm text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                ? "cursor-pointer rounded-md bg-surface px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
+                : "cursor-pointer rounded-md bg-transparent px-3 py-1.5 text-sm text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
             }
-            onClick={() => onChange(item.id)}
+            onClick={() => {
+              if (!disabled) onChange(item.id);
+            }}
           >
             {item.text}
           </button>
