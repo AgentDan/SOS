@@ -103,6 +103,10 @@ function productData(product) {
   if (typeof product.priceEur === "number" && Number.isFinite(product.priceEur)) data.priceEur = product.priceEur;
   if (typeof product.movable === "boolean") data.movable = product.movable;
   if (isRecord(product.media) && typeof product.media.model3d === "string") data.model3d = product.media.model3d;
+  if (Array.isArray(product.words)) {
+    const words = product.words.filter((item) => typeof item === "string" && item.length > 0);
+    if (words.length > 0) data.words = words;
+  }
   return data;
 }
 
@@ -608,4 +612,73 @@ function diffMaps(published, draft) {
   };
 }
 
-export { buildLinkMap, diffMaps, describeLink, linkKey };
+const CHAIN_KINDS = new Set(["applies", "has-option", "infers", "needs-type", "matches", "is-type", "hosts-on"]);
+const SCENARIO_LINK_KINDS = new Set(["picks-scenario", "default-scenario"]);
+
+function walk(start, next) {
+  const seen = new Set();
+  if (typeof start !== "string" || start.length === 0) return seen;
+  const stack = [start];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (seen.has(current)) continue;
+    seen.add(current);
+    for (const item of next.get(current) || []) {
+      if (typeof item === "string" && item.length > 0) stack.push(item);
+    }
+  }
+  return seen;
+}
+
+function chainOf(nodeId, links) {
+  const start = typeof nodeId === "string" ? nodeId : "";
+  const forward = new Map();
+  const backward = new Map();
+  for (const link of asArray(links)) {
+    if (!isRecord(link) || !CHAIN_KINDS.has(link.kind)) continue;
+    if (typeof link.from !== "string" || typeof link.to !== "string") continue;
+    if (!forward.has(link.from)) forward.set(link.from, []);
+    forward.get(link.from).push(link.to);
+    if (!backward.has(link.to)) backward.set(link.to, []);
+    backward.get(link.to).push(link.from);
+  }
+  const down = walk(start, forward);
+  const up = walk(start, backward);
+  const ids = new Set([...down, ...up]);
+  const linkKeys = new Set();
+  const selectedScenario = start.startsWith("scenario:") ? start : "";
+  for (const link of asArray(links)) {
+    if (!isRecord(link) || typeof link.from !== "string" || typeof link.to !== "string") continue;
+    const both = ids.has(link.from) && ids.has(link.to);
+    const toSelected = Boolean(selectedScenario) && link.to === selectedScenario;
+    if (CHAIN_KINDS.has(link.kind)) {
+      if (both) linkKeys.add(linkKey(link));
+    } else if (SCENARIO_LINK_KINDS.has(link.kind) && (both || toSelected)) {
+      linkKeys.add(linkKey(link));
+    }
+  }
+  return { down, up, ids, linkKeys };
+}
+
+function onlyHere(scenarioId, nodes, links) {
+  const raw = typeof scenarioId === "string" ? scenarioId : "";
+  const nodeId = raw.startsWith("scenario:") ? raw : raw ? `scenario:${raw}` : "";
+  const scenarios = [];
+  for (const node of asArray(nodes)) {
+    if (!isRecord(node) || node.kind !== "scenario" || typeof node.id !== "string" || node.id.length === 0) continue;
+    if (!scenarios.includes(node.id)) scenarios.push(node.id);
+  }
+  const mine = chainOf(nodeId, links).ids;
+  const others = new Set();
+  for (const other of scenarios) {
+    if (other === nodeId) continue;
+    for (const item of chainOf(other, links).ids) others.add(item);
+  }
+  const only = new Set();
+  for (const item of mine) {
+    if (!others.has(item)) only.add(item);
+  }
+  return only;
+}
+
+export { buildLinkMap, diffMaps, describeLink, linkKey, chainOf, onlyHere };

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildLinkMap, describeLink, diffMaps, linkKey } from "./link-map.js";
+import { buildLinkMap, chainOf, describeLink, diffMaps, linkKey, onlyHere } from "./link-map.js";
 
 function brief(link) {
   return [link.kind, link.from, link.to, link.label];
@@ -320,4 +320,128 @@ test("key order in data does not mark a node changed", () => {
   );
   assert.equal(changed.nodes.get("need:a"), "changed");
   assert.equal(changed.counts.nodesChanged, 1);
+});
+
+function sorted(set) {
+  return [...set].sort();
+}
+
+test("chainOf walks forward and backward separately", () => {
+  const links = [
+    { kind: "applies", from: "scenario:home", to: "question:q", label: "" },
+    { kind: "has-option", from: "question:q", to: "option:q:play", label: "" },
+    { kind: "infers", from: "option:q:play", to: "need:monitor", label: "high" }
+  ];
+  const mid = chainOf("question:q", links);
+  assert.deepEqual(sorted(mid.down), ["need:monitor", "option:q:play", "question:q"]);
+  assert.deepEqual(sorted(mid.up), ["question:q", "scenario:home"]);
+  assert.equal(mid.ids.has("scenario:home"), true);
+  assert.equal(mid.down.has("scenario:home"), false);
+  assert.equal(mid.up.has("need:monitor"), false);
+});
+
+test("scenario cycle does not pull the other scenario", () => {
+  const links = [
+    { kind: "applies", from: "scenario:home", to: "question:q", label: "" },
+    { kind: "applies", from: "scenario:game", to: "question:spk", label: "" },
+    { kind: "has-option", from: "question:q", to: "option:q:play", label: "" },
+    { kind: "has-option", from: "question:spk", to: "option:spk:yes", label: "" },
+    { kind: "infers", from: "option:q:play", to: "need:monitor", label: "high" },
+    { kind: "infers", from: "option:spk:yes", to: "need:spk", label: "high" },
+    { kind: "picks-scenario", from: "option:q:play", to: "scenario:game", label: "" },
+    { kind: "default-scenario", from: "question:q", to: "scenario:home", label: "по умолчанию" },
+    { kind: "needs-type", from: "need:monitor", to: "type:monitor", label: "" },
+    { kind: "matches", from: "need:spk", to: "product:SPK", label: "" }
+  ];
+  const nodes = [
+    { id: "scenario:home", kind: "scenario" },
+    { id: "scenario:game", kind: "scenario" },
+    { id: "question:q", kind: "question" },
+    { id: "question:spk", kind: "question" },
+    { id: "option:q:play", kind: "option" },
+    { id: "option:spk:yes", kind: "option" },
+    { id: "need:monitor", kind: "need" },
+    { id: "need:spk", kind: "need" },
+    { id: "type:monitor", kind: "type" },
+    { id: "product:SPK", kind: "product" }
+  ];
+
+  const home = chainOf("scenario:home", links);
+  assert.equal(home.ids.has("scenario:game"), false);
+  assert.equal(home.ids.has("question:spk"), false);
+  assert.equal(home.ids.has("need:spk"), false);
+  assert.equal(home.linkKeys.has(linkKey(links.find((link) => link.kind === "default-scenario"))), true);
+  assert.equal(home.linkKeys.has(linkKey(links.find((link) => link.kind === "picks-scenario"))), false);
+
+  const game = chainOf("scenario:game", links);
+  assert.equal(game.ids.has("scenario:home"), false);
+  assert.equal(game.ids.has("question:q"), false);
+  assert.equal(game.ids.has("question:spk"), true);
+  assert.equal(game.linkKeys.has(linkKey(links.find((link) => link.kind === "picks-scenario"))), true);
+  assert.equal(game.ids.has("option:q:play"), false);
+
+  const lonely = chainOf("scenario:alone", [
+    { kind: "picks-scenario", from: "option:q:play", to: "scenario:alone", label: "" },
+    { kind: "applies", from: "scenario:home", to: "question:q", label: "" }
+  ]);
+  assert.deepEqual(sorted(lonely.ids), ["scenario:alone"]);
+  assert.equal(lonely.linkKeys.size, 1);
+
+  const speakers = chainOf("question:spk", links);
+  assert.equal(speakers.ids.has("scenario:game"), true);
+  assert.equal(speakers.ids.has("scenario:home"), false);
+
+  const onlyGame = onlyHere("scenario:game", nodes, links);
+  assert.equal(onlyGame.has("question:spk"), true);
+  assert.equal(onlyGame.has("need:spk"), true);
+  assert.equal(onlyGame.has("product:SPK"), true);
+  assert.equal(onlyGame.has("question:q"), false);
+  assert.equal(onlyGame.has("scenario:home"), false);
+
+  const onlyHome = onlyHere("home", nodes, links);
+  assert.equal(onlyHome.has("scenario:home"), true);
+  assert.equal(onlyHome.has("question:q"), true);
+  assert.equal(onlyHome.has("question:spk"), false);
+  assert.equal(onlyHome.has("need:spk"), false);
+});
+
+test("onlyHere compares a scenario with every other scenario", () => {
+  const links = [
+    { kind: "applies", from: "scenario:a", to: "question:shared", label: "" },
+    { kind: "applies", from: "scenario:b", to: "question:shared", label: "" },
+    { kind: "applies", from: "scenario:c", to: "question:shared", label: "" },
+    { kind: "applies", from: "scenario:a", to: "question:only-a", label: "" }
+  ];
+  const nodes = [
+    { id: "scenario:a", kind: "scenario" },
+    { id: "scenario:b", kind: "scenario" },
+    { id: "scenario:c", kind: "scenario" }
+  ];
+  const only = onlyHere("scenario:a", nodes, links);
+  assert.equal(only.has("question:only-a"), true);
+  assert.equal(only.has("question:shared"), false);
+  assert.equal(only.has("scenario:b"), false);
+  assert.equal(only.has("scenario:c"), false);
+});
+
+test("chainOf and onlyHere tolerate empty and unknown input", () => {
+  assert.doesNotThrow(() => {
+    chainOf(null, null);
+    chainOf(undefined, {});
+    chainOf("scenario:missing", []);
+    chainOf("scenario:missing", [null, "bad", { kind: "applies" }, { from: 1, to: 2, kind: "applies" }]);
+    onlyHere(null, null, null);
+    onlyHere("scenario:missing", {}, []);
+    onlyHere("", [{ id: "scenario:a", kind: "scenario" }], null);
+  });
+  const empty = chainOf(null, null);
+  assert.equal(empty.ids.size, 0);
+  assert.equal(empty.down.size, 0);
+  assert.equal(empty.up.size, 0);
+  assert.equal(empty.linkKeys.size, 0);
+  const unknown = chainOf("scenario:missing", []);
+  assert.deepEqual(sorted(unknown.ids), ["scenario:missing"]);
+  assert.equal(unknown.linkKeys.size, 0);
+  assert.equal(onlyHere(null, null, null).size, 0);
+  assert.equal(onlyHere("nope", [], [{ kind: "applies", from: "scenario:nope", to: "question:q", label: "" }]).has("question:q"), true);
 });
