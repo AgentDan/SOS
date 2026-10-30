@@ -39,14 +39,6 @@
     ]
   },
   {
-    "id": "MON-715-427",
-    "label": "MON-715-427",
-    "canBeHost": false,
-    "canHostOn": [
-      "desk_top"
-    ]
-  },
-  {
     "id": "chair",
     "label": "Chair",
     "canBeHost": false,
