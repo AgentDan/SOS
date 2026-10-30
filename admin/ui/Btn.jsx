@@ -7,7 +7,8 @@ function Btn({
   onClick,
   type = "button",
   className = "",
-  children
+  children,
+  ...rest
 }) {
   const look =
     kind === "primary"
@@ -18,6 +19,7 @@ function Btn({
   const pad = size === "sm" ? "px-2.5 py-1 text-sm" : "px-3 py-2 text-base";
   return (
     <button
+      {...rest}
       type={type}
       className={`cursor-pointer rounded-lg font-medium focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${pad} ${look} ${className}`}
       disabled={busy || disabled}

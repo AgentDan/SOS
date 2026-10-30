@@ -4,7 +4,7 @@ const NAV_MAIN = [
   { id: "home", text: "Главная", route: { screen: "overview" } },
   { id: "catalog", text: "Каталог", route: { screen: "catalog" } },
   { id: "questionnaire", text: "Анкета", route: { screen: "section", name: "questionnaire" } },
-  { id: "dialog", text: "Диалог", route: { screen: "section", name: "consultant" } },
+  { id: "dialog", text: "Диалог", route: { screen: "dialog", name: "consultant" } },
   { id: "ergonomics", text: "Эргономика", route: { screen: "section", name: "ergonomics" } },
   { id: "map", text: "Карта связей", route: { screen: "map" } },
   { id: "journal", text: "Версии и журнал", route: { screen: "journal" } }
@@ -23,18 +23,24 @@ const SCREEN_TITLES = {
   models: "Модели",
   map: "Карта связей",
   journal: "Версии и журнал",
-  catalog: "Каталог"
+  catalog: "Каталог",
+  dialog: "Диалог"
 };
 
-const DIALOG_SECTIONS = new Set(["consultant", "director", "sales", "commands", "ai-rules"]);
+const DIALOG_SECTIONS = ["consultant", "director", "sales", "commands", "ai-rules"];
+
+function dialogSectionName(name) {
+  return DIALOG_SECTIONS.includes(name) ? name : "consultant";
+}
 
 function activeNavId(route) {
   if (!route || typeof route !== "object") return "sections";
+  if (route.screen === "dialog") return "dialog";
   if (route.screen === "section") {
     if (route.name === "catalog" || route.name === "questionnaire" || route.name === "ergonomics") {
       return route.name;
     }
-    if (DIALOG_SECTIONS.has(route.name)) return "dialog";
+    if (DIALOG_SECTIONS.includes(route.name)) return "dialog";
     return "sections";
   }
   if (route.screen === "overview") return "home";
@@ -57,4 +63,4 @@ function screenTitle(route) {
   return SCREEN_TITLES[route.screen] || "Главная";
 }
 
-export { NAV_MAIN, NAV_LEGACY, activeNavId, screenTitle };
+export { NAV_MAIN, NAV_LEGACY, activeNavId, dialogSectionName, screenTitle };

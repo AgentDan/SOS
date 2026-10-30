@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isAbort, listSections, onWrite, setUnauthorizedHandler } from "./api/admin-api.js";
 import { loginFailure } from "./lib/messages.js";
-import { NAV_LEGACY, NAV_MAIN, activeNavId, screenTitle } from "./lib/nav.js";
+import { NAV_LEGACY, NAV_MAIN, activeNavId, dialogSectionName, screenTitle } from "./lib/nav.js";
 import { sectionCountText, unpublished } from "./lib/versions.js";
 import { clearToken, getToken } from "./session/token.js";
 import { confirmAction } from "./components/confirm.jsx";
@@ -11,6 +11,7 @@ import { Btn } from "./ui/Btn.jsx";
 import { Pill } from "./ui/Pill.jsx";
 import { Shell } from "./ui/Shell.jsx";
 import { Catalog } from "./screens/Catalog.jsx";
+import { Dialog } from "./screens/Dialog.jsx";
 import { Knobs } from "./screens/Knobs.jsx";
 import { Login } from "./screens/Login.jsx";
 import { LinkMap } from "./screens/LinkMap.jsx";
@@ -57,6 +58,15 @@ function parseHash() {
       create
     };
   }
+  if (head === "dialog") {
+    let decoded = rest[0] || "";
+    try {
+      decoded = decoded ? decodeURIComponent(decoded) : "";
+    } catch {
+      decoded = rest[0] || "";
+    }
+    return { screen: "dialog", name: dialogSectionName(decoded) };
+  }
   return { screen: "overview" };
 }
 
@@ -68,6 +78,7 @@ function hrefFor(route) {
   if (route.screen === "models") return "#/models";
   if (route.screen === "map") return "#/map";
   if (route.screen === "journal") return "#/journal";
+  if (route.screen === "dialog") return `#/dialog/${encodeURIComponent(dialogSectionName(route.name))}`;
   if (route.screen === "catalog") {
     const params = new URLSearchParams();
     if (route.tab === "types" || route.tab === "needs") params.set("tab", route.tab);
@@ -157,8 +168,15 @@ function App() {
         return;
       }
       dirtyRef.current = false;
+      const next = parseHash();
       hashRef.current = location.hash;
-      setRoute(parseHash());
+      setRoute(next);
+      const canonical = hrefFor(next);
+      if (next.screen === "dialog" && location.hash !== canonical) {
+        suppressRef.current = true;
+        hashRef.current = canonical;
+        location.hash = canonical;
+      }
     }
     window.addEventListener("beforeunload", onBeforeUnload);
     window.addEventListener("hashchange", onHashChange);
@@ -201,6 +219,12 @@ function App() {
     hashRef.current = location.hash;
     const next = parseHash();
     setRoute(next);
+    const canonical = hrefFor(next);
+    if (next.screen === "dialog" && location.hash !== canonical) {
+      suppressRef.current = true;
+      hashRef.current = canonical;
+      location.hash = canonical;
+    }
     document.title = documentTitle(next);
   }, [mode]);
 
@@ -307,6 +331,8 @@ function App() {
   else if (route.screen === "journal") screen = <Versions key={screenKey} />;
   else if (route.screen === "catalog") {
     screen = <Catalog key={screenKey} route={route} onDirty={markDirty} requestGo={requestGo} />;
+  } else if (route.screen === "dialog") {
+    screen = <Dialog key={screenKey} name={route.name} onDirty={markDirty} />;
   }
 
   return (

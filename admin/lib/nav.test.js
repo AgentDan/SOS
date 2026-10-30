@@ -12,6 +12,9 @@ const PAIRS = [
   [{ screen: "section", name: "sales" }, "dialog"],
   [{ screen: "section", name: "commands" }, "dialog"],
   [{ screen: "section", name: "ai-rules" }, "dialog"],
+  [{ screen: "dialog", name: "consultant" }, "dialog"],
+  [{ screen: "dialog", name: "director" }, "dialog"],
+  [{ screen: "dialog" }, "dialog"],
   [{ screen: "section", name: "ergonomics" }, "ergonomics"],
   [{ screen: "map" }, "map"],
   [{ screen: "journal" }, "journal"],
@@ -46,8 +49,17 @@ test("every nav item has a unique id, a route and text", () => {
   }
 });
 
+test("dialog opens the consultant tab and ergonomics stays a section", () => {
+  const dialog = NAV_MAIN.find((item) => item.id === "dialog");
+  const ergonomics = NAV_MAIN.find((item) => item.id === "ergonomics");
+  assert.deepEqual(dialog.route, { screen: "dialog", name: "consultant" });
+  assert.deepEqual(ergonomics.route, { screen: "section", name: "ergonomics" });
+});
+
 test("screenTitle names screens and uses section labels", () => {
   assert.equal(screenTitle({ screen: "overview" }), "Главная");
+  assert.equal(screenTitle({ screen: "dialog" }), "Диалог");
+  assert.equal(screenTitle({ screen: "dialog", name: "director" }), "Диалог");
   assert.equal(screenTitle({ screen: "sections" }), "Разделы");
   assert.equal(screenTitle({ screen: "knobs" }), "Ручки");
   assert.equal(screenTitle({ screen: "models" }), "Модели");
