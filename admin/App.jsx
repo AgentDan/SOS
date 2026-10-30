@@ -8,6 +8,7 @@ import { Loading } from "./components/Loading.jsx";
 import { Journal } from "./screens/Journal.jsx";
 import { Knobs } from "./screens/Knobs.jsx";
 import { Login } from "./screens/Login.jsx";
+import { LinkMap } from "./screens/LinkMap.jsx";
 import { Models } from "./screens/Models.jsx";
 import { Overview } from "./screens/Overview.jsx";
 import { SectionEditor } from "./screens/SectionEditor.jsx";
@@ -19,6 +20,7 @@ const NAV = [
   ["sections", "Разделы"],
   ["knobs", "Ручки"],
   ["models", "Модели"],
+  ["map", "Карта связей"],
   ["journal", "Журнал"]
 ];
 
@@ -38,6 +40,7 @@ function parseHash() {
   if (head === "sections") return { screen: "sections" };
   if (head === "knobs") return { screen: "knobs" };
   if (head === "models") return { screen: "models" };
+  if (head === "map") return { screen: "map" };
   if (head === "journal") return { screen: "journal" };
   return { screen: "overview" };
 }
@@ -47,6 +50,7 @@ function hrefFor(route) {
   if (route.screen === "sections") return "#/sections";
   if (route.screen === "knobs") return "#/knobs";
   if (route.screen === "models") return "#/models";
+  if (route.screen === "map") return "#/map";
   if (route.screen === "journal") return "#/journal";
   return "#/overview";
 }
@@ -57,7 +61,14 @@ function sameHash(hash, next) {
 
 function titleFor(route) {
   if (route.screen === "section") return `Админка — ${sectionLabel(route.name)}`;
-  const names = { overview: "Обзор", sections: "Разделы", knobs: "Ручки", models: "Модели", journal: "Журнал" };
+  const names = {
+    overview: "Обзор",
+    sections: "Разделы",
+    knobs: "Ручки",
+    models: "Модели",
+    map: "Карта связей",
+    journal: "Журнал"
+  };
   return `Админка — ${names[route.screen] || "Обзор"}`;
 }
 
@@ -212,6 +223,7 @@ function App() {
   else if (route.screen === "sections") screen = <Sections key={screenKey} openSection={openSection} />;
   else if (route.screen === "knobs") screen = <Knobs key={screenKey} openSection={openSection} />;
   else if (route.screen === "models") screen = <Models key={screenKey} onDirty={markDirty} />;
+  else if (route.screen === "map") screen = <LinkMap key={screenKey} openSection={openSection} />;
   else if (route.screen === "journal") screen = <Journal key={screenKey} />;
 
   return (
