@@ -220,6 +220,13 @@ test("спина finds the back question and its answers", () => {
   assert.deepEqual(short, ids);
 });
 
+test("ergonomics search opens the form screen", () => {
+  const entry = SCREEN_ENTRIES.find((item) => item.id === "screen:ergonomics");
+  assert.deepEqual(entry.route, { screen: "ergonomics" });
+  const found = searchIndex(buildSearchIndex({}), "эргономика");
+  assert.equal(found[0].items[0].route.screen, "ergonomics");
+});
+
 test("kind titles name every search group", () => {
   assert.equal(kindTitle("screen"), "Экраны");
   assert.equal(kindTitle("product"), "Товары");

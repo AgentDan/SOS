@@ -11,7 +11,7 @@ function routeForSection(name) {
   if (name === "catalog") return { screen: "catalog" };
   if (name === "questionnaire") return { screen: "questionnaire" };
   if (DIALOG.has(name)) return { screen: "dialog", name };
-  if (name === "ergonomics") return { screen: "section", name: "ergonomics" };
+  if (name === "ergonomics") return { screen: "ergonomics" };
   return { screen: "section", name };
 }
 

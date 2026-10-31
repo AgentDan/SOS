@@ -923,7 +923,7 @@ function ProductTable({ rows, nodesById, mode, nodeStatus, check, highlight }) {
   );
 }
 
-function NodeCard({ node, mode, model, linkStatus, groups, onPick, onOpen }) {
+function NodeCard({ node, mode, model, linkStatus, groups, onPick, onOpen, onOpenNode }) {
   const publishedNode = model.publishedById.get(node.id) || null;
   const draftNode = model.draftById.get(node.id) || null;
   const status = mode === "diff" ? model.diff.nodes.get(node.id) || "same" : null;
@@ -994,10 +994,10 @@ function NodeCard({ node, mode, model, linkStatus, groups, onPick, onOpen }) {
       <button
         type="button"
         className={`cursor-pointer rounded-lg border border-[#ddd4c6] bg-[#fffdf8] px-3 py-2 text-[14px] dark:border-[#343b46] dark:bg-[#1e232b] ${FOCUS}`}
-        aria-label={`Открыть в разделе «${sectionLabel(section)}»`}
-        onClick={() => onOpen(section)}
+        aria-label={typeof onOpenNode === "function" ? "Открыть в редакторе" : `Открыть в разделе «${sectionLabel(section)}»`}
+        onClick={() => (typeof onOpenNode === "function" ? onOpenNode(node) : onOpen(section))}
       >
-        Открыть в разделе
+        {typeof onOpenNode === "function" ? "Открыть в редакторе" : "Открыть в разделе"}
       </button>
     </div>
   );
@@ -1736,7 +1736,7 @@ function SourceSwitch({ source, onChange }) {
   );
 }
 
-function LinkMap({ openSection = () => {} }) {
+function LinkMap({ openSection = () => {}, openNode }) {
   const [view, setView] = useState({ kind: "loading" });
   const [mode, setMode] = useState("published");
   const [presentation, setPresentation] = useState("graph");
@@ -2209,7 +2209,7 @@ function LinkMap({ openSection = () => {} }) {
             </button>
           </div>
           {pinnedNode ? (
-            <NodeCard node={pinnedNode} mode={mode} model={model} linkStatus={linkStatus} groups={groups} onPick={pick} onOpen={openSection} />
+            <NodeCard node={pinnedNode} mode={mode} model={model} linkStatus={linkStatus} groups={groups} onPick={pick} onOpen={openSection} onOpenNode={openNode} />
           ) : (
             <div className="grid gap-4">
               <p className="m-0 text-[15px]">Нажмите на узел, чтобы увидеть цепочку</p>

@@ -5,7 +5,7 @@ const NAV_MAIN = [
   { id: "catalog", text: "Каталог", route: { screen: "catalog" } },
   { id: "questionnaire", text: "Анкета", route: { screen: "questionnaire" } },
   { id: "dialog", text: "Диалог", route: { screen: "dialog", name: "consultant" } },
-  { id: "ergonomics", text: "Эргономика", route: { screen: "section", name: "ergonomics" } },
+  { id: "ergonomics", text: "Эргономика", route: { screen: "ergonomics" } },
   { id: "map", text: "Карта связей", route: { screen: "map" } },
   { id: "journal", text: "Версии и журнал", route: { screen: "journal" } }
 ];
@@ -25,7 +25,8 @@ const SCREEN_TITLES = {
   journal: "Версии и журнал",
   catalog: "Каталог",
   dialog: "Диалог",
-  questionnaire: "Анкета"
+  questionnaire: "Анкета",
+  ergonomics: "Эргономика"
 };
 
 const DIALOG_SECTIONS = ["consultant", "director", "sales", "commands", "ai-rules"];
@@ -38,6 +39,7 @@ function activeNavId(route) {
   if (!route || typeof route !== "object") return "sections";
   if (route.screen === "questionnaire") return "questionnaire";
   if (route.screen === "dialog") return "dialog";
+  if (route.screen === "ergonomics") return "ergonomics";
   if (route.screen === "section") {
     if (route.name === "catalog" || route.name === "questionnaire" || route.name === "ergonomics") {
       return route.name;

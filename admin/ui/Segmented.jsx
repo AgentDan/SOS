@@ -1,5 +1,5 @@
 /* Переключатель вкладок. Стрелки влево и вправо меняют выбранную вкладку. */
-function Segmented({ label, items = [], value, onChange, className = "", disabled = false }) {
+function Segmented({ label, items = [], value, onChange, className = "", disabled = false, describedBy }) {
   function onKeyDown(event) {
     if (disabled) return;
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
@@ -17,6 +17,7 @@ function Segmented({ label, items = [], value, onChange, className = "", disable
     <div
       role="tablist"
       aria-label={label}
+      aria-describedby={describedBy || undefined}
       className={`inline-flex flex-wrap gap-0.5 rounded-lg border border-line bg-side p-0.5 ${className}`}
       onKeyDown={onKeyDown}
     >

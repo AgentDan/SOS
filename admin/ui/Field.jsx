@@ -1,7 +1,8 @@
 import { cloneElement, isValidElement, useId } from "react";
 
-/* Подпись и подсказка, связанные с полем ввода. */
-function Field({ label, hint, className = "", children }) {
+/* Подпись и подсказка, связанные с полем ввода.
+   before — ползунок слева от поля, между подписью и самим полем. */
+function Field({ label, hint, before = null, className = "", children }) {
   const autoId = useId();
   const childId = isValidElement(children) && children.props.id ? children.props.id : autoId;
   const hintId = hint ? `${autoId}-hint` : undefined;
@@ -20,7 +21,14 @@ function Field({ label, hint, className = "", children }) {
       <label htmlFor={childId} className="text-sm font-medium text-ink">
         {label}
       </label>
-      {control}
+      {before ? (
+        <div className="grid grid-cols-[minmax(0,1fr)_7rem] items-center gap-3">
+          {before}
+          {control}
+        </div>
+      ) : (
+        control
+      )}
       {hint ? (
         <p id={hintId} className="m-0 text-sm text-muted">
           {hint}

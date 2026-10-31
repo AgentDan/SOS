@@ -10,7 +10,7 @@ const SCREEN_ENTRIES = [
   { id: "screen:dialog:sales", kind: "screen", label: "Диалог: Продажа", route: { screen: "dialog", name: "sales" } },
   { id: "screen:dialog:commands", kind: "screen", label: "Диалог: Команды сцены", route: { screen: "dialog", name: "commands" } },
   { id: "screen:dialog:ai-rules", kind: "screen", label: "Диалог: Правила AI", route: { screen: "dialog", name: "ai-rules" } },
-  { id: "screen:ergonomics", kind: "screen", label: "Эргономика", route: { screen: "section", name: "ergonomics" } },
+  { id: "screen:ergonomics", kind: "screen", label: "Эргономика", route: { screen: "ergonomics" } },
   { id: "screen:map", kind: "screen", label: "Карта связей", route: { screen: "map" } },
   { id: "screen:journal", kind: "screen", label: "Версии и журнал", route: { screen: "journal" } }
 ];

@@ -19,7 +19,7 @@ test("routeForSection opens the new screens and keeps unknown sections", () => {
   assert.deepEqual(routeForSection("sales"), { screen: "dialog", name: "sales" });
   assert.deepEqual(routeForSection("commands"), { screen: "dialog", name: "commands" });
   assert.deepEqual(routeForSection("ai-rules"), { screen: "dialog", name: "ai-rules" });
-  assert.deepEqual(routeForSection("ergonomics"), { screen: "section", name: "ergonomics" });
+  assert.deepEqual(routeForSection("ergonomics"), { screen: "ergonomics" });
   assert.deepEqual(routeForSection("archive"), { screen: "section", name: "archive" });
   assert.deepEqual(routeForSection(""), { screen: "section", name: "" });
 });

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSection, isAbort, listSections, onWrite, setUnauthorizedHandler } from "./api/admin-api.js";
 import { loginFailure } from "./lib/messages.js";
 import { NAV_LEGACY, NAV_MAIN, activeNavId, dialogSectionName, screenTitle } from "./lib/nav.js";
-import { buildSearchIndex, kindTitle, searchIndex } from "./lib/search.js";
+import { buildSearchIndex, kindTitle, routeForNode, searchIndex } from "./lib/search.js";
 import { sectionCountText, unpublished } from "./lib/versions.js";
 import { clearToken, getToken } from "./session/token.js";
 import { confirmAction } from "./components/confirm.jsx";
@@ -14,6 +14,7 @@ import { SearchPalette } from "./ui/SearchPalette.jsx";
 import { Shell } from "./ui/Shell.jsx";
 import { Catalog } from "./screens/Catalog.jsx";
 import { Dialog } from "./screens/Dialog.jsx";
+import { Ergonomics } from "./screens/Ergonomics.jsx";
 import { Home } from "./screens/Home.jsx";
 import { Knobs } from "./screens/Knobs.jsx";
 import { Login } from "./screens/Login.jsx";
@@ -52,6 +53,7 @@ function parseHash(hash) {
   if (head === "models") return { screen: "models" };
   if (head === "map") return { screen: "map" };
   if (head === "journal") return { screen: "journal" };
+  if (head === "ergonomics") return { screen: "ergonomics" };
   if (head === "catalog") {
     const tab = params.get("tab");
     const create = params.get("create") === "1";
@@ -91,6 +93,7 @@ function hrefFor(route) {
   if (route.screen === "models") return "#/models";
   if (route.screen === "map") return "#/map";
   if (route.screen === "journal") return "#/journal";
+  if (route.screen === "ergonomics") return "#/ergonomics";
   if (route.screen === "dialog") return `#/dialog/${encodeURIComponent(dialogSectionName(route.name))}`;
   if (route.screen === "catalog") {
     const params = new URLSearchParams();
@@ -428,6 +431,17 @@ function App() {
     requestGo({ screen: "section", name: sectionName });
   }
 
+  function openNode(node) {
+    const next = routeForNode(node);
+    if (next) {
+      requestGo(next);
+      return;
+    }
+    const kind = node && typeof node === "object" ? node.kind : "";
+    const section = kind === "product" || kind === "need" || kind === "type" ? "catalog" : "questionnaire";
+    openSection(section);
+  }
+
   function goNav(id) {
     const item = NAV.find((entry) => entry.id === id);
     if (item) requestGo(item.route);
@@ -461,7 +475,8 @@ function App() {
   else if (route.screen === "sections") screen = <Sections key={screenKey} openSection={openSection} />;
   else if (route.screen === "knobs") screen = <Knobs key={screenKey} openSection={openSection} />;
   else if (route.screen === "models") screen = <Models key={screenKey} onDirty={markDirty} />;
-  else if (route.screen === "map") screen = <LinkMap key={screenKey} openSection={openSection} />;
+  else if (route.screen === "map") screen = <LinkMap key={screenKey} openSection={openSection} openNode={openNode} />;
+  else if (route.screen === "ergonomics") screen = <Ergonomics key={screenKey} onDirty={markDirty} requestGo={requestGo} />;
   else if (route.screen === "journal") screen = <Versions key={screenKey} />;
   else if (route.screen === "catalog") {
     screen = <Catalog key={screenKey} route={route} onDirty={markDirty} requestGo={requestGo} />;
