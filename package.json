@@ -29,7 +29,6 @@
     "@dimforge/rapier3d-compat": "^0.14.0",
     "concurrently": "^10.0.5",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

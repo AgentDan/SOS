@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { NAV_LEGACY, NAV_MAIN, activeNavId, screenTitle } from "./nav.js";
+import { NAV_MAIN, NAV_MORE, activeNavId, screenTitle } from "./nav.js";
 
 const PAIRS = [
   [{ screen: "overview" }, "home"],
@@ -22,8 +22,7 @@ const PAIRS = [
   [{ screen: "map" }, "map"],
   [{ screen: "journal" }, "journal"],
   [{ screen: "sections" }, "sections"],
-  [{ screen: "knobs" }, "knobs"],
-  [{ screen: "models" }, "models"]
+  [{ screen: "knobs" }, "knobs"]
 ];
 
 test("activeNavId maps each menu route to its item", () => {
@@ -38,11 +37,13 @@ test("an unknown section highlights the sections item", () => {
 });
 
 test("every nav item has a unique id, a route and text", () => {
-  const items = [...NAV_MAIN, ...NAV_LEGACY];
+  const items = [...NAV_MAIN, ...NAV_MORE];
   const ids = items.map((item) => item.id);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(NAV_MAIN.length, 7);
-  assert.equal(NAV_LEGACY.length, 3);
+  assert.equal(NAV_MORE.length, 2);
+  assert.equal(NAV_MORE[0].text, "Ручки продукта");
+  assert.equal(NAV_MORE[1].text, "Разделы (JSON)");
   for (const item of items) {
     assert.equal(typeof item.text, "string");
     assert.ok(item.text.length > 0);
@@ -65,9 +66,8 @@ test("screenTitle names screens and uses section labels", () => {
   assert.equal(screenTitle({ screen: "overview" }), "Главная");
   assert.equal(screenTitle({ screen: "dialog" }), "Диалог");
   assert.equal(screenTitle({ screen: "dialog", name: "director" }), "Диалог");
-  assert.equal(screenTitle({ screen: "sections" }), "Разделы");
-  assert.equal(screenTitle({ screen: "knobs" }), "Ручки");
-  assert.equal(screenTitle({ screen: "models" }), "Модели");
+  assert.equal(screenTitle({ screen: "sections" }), "Разделы (JSON)");
+  assert.equal(screenTitle({ screen: "knobs" }), "Ручки продукта");
   assert.equal(screenTitle({ screen: "map" }), "Карта связей");
   assert.equal(screenTitle({ screen: "journal" }), "Версии и журнал");
   assert.equal(screenTitle({ screen: "catalog" }), "Каталог");

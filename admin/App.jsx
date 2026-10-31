@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSection, isAbort, listSections, onWrite, setUnauthorizedHandler } from "./api/admin-api.js";
 import { loginFailure } from "./lib/messages.js";
-import { NAV_LEGACY, NAV_MAIN, activeNavId, dialogSectionName, screenTitle } from "./lib/nav.js";
+import { NAV_MAIN, NAV_MORE, activeNavId, screenTitle } from "./lib/nav.js";
+import { hrefFor, parseHash, sameHash, staysOnQuestionnaire } from "./lib/routes.js";
 import { buildSearchIndex, kindTitle, routeForNode, searchIndex } from "./lib/search.js";
 import { sectionCountText, unpublished } from "./lib/versions.js";
 import { clearToken, getToken } from "./session/token.js";
@@ -12,117 +13,24 @@ import { Btn } from "./ui/Btn.jsx";
 import { Pill } from "./ui/Pill.jsx";
 import { SearchPalette } from "./ui/SearchPalette.jsx";
 import { Shell } from "./ui/Shell.jsx";
-import { Catalog } from "./screens/Catalog.jsx";
-import { Dialog } from "./screens/Dialog.jsx";
-import { Ergonomics } from "./screens/Ergonomics.jsx";
-import { Home } from "./screens/Home.jsx";
-import { Knobs } from "./screens/Knobs.jsx";
 import { Login } from "./screens/Login.jsx";
-import { LinkMap } from "./screens/LinkMap.jsx";
-import { Models } from "./screens/Models.jsx";
-import { Questionnaire } from "./screens/Questionnaire.jsx";
-import { SectionEditor } from "./screens/SectionEditor.jsx";
-import { Sections } from "./screens/Sections.jsx";
-import { Versions } from "./screens/Versions.jsx";
+
+const Catalog = lazy(() => import("./screens/Catalog.jsx").then((m) => ({ default: m.Catalog })));
+const Dialog = lazy(() => import("./screens/Dialog.jsx").then((m) => ({ default: m.Dialog })));
+const Ergonomics = lazy(() => import("./screens/Ergonomics.jsx").then((m) => ({ default: m.Ergonomics })));
+const Home = lazy(() => import("./screens/Home.jsx").then((m) => ({ default: m.Home })));
+const Knobs = lazy(() => import("./screens/Knobs.jsx").then((m) => ({ default: m.Knobs })));
+const LinkMap = lazy(() => import("./screens/LinkMap.jsx").then((m) => ({ default: m.LinkMap })));
+const Questionnaire = lazy(() => import("./screens/Questionnaire.jsx").then((m) => ({ default: m.Questionnaire })));
+const SectionEditor = lazy(() => import("./screens/SectionEditor.jsx").then((m) => ({ default: m.SectionEditor })));
+const Sections = lazy(() => import("./screens/Sections.jsx").then((m) => ({ default: m.Sections })));
+const Versions = lazy(() => import("./screens/Versions.jsx").then((m) => ({ default: m.Versions })));
 
 const LEAVE_TEXT = "Есть несохранённые правки. Уйти без сохранения?";
 const NAV = [
   ...NAV_MAIN.map((item) => ({ ...item, group: "main" })),
-  ...NAV_LEGACY.map((item) => ({ ...item, group: "legacy" }))
+  ...NAV_MORE.map((item) => ({ ...item, group: "more" }))
 ];
-
-function parseHash(hash) {
-  const source = typeof hash === "string" ? hash : location.hash;
-  const raw = source.replace(/^#\/?/, "");
-  const cut = raw.indexOf("?");
-  const path = cut >= 0 ? raw.slice(0, cut) : raw;
-  const params = new URLSearchParams(cut >= 0 ? raw.slice(cut + 1) : "");
-  const [head, ...rest] = path.split("/");
-  const name = rest.join("/");
-  if (head === "sections" && name) {
-    let decoded = name;
-    try {
-      decoded = decodeURIComponent(name);
-    } catch {
-      decoded = name;
-    }
-    return { screen: "section", name: decoded };
-  }
-  if (head === "sections") return { screen: "sections" };
-  if (head === "knobs") return { screen: "knobs" };
-  if (head === "models") return { screen: "models" };
-  if (head === "map") return { screen: "map" };
-  if (head === "journal") return { screen: "journal" };
-  if (head === "ergonomics") return { screen: "ergonomics" };
-  if (head === "catalog") {
-    const tab = params.get("tab");
-    const create = params.get("create") === "1";
-    const named = tab === "types" || tab === "needs" ? tab : "products";
-    const item = named === "products" ? "" : params.get("item") || "";
-    return {
-      screen: "catalog",
-      tab: named,
-      sku: create ? "" : params.get("sku") || "",
-      create,
-      item
-    };
-  }
-  if (head === "dialog") {
-    let decoded = rest[0] || "";
-    try {
-      decoded = decoded ? decodeURIComponent(decoded) : "";
-    } catch {
-      decoded = rest[0] || "";
-    }
-    return { screen: "dialog", name: dialogSectionName(decoded) };
-  }
-  if (head === "questionnaire") {
-    const tab = params.get("tab");
-    const route = { screen: "questionnaire", q: params.get("q") || "" };
-    if (tab === "scenarios" || tab === "phases") route.tab = tab;
-    return route;
-  }
-  return { screen: "overview" };
-}
-
-function hrefFor(route) {
-  if (!route || typeof route !== "object") return "#/overview";
-  if (route.screen === "section") return `#/sections/${encodeURIComponent(route.name)}`;
-  if (route.screen === "sections") return "#/sections";
-  if (route.screen === "knobs") return "#/knobs";
-  if (route.screen === "models") return "#/models";
-  if (route.screen === "map") return "#/map";
-  if (route.screen === "journal") return "#/journal";
-  if (route.screen === "ergonomics") return "#/ergonomics";
-  if (route.screen === "dialog") return `#/dialog/${encodeURIComponent(dialogSectionName(route.name))}`;
-  if (route.screen === "catalog") {
-    const params = new URLSearchParams();
-    if (route.tab === "types" || route.tab === "needs") params.set("tab", route.tab);
-    if ((route.tab === "types" || route.tab === "needs") && typeof route.item === "string" && route.item.length > 0) {
-      params.set("item", route.item);
-    }
-    if (route.create) params.set("create", "1");
-    else if (route.sku) params.set("sku", route.sku);
-    const query = params.toString();
-    return query ? `#/catalog?${query}` : "#/catalog";
-  }
-  if (route.screen === "questionnaire") {
-    const params = new URLSearchParams();
-    if (route.q) params.set("q", route.q);
-    if (route.tab === "scenarios" || route.tab === "phases") params.set("tab", route.tab);
-    const query = params.toString();
-    return query ? `#/questionnaire?${query}` : "#/questionnaire";
-  }
-  return "#/overview";
-}
-
-function staysOnQuestionnaire(prevHash, nextHash) {
-  return parseHash(prevHash).screen === "questionnaire" && parseHash(nextHash).screen === "questionnaire";
-}
-
-function sameHash(hash, next) {
-  return hash === next || ((hash === "" || hash === "#") && next === "#/overview");
-}
 
 function documentTitle(route) {
   return `Админка — ${screenTitle(route)}`;
@@ -172,7 +80,7 @@ function SearchButton({ open = false, onClick }) {
 function App() {
   const [mode, setMode] = useState(() => (getToken() ? "boot" : "login"));
   const [loginMessage, setLoginMessage] = useState("");
-  const [route, setRoute] = useState(parseHash);
+  const [route, setRoute] = useState(() => parseHash(location.hash));
   const [visit, setVisit] = useState(0);
   const [sectionList, setSectionList] = useState(null);
   const [writeTick, setWriteTick] = useState(0);
@@ -262,7 +170,7 @@ function App() {
         return;
       }
       if (!stay) dirtyRef.current = false;
-      const next = parseHash();
+      const next = parseHash(location.hash);
       hashRef.current = location.hash;
       setRoute(next);
       const canonical = hrefFor(next);
@@ -311,7 +219,7 @@ function App() {
       location.hash = "#/overview";
     }
     hashRef.current = location.hash;
-    const next = parseHash();
+    const next = parseHash(location.hash);
     setRoute(next);
     const canonical = hrefFor(next);
     if (next.screen === "dialog" && location.hash !== canonical) {
@@ -411,7 +319,7 @@ function App() {
     if (!stay) dirtyRef.current = false;
     if (sameHash(location.hash, next)) {
       if (stay) return true;
-      setRoute(parseHash());
+      setRoute(parseHash(location.hash));
       setVisit((value) => value + 1);
       return true;
     }
@@ -474,7 +382,6 @@ function App() {
   if (route.screen === "section") screen = <SectionEditor key={screenKey} name={route.name} onDirty={markDirty} />;
   else if (route.screen === "sections") screen = <Sections key={screenKey} openSection={openSection} />;
   else if (route.screen === "knobs") screen = <Knobs key={screenKey} openSection={openSection} />;
-  else if (route.screen === "models") screen = <Models key={screenKey} onDirty={markDirty} />;
   else if (route.screen === "map") screen = <LinkMap key={screenKey} openSection={openSection} openNode={openNode} />;
   else if (route.screen === "ergonomics") screen = <Ergonomics key={screenKey} onDirty={markDirty} requestGo={requestGo} />;
   else if (route.screen === "journal") screen = <Versions key={screenKey} />;
@@ -513,7 +420,7 @@ function App() {
           />
         }
       >
-        {screen}
+        <Suspense fallback={<Loading />}>{screen}</Suspense>
       </Shell>
       {searchOpen ? (
         <SearchPalette

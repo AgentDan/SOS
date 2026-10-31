@@ -6,7 +6,7 @@ function ConfirmButton({ message, disabled = false, className, onConfirm, childr
   return (
     <button
       type="button"
-      className={`cursor-pointer rounded-lg border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e] ${className || ""}`}
+      className={`cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${className || ""}`}
       disabled={disabled}
       onClick={() => {
         const text = typeof message === "function" ? message() : message;

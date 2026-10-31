@@ -1,7 +1,6 @@
 import { summarizeProblems } from "./link-map.js";
+import { DIALOG_SECTIONS } from "./nav.js";
 import { routeForNode } from "./search.js";
-
-const DIALOG = new Set(["consultant", "director", "sales", "commands", "ai-rules"]);
 
 function isRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -10,7 +9,7 @@ function isRecord(value) {
 function routeForSection(name) {
   if (name === "catalog") return { screen: "catalog" };
   if (name === "questionnaire") return { screen: "questionnaire" };
-  if (DIALOG.has(name)) return { screen: "dialog", name };
+  if (DIALOG_SECTIONS.includes(name)) return { screen: "dialog", name };
   if (name === "ergonomics") return { screen: "ergonomics" };
   return { screen: "section", name };
 }

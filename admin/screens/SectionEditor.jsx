@@ -32,7 +32,7 @@ function Notice({ notice, working, onLoadLatest }) {
         <span>Раздел уже изменили в другом месте</span>
         <button
           type="button"
-          className="col-span-full w-full cursor-pointer rounded-lg border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
+          className="col-span-full w-full cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           disabled={working}
           onClick={onLoadLatest}
         >
@@ -47,7 +47,7 @@ function Notice({ notice, working, onLoadLatest }) {
 
 function HistoryTable({ history, working, rollbackMessage, onRollback }) {
   const rows = [...history].reverse();
-  if (rows.length === 0) return <p className="mt-0 mb-2 text-[#5e584e] dark:text-[#b7b0a4]">Истории пока нет</p>;
+  if (rows.length === 0) return <p className="mt-0 mb-2 text-muted">Истории пока нет</p>;
   return (
     <DataTable
       columns={[
@@ -321,7 +321,7 @@ function SectionEditor({ name, onDirty }) {
         <div>
           <h2 className="mt-0 mb-2.5 font-[650] leading-tight text-[1.15rem]">Черновик</h2>
           <textarea
-            className="min-h-[60vh] w-full resize-y overflow-auto rounded-lg border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] p-3 text-[13px] leading-[1.45] whitespace-pre font-[Consolas,ui-monospace,monospace] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
+            className="min-h-[60vh] w-full resize-y overflow-auto rounded-lg border border-line bg-surface p-3 text-[13px] leading-[1.45] whitespace-pre font-[Consolas,ui-monospace,monospace] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             wrap="off"
             spellCheck={false}
             autoCapitalize="off"
@@ -334,7 +334,7 @@ function SectionEditor({ name, onDirty }) {
             }}
           />
         </div>
-        <div className="flex flex-col gap-2 rounded-xl border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] p-3.5">
+        <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-3.5">
           <h2 className="mt-0 mb-2.5 font-[650] leading-tight text-[1.15rem]">Версии</h2>
           <p className="mt-0 mb-2">{`Черновик: версия ${draftVersion}`}</p>
           <p className="mt-0 mb-2">{`Опубликовано: версия ${publishedVersion}`}</p>
@@ -342,14 +342,14 @@ function SectionEditor({ name, onDirty }) {
             className={
               differs
                 ? "mt-1.5 mb-2 inline-block rounded-[999px] bg-[#fff4d6] dark:bg-[#3a2e12] px-2 py-0.5 text-[0.86rem] text-[#7a4e00] dark:text-[#ffe0a3] before:font-bold before:content-['!_']"
-                : "mt-0 mb-2 text-[#5e584e] dark:text-[#b7b0a4]"
+                : "mt-0 mb-2 text-muted"
             }
           >
             {differs ? "Черновик отличается от опубликованного" : "Черновик совпадает с опубликованным"}
           </p>
           <button
             type="button"
-            className="w-full cursor-pointer rounded-lg border border-[#1f6b4a] dark:border-[#3d9a6e] bg-[#1f6b4a] dark:bg-[#3d9a6e] px-3 py-2 text-[#f4fff8] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
+            className="w-full cursor-pointer rounded-lg border border-accent bg-accent px-3 py-2 text-[#f4fff8] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             disabled={working}
             onClick={save}
           >
@@ -359,7 +359,7 @@ function SectionEditor({ name, onDirty }) {
             <span>Что изменено</span>
             <input
               ref={descriptionInputRef}
-              className="w-full rounded-lg border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
+              className="w-full rounded-lg border border-line bg-surface px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               type="text"
               autoComplete="off"
               value={description}
@@ -372,7 +372,7 @@ function SectionEditor({ name, onDirty }) {
           </label>
           <button
             type="button"
-            className="w-full cursor-pointer rounded-lg border border-[#1f6b4a] dark:border-[#3d9a6e] bg-[#1f6b4a] dark:bg-[#3d9a6e] px-3 py-2 text-[#f4fff8] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
+            className="w-full cursor-pointer rounded-lg border border-accent bg-accent px-3 py-2 text-[#f4fff8] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             disabled={working}
             onClick={publish}
           >
@@ -380,7 +380,7 @@ function SectionEditor({ name, onDirty }) {
           </button>
           <button
             type="button"
-            className="w-full cursor-pointer rounded-lg border border-[#ddd4c6] dark:border-[#343b46] bg-[#fffdf8] dark:bg-[#1e232b] px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4a] dark:focus-visible:outline-[#3d9a6e]"
+            className="w-full cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             disabled={working}
             onClick={reset}
           >

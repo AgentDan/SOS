@@ -34,7 +34,7 @@ function Sections({ openSection }) {
       {view.kind === "error" ? <ErrorBlock lines={view.lines} /> : null}
       {view.kind === "ready" ? (
         <>
-          <p className="mt-0 mb-2 text-[#5e584e] dark:text-[#b7b0a4]">Откройте раздел, чтобы править черновик, публиковать и откатывать.</p>
+          <p className="mt-0 mb-2 text-muted">Откройте раздел, чтобы править черновик, публиковать и откатывать.</p>
           {view.sections.length > 0 ? (
             <div className="mb-7 grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
               {view.sections.map((item) => (
@@ -42,7 +42,7 @@ function Sections({ openSection }) {
               ))}
             </div>
           ) : (
-            <p className="mt-0 mb-2 text-[#5e584e] dark:text-[#b7b0a4]">Разделов пока нет</p>
+            <p className="mt-0 mb-2 text-muted">Разделов пока нет</p>
           )}
         </>
       ) : null}

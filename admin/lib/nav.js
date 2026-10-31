@@ -10,17 +10,15 @@ const NAV_MAIN = [
   { id: "journal", text: "Версии и журнал", route: { screen: "journal" } }
 ];
 
-const NAV_LEGACY = [
-  { id: "sections", text: "Разделы", route: { screen: "sections" } },
-  { id: "knobs", text: "Ручки", route: { screen: "knobs" } },
-  { id: "models", text: "Модели", route: { screen: "models" } }
+const NAV_MORE = [
+  { id: "knobs", text: "Ручки продукта", route: { screen: "knobs" } },
+  { id: "sections", text: "Разделы (JSON)", route: { screen: "sections" } }
 ];
 
 const SCREEN_TITLES = {
   overview: "Главная",
-  sections: "Разделы",
-  knobs: "Ручки",
-  models: "Модели",
+  sections: "Разделы (JSON)",
+  knobs: "Ручки продукта",
   map: "Карта связей",
   journal: "Версии и журнал",
   catalog: "Каталог",
@@ -49,13 +47,7 @@ function activeNavId(route) {
   }
   if (route.screen === "overview") return "home";
   if (route.screen === "catalog") return "catalog";
-  if (
-    route.screen === "map" ||
-    route.screen === "journal" ||
-    route.screen === "knobs" ||
-    route.screen === "models" ||
-    route.screen === "sections"
-  ) {
+  if (route.screen === "map" || route.screen === "journal" || route.screen === "knobs" || route.screen === "sections") {
     return route.screen;
   }
   return "sections";
@@ -67,4 +59,4 @@ function screenTitle(route) {
   return SCREEN_TITLES[route.screen] || "Главная";
 }
 
-export { NAV_MAIN, NAV_LEGACY, activeNavId, dialogSectionName, screenTitle };
+export { DIALOG_SECTIONS, NAV_MAIN, NAV_MORE, activeNavId, dialogSectionName, screenTitle };

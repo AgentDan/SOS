@@ -74,4 +74,4 @@ function AiPilotToggle({ on, onChange }) {
   );
 }
 
-export { AiNote, AiPilotToggle, formatAiNote, readShowAi, writeShowAi };
+export { AiNote, AiPilotToggle, readShowAi, writeShowAi };

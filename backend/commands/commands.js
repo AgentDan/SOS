@@ -1,11 +1,6 @@
 import { formatDistance, gap } from "../scene/distance.js";
-import {
-  findProduct,
-  firstReplacement,
-  isProtected,
-  resolveTarget,
-  typeAtMax
-} from "./limits.js";
+import { findProduct } from "./catalog.js";
+import { firstReplacement, isProtected, resolveTarget, typeAtMax } from "./limits.js";
 import { canPlace, canReplace } from "./placement.js";
 import { failCommand, okCommand } from "./result.js";
 

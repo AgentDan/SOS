@@ -42,4 +42,4 @@ function clear() {
   registry.clear();
 }
 
-export { instanceKey, enumerateInstances, register, get, all, unregister, clear };
+export { enumerateInstances, register, get, all, unregister, clear };

@@ -1,7 +1,7 @@
 /* Меню слева и верхняя панель. Поиск и содержимое экрана приходят снаружи. */
 function Shell({ nav = [], activeId, onGo, onLogout, title, search, topRight, children }) {
-  const main = nav.filter((item) => item.group !== "legacy");
-  const legacy = nav.filter((item) => item.group === "legacy");
+  const main = nav.filter((item) => item.group !== "more");
+  const more = nav.filter((item) => item.group === "more");
 
   function skipToContent(event) {
     event.preventDefault();
@@ -30,12 +30,12 @@ function Shell({ nav = [], activeId, onGo, onLogout, title, search, topRight, ch
           {main.map((item) => (
             <NavButton key={item.id} item={item} active={item.id === activeId} onGo={onGo} />
           ))}
-          {legacy.length > 0 ? (
+          {more.length > 0 ? (
             <p className="mt-4 mb-1 px-3 text-xs font-medium text-muted narrow:mt-0 narrow:mb-0 narrow:w-full">
-              Пока по-старому
+              Дополнительно
             </p>
           ) : null}
-          {legacy.map((item) => (
+          {more.map((item) => (
             <NavButton key={item.id} item={item} active={item.id === activeId} onGo={onGo} />
           ))}
         </nav>
