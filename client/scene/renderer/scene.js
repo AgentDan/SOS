@@ -1,9 +1,12 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { FLOOR_DEPTH_M, FLOOR_WIDTH_M } from "../floor.js";
+import { computeRoomPlan } from "../room/room-plan.js";
+import { createRoomSketch } from "../room/room-sketch.js";
 
 function initScene(canvas, { onFrame } = {}) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x1a1a1a);
+  scene.background = new THREE.Color(0xf8f6f1);
 
   const camera = new THREE.PerspectiveCamera(
     50,
@@ -28,13 +31,15 @@ function initScene(canvas, { onFrame } = {}) {
   dirLight.position.set(2, 3, 2);
   scene.add(dirLight);
 
-  const grid = new THREE.GridHelper(4, 40, 0x444444, 0x2a2a2a);
-  scene.add(grid);
+  const room = createRoomSketch(computeRoomPlan({ width: FLOOR_WIDTH_M, depth: FLOOR_DEPTH_M }));
+  scene.add(room.group);
+  room.setResolution(window.innerWidth, window.innerHeight);
 
   const onResize = () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    room.setResolution(window.innerWidth, window.innerHeight);
   };
   window.addEventListener("resize", onResize);
 
@@ -57,6 +62,7 @@ function initScene(canvas, { onFrame } = {}) {
     cancelAnimationFrame(frameId);
     window.removeEventListener("resize", onResize);
     controls.dispose();
+    room.dispose();
     const materials = new Set();
     scene.traverse((obj) => {
       if (obj.geometry) obj.geometry.dispose();
