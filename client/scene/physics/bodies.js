@@ -4,8 +4,8 @@ const MM_TO_M = 1 / 1000;
 
 // Mass is this density times the volume of the colliders, so a larger piece is heavier.
 const COLLIDER_DENSITY = 500;
-const LINEAR_DAMPING = 0.8;
-const ANGULAR_DAMPING = 1.2;
+const LINEAR_DAMPING = 0.05;
+const ANGULAR_DAMPING = 0.5;
 const COLLIDER_FRICTION = 0.8;
 
 function mmToM(mm) {
@@ -29,7 +29,7 @@ function createBodyFromCatalogItem(item, { position = { x: 0, y: 0, z: 0 }, part
     : RAPIER.RigidBodyDesc.dynamic()
         .setTranslation(position.x, position.y, position.z)
         .setLinvel(0, 0, 0)
-        .enabledRotations(false, true, false)
+        .enabledRotations(true, true, true)
         .setLinearDamping(LINEAR_DAMPING)
         .setAngularDamping(ANGULAR_DAMPING)
         .setCanSleep(true)

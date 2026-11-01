@@ -19,13 +19,30 @@ function exclusive(task) {
   return run;
 }
 
-function SceneView({ skus, placements = null, person = null, showPerson = false, onReady }) {
+function SceneView({
+  skus,
+  placements = null,
+  person = null,
+  showPerson = false,
+  showColliders = true,
+  onReady
+}) {
   const canvasRef = useRef(null);
   const syncRef = useRef(null);
   const sceneRef = useRef(null);
   const onReadyRef = useRef(onReady);
+  const showCollidersRef = useRef(showColliders);
   const [booted, setBooted] = useState(false);
   onReadyRef.current = onReady;
+  showCollidersRef.current = showColliders;
+
+  function applyColliderWires(scene) {
+    if (!scene) return;
+    const visible = showCollidersRef.current;
+    scene.traverse((object) => {
+      if (object.userData && object.userData.colliderWire === true) object.visible = visible;
+    });
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -59,10 +76,14 @@ function SceneView({ skus, placements = null, person = null, showPerson = false,
           return;
         }
         const sync = createSceneSync({ world, products });
+        let lastFrame = performance.now();
         view = initScene(canvas, {
           onFrame: () => {
+            const now = performance.now();
+            const deltaSeconds = Math.max(0, (now - lastFrame) / 1000);
+            lastFrame = now;
             if (drag) drag.apply();
-            step();
+            step(deltaSeconds);
             syncMeshes();
           }
         });
@@ -102,6 +123,7 @@ function SceneView({ skus, placements = null, person = null, showPerson = false,
       if (cancelled || !syncScene || !scene) return;
       try {
         await syncScene(scene, list, places, figure, { showPerson: visible });
+        applyColliderWires(scene);
       } catch (err) {
         if (!cancelled) console.error("SOS failed to start:", err);
         return;
@@ -113,6 +135,10 @@ function SceneView({ skus, placements = null, person = null, showPerson = false,
       cancelled = true;
     };
   }, [booted, skus, placements, person, showPerson]);
+
+  useEffect(() => {
+    applyColliderWires(sceneRef.current);
+  }, [showColliders]);
 
   return (
     <div className="absolute inset-0 overflow-hidden">

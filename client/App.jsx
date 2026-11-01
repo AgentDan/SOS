@@ -4,6 +4,7 @@ import { AiPilotToggle, readShowAi } from "./chat/ai-note.js";
 import { MessageInput } from "./chat/MessageInput.jsx";
 import { QuestionPanel } from "./chat/QuestionPanel.jsx";
 import { ReplyBox } from "./chat/ReplyBox.jsx";
+import { readShowColliders, writeShowColliders } from "./scene/colliders-pref.js";
 import { SceneView } from "./scene/SceneView.jsx";
 import { getClientId } from "./session/client-id.js";
 
@@ -15,6 +16,7 @@ function App() {
   const [reply, setReply] = useState("");
   const [meta, setMeta] = useState(null);
   const [showAi, setShowAi] = useState(readShowAi);
+  const [showColliders, setShowColliders] = useState(readShowColliders);
 
   const remember = useCallback((data) => {
     const next = readScene(data);
@@ -63,6 +65,7 @@ function App() {
         placements={scene ? scene.placements : null}
         person={person}
         showPerson={showPerson && person != null}
+        showColliders={showColliders}
         onReady={() => setPanel(true)}
       />
       <div className="scene-tools">
@@ -72,6 +75,17 @@ function App() {
             {showPerson ? "Скрыть манекена" : "Показать манекена"}
           </button>
         ) : null}
+        <button
+          type="button"
+          className="scene-person"
+          onClick={() => {
+            const next = !showColliders;
+            writeShowColliders(next);
+            setShowColliders(next);
+          }}
+        >
+          {showColliders ? "Скрыть рамки коллайдеров" : "Показать рамки коллайдеров"}
+        </button>
       </div>
       {panel ? (
         <QuestionPanel clientId={clientId} onAnswered={refreshScene} />

@@ -23,6 +23,8 @@ function initScene(canvas, { onFrame } = {}) {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 1.0, 0);
   controls.enableDamping = true;
+  controls.maxPolarAngle = Math.PI / 2 - 0.05;
+  controls.minDistance = 0.5;
 
   const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
   scene.add(hemiLight);

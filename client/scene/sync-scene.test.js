@@ -255,13 +255,17 @@ test("new monitors stay dynamic on the server pose until the scene changes", asy
     assert.equal(right.rigidBody.gravityScale(), 1);
     assert.equal(left.rigidBody.isCcdEnabled(), true);
 
+    const parkedY = left.rigidBody.translation().y;
+    for (let i = 0; i < 8; i += 1) step();
+    assert.ok(left.rigidBody.translation().y < parkedY);
     left.rigidBody.setAngvel({ x: 6, y: 0, z: 6 }, true);
     for (let i = 0; i < 12; i += 1) step();
-    assert.ok(Math.abs(left.rigidBody.rotation().x) < 0.02, `pitch ${left.rigidBody.rotation().x}`);
-    assert.ok(Math.abs(left.rigidBody.rotation().z) < 0.02, `roll ${left.rigidBody.rotation().z}`);
-    assert.ok(left.rigidBody.translation().y < 1.03);
+    const tilted = left.rigidBody.rotation();
+    assert.ok(Math.hypot(tilted.x, tilted.z) > 0.02, `tilt x ${tilted.x} z ${tilted.z}`);
     assert.equal(left.rigidBody.gravityScale(), 1);
 
+    left.rigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    left.rigidBody.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
     left.rigidBody.setTranslation({ x: 4, y: 1.03, z: -0.1975 }, true);
     left.rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
     left.moved = true;

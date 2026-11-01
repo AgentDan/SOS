@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { all } from "./physics/registry.js";
-import { RAPIER } from "./physics/world.js";
+import { getWorld } from "./physics/world.js";
+
+const MAX_DRAG_SPEED_M_S = 4;
 
 function productEntry(object) {
   let current = object;
@@ -48,6 +50,15 @@ function createDrag({ canvas, camera, controls }) {
     pointer.y = -((event.clientY - rect.top) / height) * 2 + 1;
   }
 
+  function shown(object) {
+    let current = object;
+    while (current) {
+      if (current.visible === false) return false;
+      current = current.parent;
+    }
+    return true;
+  }
+
   function canDrag(entry) {
     if (!entry || !entry.rigidBody) return false;
     if (typeof entry.rigidBody.isValid === "function" && !entry.rigidBody.isValid()) return false;
@@ -64,10 +75,13 @@ function createDrag({ canvas, camera, controls }) {
     }
     if (meshes.length === 0) return null;
     const hits = raycaster.intersectObjects(meshes, true);
-    if (hits.length === 0) return null;
-    const entry = productEntry(hits[0].object);
-    if (!canDrag(entry)) return null;
-    return { entry, point: hits[0].point };
+    for (const hit of hits) {
+      if (!shown(hit.object)) continue;
+      const entry = productEntry(hit.object);
+      if (!canDrag(entry)) return null;
+      return { entry, point: hit.point };
+    }
+    return null;
   }
 
   function releaseCapture() {
@@ -89,8 +103,8 @@ function createDrag({ canvas, camera, controls }) {
     canvas.style.cursor = "";
     if (!entry || !entry.rigidBody || !entry.rigidBody.isValid()) return;
     const body = entry.rigidBody;
-    body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
-    body.setTranslation(state.target, true);
+    body.setGravityScale(1, true);
+    body.setEnabledRotations(true, true, true, true);
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
   }
@@ -114,9 +128,10 @@ function createDrag({ canvas, camera, controls }) {
     state.pointerId = event.pointerId;
     state.notified = false;
     plane.constant = -hit.point.y;
+    body.setGravityScale(0, true);
+    body.setEnabledRotations(false, false, false, true);
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-    body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
     if (controls) controls.enabled = false;
     try {
       canvas.setPointerCapture(event.pointerId);
@@ -162,10 +177,22 @@ function createDrag({ canvas, camera, controls }) {
       canvas.style.cursor = "";
       return;
     }
-    if (typeof body.isKinematic === "function" && !body.isKinematic()) {
-      body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
+    const pos = body.translation();
+    const px = pos.x;
+    const py = pos.y;
+    const pz = pos.z;
+    const dt = getWorld().timestep || 1 / 60;
+    let vx = (state.target.x - px) / dt;
+    let vy = (state.target.y - py) / dt;
+    let vz = (state.target.z - pz) / dt;
+    const speed = Math.hypot(vx, vy, vz);
+    if (speed > MAX_DRAG_SPEED_M_S) {
+      const scale = MAX_DRAG_SPEED_M_S / speed;
+      vx *= scale;
+      vy *= scale;
+      vz *= scale;
     }
-    body.setNextKinematicTranslation(state.target);
+    body.setLinvel({ x: vx, y: vy, z: vz }, true);
   }
 
   function dispose() {

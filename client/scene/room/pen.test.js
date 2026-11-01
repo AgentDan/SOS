@@ -18,13 +18,18 @@ function snapshot(seed) {
   return plain;
 }
 
-function segmentCount(seed, allowBreaks) {
-  const pen = createPen(seed);
-  pen.stroke("main", [0, 0, 0], [1, 0, 0], allowBreaks ? {} : { breaks: false });
-  const drawn = pen.result().main;
-  assert.ok(drawn);
-  assert.equal(drawn.length % 6, 0);
-  return drawn.length / 6;
+function gapCount(positions) {
+  if (!positions) return 0;
+  let gaps = 0;
+  for (let i = 6; i < positions.length; i += 6) {
+    const distance = Math.hypot(
+      positions[i - 3] - positions[i],
+      positions[i - 2] - positions[i + 1],
+      positions[i - 1] - positions[i + 2]
+    );
+    if (distance > 0.008) gaps += 1;
+  }
+  return gaps;
 }
 
 test("one seed repeats the same strokes", () => {
@@ -46,12 +51,12 @@ test("another seed draws a different stroke", () => {
 
 test("pens keep the sketch weights", () => {
   assert.deepEqual(PENS, {
-    main: { width: 1.55, opacity: 0.92 },
-    second: { width: 1.1, opacity: 0.62 },
-    light: { width: 0.9, opacity: 0.38 },
-    ghost: { width: 0.85, opacity: 0.2 },
-    hatch: { width: 0.75, opacity: 0.3 },
-    vein: { width: 0.7, opacity: 0.3 }
+    main: { width: 1.55, opacity: 0.95 },
+    second: { width: 1.1, opacity: 0.67 },
+    light: { width: 0.9, opacity: 0.43 },
+    ghost: { width: 0.85, opacity: 0.25 },
+    hatch: { width: 0.75, opacity: 0.35 },
+    vein: { width: 0.7, opacity: 0.35 }
   });
 });
 
@@ -81,19 +86,42 @@ test("stored strokes are pairs of points", () => {
   }
 });
 
-test("a stroke longer than 0.9 m breaks for a fitting seed", () => {
+test("a stroke longer than 1.2 m breaks for a fitting seed", () => {
   let found = null;
-  for (let seed = 1; seed <= 40; seed++) {
-    const open = segmentCount(seed, true);
-    const shut = segmentCount(seed, false);
-    if (open !== shut) {
-      found = { seed, open, shut };
+  for (let seed = 1; seed <= 80; seed++) {
+    const openPen = createPen(seed);
+    openPen.stroke("main", [0, 0, 0], [2, 0, 0]);
+    const shutPen = createPen(seed);
+    shutPen.stroke("main", [0, 0, 0], [2, 0, 0], { breaks: false });
+    const open = openPen.result().main;
+    const shut = shutPen.result().main;
+    if (gapCount(open) > 0) {
+      found = seed;
+      assert.equal(gapCount(shut), 0);
+      assert.equal(shut.length / 6, 8);
       break;
     }
   }
   assert.ok(found, "no seed lifted the pen");
-  assert.equal(found.shut, 4);
-  assert.equal(found.open, 6);
+});
+
+test("strokes up to 1.2 m stay whole", () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const pen = createPen(seed);
+    pen.stroke("main", [0, 0, 0], [1.2, 0, 0]);
+    assert.equal(gapCount(pen.result().main), 0, `seed ${seed}`);
+  }
+});
+
+test("long strokes break on at most about a fifth of a fixed sample", () => {
+  let breaks = 0;
+  for (let i = 0; i < 200; i++) {
+    const pen = createPen(9000 + i);
+    pen.stroke("main", [0, 0, 0], [2, 0, 0]);
+    if (gapCount(pen.result().main) > 0) breaks += 1;
+  }
+  assert.ok(breaks > 0, "expected at least one break");
+  assert.ok(breaks / 200 <= 0.2, `breaks ${breaks}/200`);
 });
 
 test("hatchBand with zero width does nothing", () => {

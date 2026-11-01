@@ -26,7 +26,7 @@ describe("catalog bodies", { concurrency: 1 }, () => {
     );
   });
 
-  test("a catalog body is dynamic, keeps gravity, and yaws only", async () => {
+  test("a catalog body is dynamic, keeps gravity, and can tip", async () => {
     await initWorld();
     try {
       const light = createBodyFromCatalogItem(ITEM, {
@@ -49,8 +49,8 @@ describe("catalog bodies", { concurrency: 1 }, () => {
       assert.equal(light.bodyType(), RAPIER.RigidBodyType.Dynamic);
       assert.equal(light.gravityScale(), 1);
       assert.equal(light.isCcdEnabled(), true);
-      assert.ok(light.linearDamping() > 0 && light.linearDamping() < 4);
-      assert.ok(light.angularDamping() > 0 && light.angularDamping() < 4);
+      assert.ok(Math.abs(light.linearDamping() - 0.05) < 1e-6);
+      assert.ok(Math.abs(light.angularDamping() - 0.5) < 1e-6);
       assert.ok(light.mass() > 0.5, `mass ${light.mass()}`);
       assert.ok(Math.abs(heavy.mass() / light.mass() - 2) < 1e-3);
       assert.ok(Math.abs(stacked.mass() / light.mass() - 2) < 1e-3);
@@ -58,11 +58,10 @@ describe("catalog bodies", { concurrency: 1 }, () => {
       light.setAngvel({ x: 6, y: 2, z: 6 }, true);
       for (let i = 0; i < 20; i += 1) step();
       const rotation = light.rotation();
-      assert.ok(Math.abs(rotation.x) < 0.02, `pitch ${rotation.x}`);
-      assert.ok(Math.abs(rotation.z) < 0.02, `roll ${rotation.z}`);
-      assert.ok(Math.abs(rotation.y) > 0.05, `yaw ${rotation.y}`);
+      assert.ok(Math.hypot(rotation.x, rotation.z) > 0.05, `tilt x ${rotation.x} z ${rotation.z}`);
       assert.equal(light.gravityScale(), 1);
-      assert.ok(light.translation().y < 1.5);
+      const fallen = light.translation().y;
+      assert.ok(fallen < 1.7, `y ${fallen}`);
     } finally {
       disposeWorld();
     }
@@ -193,5 +192,66 @@ describe("catalog bodies", { concurrency: 1 }, () => {
     } finally {
       disposeWorld();
     }
+  });
+
+  test("a tall box with its center past a table edge tips over", async () => {
+    await initWorld();
+    try {
+      const world = getWorld();
+      const tableHalfY = 0.05;
+      const table = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(0, 0.5, 0));
+      world.createCollider(
+        RAPIER.ColliderDesc.cuboid(0.5, tableHalfY, 0.5).setFriction(0.8).setRestitution(0),
+        table
+      );
+      const tableTop = 0.5 + tableHalfY;
+      const edgeX = 0.5;
+      const half = { x: 0.05, y: 0.4, z: 0.08 };
+      // Two centimetres past the lip: a center exactly on the edge can stay upright.
+      const { rigidBody } = createBodyFromCatalogItem(ITEM, {
+        position: { x: edgeX + 0.02, y: tableTop, z: 0 },
+        parts: [part(half, { x: 0, y: half.y, z: 0 })]
+      });
+      const steps = Math.round(2 / world.timestep);
+      for (let i = 0; i < steps; i += 1) step();
+      const q = rigidBody.rotation();
+      const up = Math.min(1, Math.max(-1, 1 - 2 * (q.x * q.x + q.z * q.z)));
+      const tilt = (Math.acos(up) * 180) / Math.PI;
+      assert.ok(tilt > 20, `tilt ${tilt}°, q ${q.x} ${q.y} ${q.z} ${q.w}`);
+    } finally {
+      disposeWorld();
+    }
+  });
+
+  test("step keeps a fixed 1/60 tick and a long frame stops at five", async () => {
+    async function drop(action) {
+      await initWorld();
+      try {
+        const world = getWorld();
+        const { rigidBody } = createBodyFromCatalogItem(ITEM, {
+          position: { x: 0, y: 4, z: 0 },
+          parts: [part({ x: 0.1, y: 0.1, z: 0.1 }, { x: 0, y: 0.1, z: 0 })]
+        });
+        action(world);
+        return rigidBody.translation().y;
+      } finally {
+        disposeWorld();
+      }
+    }
+
+    const once = await drop(() => step());
+    const timed = await drop((world) => step(world.timestep));
+    assert.ok(Math.abs(once - timed) < 1e-5, `bare ${once} vs timed ${timed}`);
+
+    const five = await drop(() => {
+      for (let i = 0; i < 5; i += 1) step();
+    });
+    const burst = await drop(() => step(1));
+    assert.ok(Math.abs(five - burst) < 1e-4, `five ${five} vs burst ${burst}`);
+
+    const six = await drop(() => {
+      for (let i = 0; i < 6; i += 1) step();
+    });
+    assert.ok(Math.abs(six - burst) > 1e-3, `six ${six} should pass the five-step cap ${burst}`);
   });
 });

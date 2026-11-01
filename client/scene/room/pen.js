@@ -1,10 +1,10 @@
 const PENS = {
-  main: { width: 1.55, opacity: 0.92 },
-  second: { width: 1.1, opacity: 0.62 },
-  light: { width: 0.9, opacity: 0.38 },
-  ghost: { width: 0.85, opacity: 0.2 },
-  hatch: { width: 0.75, opacity: 0.3 },
-  vein: { width: 0.7, opacity: 0.3 }
+  main: { width: 1.55, opacity: 0.95 },
+  second: { width: 1.1, opacity: 0.67 },
+  light: { width: 0.9, opacity: 0.43 },
+  ghost: { width: 0.85, opacity: 0.25 },
+  hatch: { width: 0.75, opacity: 0.35 },
+  vein: { width: 0.7, opacity: 0.35 }
 };
 
 function seededRandom(seed) {
@@ -115,7 +115,7 @@ function createPen(seed) {
 
   function stroke(penName, a, b, opt = {}) {
     const len = lengthOf(sub(b, a));
-    const broken = len > 0.9 && rng() < 0.45 && opt.breaks !== false;
+    const broken = len > 1.2 && rng() < 0.12 && opt.breaks !== false;
     if (broken) {
       const gap = rr(0.015, 0.04);
       const pos = rr(0.3, 0.7);

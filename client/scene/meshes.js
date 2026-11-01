@@ -26,6 +26,7 @@ function withColliderWire(visual, parts) {
 
 function colliderWire(parts) {
   const group = new THREE.Group();
+  group.userData.colliderWire = true;
   const material = new THREE.LineBasicMaterial({ color: COLLIDER_COLOR, depthTest: false });
   for (const part of parts) {
     const box = new THREE.BoxGeometry(part.half.x * 2, part.half.y * 2, part.half.z * 2);

@@ -58,9 +58,6 @@ function applyBodyPose(body, pose) {
   if (!fixed && typeof body.setBodyType === "function") {
     body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
   }
-  if (!fixed && typeof body.setEnabledRotations === "function") {
-    body.setEnabledRotations(false, true, false, true);
-  }
   if (typeof body.setTranslation === "function") {
     body.setTranslation({ x: pose.x, y: pose.y, z: pose.z }, true);
   }

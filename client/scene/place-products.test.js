@@ -101,8 +101,8 @@ test("a placed copy is dynamic with gravity and returns to the server pose", asy
     const startY = body.translation().y;
     for (let i = 0; i < 15; i += 1) step();
     assert.ok(body.translation().y < startY - 0.01);
-    assert.ok(Math.abs(body.rotation().x) < 0.02, `pitch ${body.rotation().x}`);
-    assert.ok(Math.abs(body.rotation().z) < 0.02, `roll ${body.rotation().z}`);
+    const tilted = body.rotation();
+    assert.ok(Math.hypot(tilted.x, tilted.z) > 0.02, `tilt x ${tilted.x} z ${tilted.z}`);
     assert.equal(body.gravityScale(), 1);
   } finally {
     clear();

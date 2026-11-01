@@ -1,8 +1,8 @@
 import { register } from "./physics/registry.js";
 import { RAPIER } from "./physics/world.js";
 
-const FLOOR_WIDTH_M = 4;
-const FLOOR_DEPTH_M = 4;
+const FLOOR_WIDTH_M = 6;
+const FLOOR_DEPTH_M = 6;
 const FLOOR_THICKNESS_M = 0.05;
 
 function createFloor(world) {
