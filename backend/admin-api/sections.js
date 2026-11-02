@@ -111,10 +111,63 @@ function sectionHistory(name) {
   return publicHistory(readEnvelope(name).history);
 }
 
+function positiveTriple(size) {
+  if (!size || typeof size !== "object" || Array.isArray(size)) return null;
+  const width = size.width;
+  const height = size.height;
+  const depth = size.depth;
+  if (![width, height, depth].every((value) => typeof value === "number" && Number.isFinite(value) && value > 0)) {
+    return null;
+  }
+  return { width, height, depth };
+}
+
+function sameTriple(size, triple) {
+  return (
+    size &&
+    typeof size === "object" &&
+    !Array.isArray(size) &&
+    size.width === triple.width &&
+    size.height === triple.height &&
+    size.depth === triple.depth &&
+    Object.keys(size).length === 3
+  );
+}
+
+function keepModelSizes(savedDraft, draft) {
+  if (!draft || typeof draft !== "object" || Array.isArray(draft) || !Array.isArray(draft.products)) return draft;
+  const saved = new Map();
+  const stored = savedDraft && Array.isArray(savedDraft.products) ? savedDraft.products : [];
+  for (const product of stored) {
+    const triple = positiveTriple(product && product.modelSizeMm);
+    if (product && typeof product.sku === "string" && product.sku && triple) saved.set(product.sku, triple);
+  }
+  let changed = false;
+  const products = draft.products.map((product) => {
+    if (!product || typeof product !== "object" || Array.isArray(product)) return product;
+    const kept = typeof product.sku === "string" ? saved.get(product.sku) : undefined;
+    if (kept) {
+      if (sameTriple(product.modelSizeMm, kept)) return product;
+      changed = true;
+      return { ...product, modelSizeMm: kept };
+    }
+    if (Object.hasOwn(product, "modelSizeMm")) {
+      changed = true;
+      const copy = { ...product };
+      delete copy.modelSizeMm;
+      return copy;
+    }
+    return product;
+  });
+  if (!changed) return draft;
+  return { ...draft, products };
+}
+
 function commitDraft(name, draft, baseDraftVersion) {
   assertSection(name);
   const sections = loadSections();
-  sections[name] = sectionAsLayer(sections[name], draft);
+  const next = name === "catalog" ? keepModelSizes(sections.catalog && sections.catalog.draft, draft) : draft;
+  sections[name] = sectionAsLayer(sections[name], next);
   try {
     validateDialogData(toDialogData(sections));
   } catch (err) {
@@ -127,7 +180,7 @@ function commitDraft(name, draft, baseDraftVersion) {
     throw adminError(409, { error: "draft version conflict" });
   }
 
-  return writeDraft(name, draft);
+  return writeDraft(name, next);
 }
 
 function updateDraft(name, draft, baseDraftVersion) {

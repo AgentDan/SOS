@@ -159,11 +159,16 @@ function placedCopies(placements, sku) {
   return placements.filter((item) => item && item.sku === sku);
 }
 
+function measuredItem(catalog, sku, placement) {
+  const product = findProduct(catalog, sku);
+  const item = { placement };
+  if (product?.dimensions && typeof product.dimensions === "object") item.dimensions = product.dimensions;
+  if (product?.modelSizeMm && typeof product.modelSizeMm === "object") item.modelSizeMm = product.modelSizeMm;
+  return item;
+}
+
 function distanceText(catalog, a, b, placeA, placeB) {
-  const measured = gap(
-    { placement: placeA, dimensions: findProduct(catalog, a)?.dimensions },
-    { placement: placeB, dimensions: findProduct(catalog, b)?.dimensions }
-  );
+  const measured = gap(measuredItem(catalog, a, placeA), measuredItem(catalog, b, placeB));
   return formatDistance(measured.gapMm);
 }
 

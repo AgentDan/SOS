@@ -605,6 +605,7 @@ describe("admin API", { concurrency: 1 }, () => {
 
     const skuFile = path.join(tempData, "catalog", "sku", "DESK-TOP-1400.json");
     const skuBefore = readFileSync(skuFile);
+    const envelopeBefore = readEnvelope("catalog");
     const uploaded = await api("/admin/models/DESK-TOP-1400", {
       method: "POST",
       glb: simpleGlb("Top", 0.7, 0.015, 0.35)
@@ -617,18 +618,39 @@ describe("admin API", { concurrency: 1 }, () => {
     assert.equal(uploaded.json.sizeMm.width, 1400);
     assert.equal(uploaded.json.sizeMm.height, 30);
     assert.equal(uploaded.json.sizeMm.depth, 700);
+    assert.deepEqual(uploaded.json.modelSizeMm, uploaded.json.sizeMm);
+    assert.equal(uploaded.json.savedToCatalog, true);
     assert.deepEqual(uploaded.json.catalogMm, { width: 1400, height: 40, depth: 800 });
     assert.ok(uploaded.json.parts[0].center.every((value) => Math.abs(value) < 1e-6));
     const saved = readFileSync(path.join(tempModels, "DESK-TOP-1400.glb"));
     assert.equal(saved.length, uploaded.json.bytes);
     assert.equal(saved.readUInt32LE(0), 0x46546c67);
     assert.ok(saved.includes(Buffer.from("COL_Top")));
-    assert.deepEqual(readFileSync(skuFile), skuBefore);
+    const measured = { width: 1400, height: 30, depth: 700 };
+    const beforeProduct = JSON.parse(skuBefore);
+    const afterProduct = JSON.parse(readFileSync(skuFile, "utf8"));
+    assert.deepEqual(afterProduct.modelSizeMm, measured);
+    delete beforeProduct.modelSizeMm;
+    delete afterProduct.modelSizeMm;
+    assert.deepEqual(afterProduct, beforeProduct);
+    const envelopeAfter = readEnvelope("catalog");
+    assert.equal(envelopeAfter.draftVersion, envelopeBefore.draftVersion);
+    assert.equal(envelopeAfter.publishedVersion, envelopeBefore.publishedVersion);
+    assert.deepEqual(envelopeAfter.history, envelopeBefore.history);
+    assert.deepEqual(
+      envelopeAfter.draft.products.find((item) => item.sku === "DESK-TOP-1400").modelSizeMm,
+      measured
+    );
+    assert.deepEqual(
+      envelopeAfter.published.products.find((item) => item.sku === "DESK-TOP-1400").modelSizeMm,
+      measured
+    );
     const entry = journalEntries().at(-1);
     assert.equal(entry.action, "model");
     assert.equal(entry.section, "catalog");
     assert.equal(entry.detail.sku, "DESK-TOP-1400");
     assert.equal(entry.detail.bytes, saved.length);
+    assert.deepEqual(entry.detail.sizeMm, measured);
 
     const personGlb = simpleGlb("Body", 0.2, 0.71, 0.2);
     const personUpload = await api("/admin/models/character", {
@@ -643,6 +665,50 @@ describe("admin API", { concurrency: 1 }, () => {
     const personEntry = journalEntries().at(-1);
     assert.equal(personEntry.detail.sku, "character");
     assert.equal(personEntry.detail.parts, 0);
+    assert.deepEqual(personEntry.detail.sizeMm, personUpload.json.sizeMm);
+    assert.deepEqual(personUpload.json.modelSizeMm, personUpload.json.sizeMm);
+    assert.equal(personUpload.json.savedToCatalog, true);
+    const personEnvelope = readEnvelope("catalog");
+    assert.deepEqual(
+      personEnvelope.draft.products.find((item) => item.sku === "character").modelSizeMm,
+      personUpload.json.sizeMm
+    );
+    assert.deepEqual(
+      personEnvelope.published.products.find((item) => item.sku === "character").modelSizeMm,
+      personUpload.json.sizeMm
+    );
+    assert.equal(personEnvelope.draftVersion, envelopeAfter.draftVersion);
+    assert.equal(personEnvelope.publishedVersion, envelopeAfter.publishedVersion);
+  });
+
+  test("saving a catalog draft cannot erase or replace modelSizeMm", async () => {
+    const sku = "MOUSE-65";
+    const file = path.join(tempData, "catalog", "sku", `${sku}.json`);
+    const measured = { width: 90, height: 47, depth: 147 };
+    const stored = JSON.parse(readFileSync(file, "utf8"));
+    stored.modelSizeMm = measured;
+    writeFileSync(file, `${JSON.stringify(stored, null, 2)}\n`);
+
+    const section = await api("/admin/sections/catalog");
+    const without = structuredClone(section.json.draft);
+    delete without.products.find((item) => item.sku === sku).modelSizeMm;
+    const removed = await api("/admin/sections/catalog/draft", { method: "PUT", body: { draft: without } });
+    assert.equal(removed.status, 200);
+    assert.deepEqual(JSON.parse(readFileSync(file, "utf8")).modelSizeMm, measured);
+
+    const freshSku = "KB-440";
+    const freshFile = path.join(tempData, "catalog", "sku", `${freshSku}.json`);
+    const fresh = JSON.parse(readFileSync(freshFile, "utf8"));
+    delete fresh.modelSizeMm;
+    writeFileSync(freshFile, `${JSON.stringify(fresh, null, 2)}\n`);
+    const afterFreshWrite = await api("/admin/sections/catalog");
+    const invented = structuredClone(afterFreshWrite.json.draft);
+    invented.products.find((item) => item.sku === sku).modelSizeMm = { width: 1, height: 1, depth: 1 };
+    invented.products.find((item) => item.sku === freshSku).modelSizeMm = { width: 9, height: 9, depth: 9 };
+    const replaced = await api("/admin/sections/catalog/draft", { method: "PUT", body: { draft: invented } });
+    assert.equal(replaced.status, 200);
+    assert.deepEqual(JSON.parse(readFileSync(file, "utf8")).modelSizeMm, measured);
+    assert.equal(Object.hasOwn(JSON.parse(readFileSync(freshFile, "utf8")), "modelSizeMm"), false);
   });
 
   test("journal limit returns the latest lines", async () => {

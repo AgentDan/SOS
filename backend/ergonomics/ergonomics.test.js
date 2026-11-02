@@ -254,6 +254,25 @@ test("ergo is null without a table, a height, or a chair", () => {
   );
 });
 
+test("ergo uses model height and falls back to the card", () => {
+  const card = product("DESK-TOP-1400", "desk_top", { width: 1400, depth: 700, height: 30 });
+  const modeled = {
+    ...card,
+    modelSizeMm: { width: 1400, height: 200, depth: 700 }
+  };
+  const broken = {
+    ...card,
+    modelSizeMm: { width: 1400, height: 0, depth: 700 }
+  };
+  const body = { heightCm: 175, hand: "right" };
+  const placements = [place("DESK-TOP-1400", 696, 0), chairPlace];
+  assert.deepEqual(measure(body, placements, [card, chairProduct]).issues, []);
+  const fromModel = measure(body, placements, [modeled, chairProduct]);
+  assert.equal(fromModel.issues[0].code, "desk_too_high");
+  assert.equal(fromModel.issues[0].actualMm, 896);
+  assert.deepEqual(measure(body, placements, [broken, chairProduct]).issues, []);
+});
+
 test("the working hand is copied onto targets and does not change the numbers", () => {
   const right = measure({ heightCm: 175, hand: "right" }, [chairPlace], [chairProduct]);
   const left = measure({ heightCm: 175, hand: "left" }, [chairPlace], [chairProduct]);

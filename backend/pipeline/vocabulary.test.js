@@ -115,7 +115,7 @@ test("accessory words resolve to add and remove commands", () => {
     commands: readDraft("commands"),
     catalog: readDraft("catalog")
   });
-  assert.deepEqual(interpret({ source: "text", text: "добавь мышь" }, vocab), {
+  assert.deepEqual(interpret({ source: "text", text: "добавь мыш 65" }, vocab), {
     type: "command",
     source: "text",
     payload: { action: "add", sku: "MOUSE-65" }

@@ -30,6 +30,8 @@ function optionalMm(value) {
 }
 
 function sizeOf(product, key) {
+  const fromModel = positive(product?.modelSizeMm?.[key]);
+  if (fromModel !== null) return fromModel;
   return positive(product?.dimensions?.[key]);
 }
 

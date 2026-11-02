@@ -17,5 +17,10 @@
   ],
   "media": {
     "model3d": "DESK-LEGS-1400.glb"
+  },
+  "modelSizeMm": {
+    "width": 1330,
+    "height": 714,
+    "depth": 620
   }
 }

@@ -18,6 +18,18 @@ const STEPS = [
   { text: "поставь колонки" }
 ];
 
+function mm(product, key) {
+  const fromModel = product?.modelSizeMm?.[key];
+  if (typeof fromModel === "number" && Number.isFinite(fromModel) && fromModel > 0) return fromModel;
+  const fromCard = product?.dimensions?.[key];
+  if (typeof fromCard === "number" && Number.isFinite(fromCard) && fromCard > 0) return fromCard;
+  return null;
+}
+
+function boxOf(product) {
+  return { width: mm(product, "width"), depth: mm(product, "depth"), height: mm(product, "height") };
+}
+
 function rect(place, dimensions) {
   return {
     x0: place.x - dimensions.width / 2,
@@ -82,28 +94,28 @@ function checkScene(errors, scene, hand) {
   const keyboard = bySku.get("KB-440");
   const mouse = bySku.get("MOUSE-65");
   const speaker = bySku.get("SPK-100");
-  const surface = legs.dimensions.height + top.dimensions.height;
-  const topY = legs.dimensions.height;
+  const surface = mm(legs, "height") + mm(top, "height");
+  const topY = mm(legs, "height");
   const gap = deskType.rowGapMm;
   const back = deskType.rowBackMarginMm;
   const front = deskType.frontMarginMm;
   const accessoryGap = deskType.accessoryGapMm;
-  const rowTotal = monitor.dimensions.width * 2 + gap;
-  const monitorLeft = -rowTotal / 2 + monitor.dimensions.width / 2;
-  const monitorZ = -top.dimensions.depth / 2 + back + monitor.dimensions.depth / 2;
+  const rowTotal = mm(monitor, "width") * 2 + gap;
+  const monitorLeft = -rowTotal / 2 + mm(monitor, "width") / 2;
+  const monitorZ = -mm(top, "depth") / 2 + back + mm(monitor, "depth") / 2;
   const leftEdge = -rowTotal / 2;
   const rightEdge = rowTotal / 2;
-  const speakerZ = -top.dimensions.depth / 2 + back + speaker.dimensions.depth / 2;
-  const speakerX = rightEdge + accessoryGap + speaker.dimensions.width / 2;
-  const keyboardZ = top.dimensions.depth / 2 - front - keyboard.dimensions.depth / 2;
+  const speakerZ = -mm(top, "depth") / 2 + back + mm(speaker, "depth") / 2;
+  const speakerX = rightEdge + accessoryGap + mm(speaker, "width") / 2;
+  const keyboardZ = mm(top, "depth") / 2 - front - mm(keyboard, "depth") / 2;
   const mouseX =
     (hand === "left" ? -1 : 1) *
-    (keyboard.dimensions.width / 2 + accessoryGap + mouse.dimensions.width / 2);
+    (mm(keyboard, "width") / 2 + accessoryGap + mm(mouse, "width") / 2);
   const expected = [
     { sku: "DESK-LEGS-1400", x: 0, y: 0, z: 0, rotY: 0 },
     { sku: "DESK-TOP-1800", x: 0, y: topY, z: 0, rotY: 0 },
     { sku: "MON-613-366", x: monitorLeft, y: surface, z: monitorZ, rotY: 0 },
-    { sku: "MON-613-366", x: monitorLeft + monitor.dimensions.width + gap, y: surface, z: monitorZ, rotY: 0 },
+    { sku: "MON-613-366", x: monitorLeft + mm(monitor, "width") + gap, y: surface, z: monitorZ, rotY: 0 },
     { sku: "KB-440", x: 0, y: surface, z: keyboardZ, rotY: 0 },
     { sku: "MOUSE-65", x: mouseX, y: surface, z: keyboardZ, rotY: 0 },
     { sku: "SPK-100", x: -speakerX, y: surface, z: speakerZ, rotY: 0 },
@@ -115,7 +127,7 @@ function checkScene(errors, scene, hand) {
   for (const sku of ["KB-440", "MOUSE-65", "SPK-100"]) {
     if (!scene.skus.includes(sku)) errors.push(`${hand}: ${sku} was removed`);
   }
-  const sizes = new Map(products.map((product) => [product.sku, product.dimensions]));
+  const sizes = new Map(products.map((product) => [product.sku, boxOf(product)]));
   const onDesk = scene.placements.filter((item) => item.y === surface);
   let outer = 0;
   for (const place of onDesk) {
@@ -126,8 +138,8 @@ function checkScene(errors, scene, hand) {
     }
     outer = Math.max(outer, Math.abs(place.x) + dimensions.width / 2);
   }
-  if (outer > top.dimensions.width / 2) {
-    errors.push(`${hand}: row extends to ${outer}, desk half is ${top.dimensions.width / 2}`);
+  if (outer > mm(top, "width") / 2) {
+    errors.push(`${hand}: row extends to ${outer}, desk half is ${mm(top, "width") / 2}`);
   }
   for (let i = 0; i < onDesk.length; i += 1) {
     for (let j = i + 1; j < onDesk.length; j += 1) {

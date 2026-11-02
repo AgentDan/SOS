@@ -146,6 +146,18 @@ function validateCatalogDraft(catalog, errors) {
         }
       }
 
+      if (product && product.modelSizeMm !== undefined) {
+        const size = product.modelSizeMm && typeof product.modelSizeMm === "object" ? product.modelSizeMm : {};
+        for (const dim of ["width", "height", "depth"]) {
+          const value = size[dim];
+          if (typeof value !== "number" || !(value > 0)) {
+            errors.push(
+              `catalog: product "${label}" modelSizeMm.${dim} must be a positive number`
+            );
+          }
+        }
+      }
+
       if (product && product.sku) {
         if (seenSkus.has(product.sku)) {
           errors.push(`catalog: duplicate sku found: "${product.sku}"`);

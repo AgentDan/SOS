@@ -15,6 +15,14 @@ const STEPS = [
   { text: "расстояние между мониторами" }
 ];
 
+function mm(product, key) {
+  const fromModel = product?.modelSizeMm?.[key];
+  if (typeof fromModel === "number" && Number.isFinite(fromModel) && fromModel > 0) return fromModel;
+  const fromCard = product?.dimensions?.[key];
+  if (typeof fromCard === "number" && Number.isFinite(fromCard) && fromCard > 0) return fromCard;
+  return null;
+}
+
 function monitorPose() {
   const catalog = readCatalog();
   const products = Array.isArray(catalog?.products) ? catalog.products : [];
@@ -23,9 +31,9 @@ function monitorPose() {
   const top = products.find((item) => item?.sku === "DESK-TOP-1800");
   const monitor = products.find((item) => item?.sku === "MON-613-366");
   const deskType = types.find((item) => item?.id === "desk_top");
-  const surface = legs.dimensions.height + top.dimensions.height;
-  const z = -top.dimensions.depth / 2 + deskType.rowBackMarginMm + monitor.dimensions.depth / 2;
-  const width = monitor.dimensions.width;
+  const surface = mm(legs, "height") + mm(top, "height");
+  const z = -mm(top, "depth") / 2 + deskType.rowBackMarginMm + mm(monitor, "depth") / 2;
+  const width = mm(monitor, "width");
   const gap = deskType.rowGapMm;
   const total = width * 2 + gap;
   const left = -total / 2 + width / 2;

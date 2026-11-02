@@ -18,5 +18,10 @@
   "media": {
     "model3d": "MOUSE-Two-146-82-38.glb"
   },
-  "label": "мышь"
+  "label": "мышь",
+  "modelSizeMm": {
+    "width": 90,
+    "height": 47,
+    "depth": 147
+  }
 }

@@ -22,5 +22,10 @@
       "x": 0,
       "z": 760
     }
+  },
+  "modelSizeMm": {
+    "width": 548,
+    "height": 1040,
+    "depth": 609
   }
 }

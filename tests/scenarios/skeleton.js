@@ -139,12 +139,21 @@ const skeletonSteps = [
   }
 ];
 
+function widthOf(product) {
+  const fromModel = product?.modelSizeMm?.width;
+  if (typeof fromModel === "number" && Number.isFinite(fromModel) && fromModel > 0) return fromModel;
+  const fromCard = product?.dimensions?.width;
+  if (typeof fromCard === "number" && Number.isFinite(fromCard) && fromCard > 0) return fromCard;
+  return null;
+}
+
 function smallest(products, type, minWidth) {
   let best = null;
   for (const product of products) {
-    if (product?.type !== type || typeof product.dimensions?.width !== "number") continue;
-    if (minWidth != null && product.dimensions.width < minWidth) continue;
-    if (!best || product.dimensions.width < best.dimensions.width) best = product;
+    const width = widthOf(product);
+    if (product?.type !== type || width === null) continue;
+    if (minWidth != null && width < minWidth) continue;
+    if (!best || width < widthOf(best)) best = product;
   }
   return best;
 }

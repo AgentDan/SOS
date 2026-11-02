@@ -17,5 +17,10 @@
   ],
   "media": {
     "model3d": "MON-715-427.glb"
+  },
+  "modelSizeMm": {
+    "width": 715,
+    "height": 427,
+    "depth": 212
   }
 }

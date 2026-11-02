@@ -1,9 +1,15 @@
 import { findProduct, findType } from "./catalog.js";
 
+function axisOf(product, key) {
+  const fromModel = product?.modelSizeMm?.[key];
+  if (typeof fromModel === "number" && Number.isFinite(fromModel) && fromModel > 0) return fromModel;
+  const fromCard = product?.dimensions?.[key];
+  if (typeof fromCard === "number" && Number.isFinite(fromCard) && fromCard > 0) return fromCard;
+  return null;
+}
+
 function widthOf(product) {
-  const width = product?.dimensions?.width;
-  if (typeof width !== "number" || !Number.isFinite(width) || width <= 0) return null;
-  return width;
+  return axisOf(product, "width");
 }
 
 function gapOf(type, field) {
@@ -56,9 +62,7 @@ function occupied(widths, gap) {
 }
 
 function depthOf(product) {
-  const depth = product?.dimensions?.depth;
-  if (typeof depth !== "number" || !Number.isFinite(depth) || depth <= 0) return null;
-  return depth;
+  return axisOf(product, "depth");
 }
 
 function mmField(type, field) {

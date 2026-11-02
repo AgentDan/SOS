@@ -2,7 +2,8 @@ import { randomBytes } from "node:crypto";
 import { mkdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readEnvelope } from "../config/load.js";
+import { readEnvelope, sectionDir } from "../config/load.js";
+import { writeFolderDraft, writeFolderEnvelope } from "../config/folder-sections.js";
 import { addCollidersToGlb, ColliderError, summarizeGlb } from "../colliders/index.js";
 import { adminError } from "./auth.js";
 import { appendJournal } from "./journal.js";
@@ -46,6 +47,52 @@ function recenteredParts(parts, bounds) {
   }));
 }
 
+function measuredSize(sizeMm) {
+  if (!sizeMm || typeof sizeMm !== "object" || Array.isArray(sizeMm)) return null;
+  const width = sizeMm.width;
+  const height = sizeMm.height;
+  const depth = sizeMm.depth;
+  if (![width, height, depth].every((value) => typeof value === "number" && Number.isFinite(value) && value > 0)) {
+    return null;
+  }
+  return { width, height, depth };
+}
+
+function assignModelSize(products, sku, size) {
+  if (!Array.isArray(products)) return false;
+  let found = false;
+  for (const product of products) {
+    if (!product || product.sku !== sku) continue;
+    product.modelSizeMm = size;
+    found = true;
+  }
+  return found;
+}
+
+function saveMeasuredSizes(records) {
+  const list = Array.isArray(records) ? records : [];
+  const envelope = readEnvelope("catalog");
+  const draftVersion = envelope.draftVersion;
+  const publishedVersion = envelope.publishedVersion;
+  const history = envelope.history;
+  const saved = [];
+  for (const record of list) {
+    const size = measuredSize(record && record.sizeMm);
+    if (!size || !record || typeof record.sku !== "string") continue;
+    const inDraft = assignModelSize(envelope.draft && envelope.draft.products, record.sku, size);
+    const inPublished = assignModelSize(envelope.published && envelope.published.products, record.sku, size);
+    if (inDraft || inPublished) saved.push(record.sku);
+  }
+  if (saved.length === 0) return saved;
+  if (envelope.draftVersion !== draftVersion || envelope.publishedVersion !== publishedVersion || envelope.history !== history) {
+    throw new Error("model size must not change catalog versions");
+  }
+  const dir = sectionDir("catalog");
+  writeFolderDraft(dir, envelope.draft);
+  writeFolderEnvelope(dir, envelope);
+  return saved;
+}
+
 function saveModel(sku, buffer) {
   if (typeof sku !== "string" || !SAFE_SKU.test(sku)) {
     throw adminError(404, { error: "unknown sku" });
@@ -83,17 +130,20 @@ function uploadModel(sku, body) {
       throw err;
     }
     saveModel(product.sku, body);
+    const saved = saveMeasuredSizes([{ sku: product.sku, sizeMm: summary.sizeMm }]);
     appendJournal({
       action: "model",
       section: "catalog",
-      detail: { sku: product.sku, bytes: body.length, parts: 0 }
+      detail: { sku: product.sku, bytes: body.length, parts: 0, sizeMm: summary.sizeMm }
     });
     return {
       sku: product.sku,
       bytes: body.length,
       parts: [],
       sizeMm: summary.sizeMm,
-      catalogMm: catalogMillimeters(product)
+      catalogMm: catalogMillimeters(product),
+      modelSizeMm: summary.sizeMm,
+      savedToCatalog: saved.includes(product.sku)
     };
   }
 
@@ -108,18 +158,21 @@ function uploadModel(sku, body) {
   saveModel(product.sku, built.glb);
   const catalogMm = catalogMillimeters(product);
   const parts = recenteredParts(built.parts, built.bounds);
+  const saved = saveMeasuredSizes([{ sku: product.sku, sizeMm: built.sizeMm }]);
   appendJournal({
     action: "model",
     section: "catalog",
-    detail: { sku: product.sku, bytes: built.glb.length, parts: parts.length }
+    detail: { sku: product.sku, bytes: built.glb.length, parts: parts.length, sizeMm: built.sizeMm }
   });
   return {
     sku: product.sku,
     bytes: built.glb.length,
     parts,
     sizeMm: built.sizeMm,
-    catalogMm
+    catalogMm,
+    modelSizeMm: built.sizeMm,
+    savedToCatalog: saved.includes(product.sku)
   };
 }
 
-export { modelsDirectory, uploadModel };
+export { modelsDirectory, uploadModel, saveMeasuredSizes };

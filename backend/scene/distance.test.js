@@ -59,6 +59,22 @@ test("unknown dimensions throw", () => {
   assert.throws(() => gap(placed, { y: 0, z: 0, dimensions: cube }), /положен/);
 });
 
+test("gap uses modelSizeMm when it is positive and the card otherwise", () => {
+  const card = { width: 100, height: 80, depth: 60 };
+  const model = { width: 40, height: 80, depth: 60 };
+  const modeled = gap(
+    { placement: { x: 0, y: 0, z: 0 }, dimensions: card, modelSizeMm: model },
+    { placement: { x: 200, y: 0, z: 0 }, dimensions: card, modelSizeMm: model }
+  );
+  assert.equal(modeled.axes.x, 160);
+
+  const fallback = gap(
+    { placement: { x: 0, y: 0, z: 0 }, dimensions: card, modelSizeMm: { width: 0, height: 80, depth: 60 } },
+    { placement: { x: 200, y: 0, z: 0 }, dimensions: card }
+  );
+  assert.equal(fallback.axes.x, 100);
+});
+
 test("formatDistance speaks centimeters", () => {
   assert.equal(formatDistance(0), "0 см, они касаются");
   assert.equal(formatDistance(4), "меньше 1 см");

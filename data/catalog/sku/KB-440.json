@@ -15,5 +15,10 @@
   ],
   "media": {
     "model3d": "KB-440.glb"
+  },
+  "modelSizeMm": {
+    "width": 440,
+    "height": 25,
+    "depth": 140
   }
 }

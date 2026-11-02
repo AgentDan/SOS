@@ -660,3 +660,53 @@ test("ai-rules voice fields are an optional boolean and string arrays", () => {
   delete absent.aiRules.draft.output.addedStems;
   assert.equal(validateDialogData(absent), true);
 });
+
+test("modelSizeMm is an optional box of positive width, height and depth", () => {
+  const chair = (data) => data.catalog.draft.products.find((item) => item.sku === "CHAIR-460");
+
+  const omitted = validPair();
+  delete chair(omitted).modelSizeMm;
+  assert.equal(validateDialogData(omitted), true);
+
+  const present = validPair();
+  chair(present).modelSizeMm = { width: 548, height: 1040, depth: 609 };
+  assert.equal(validateDialogData(present), true);
+
+  const stillNeedsCard = validPair();
+  chair(stillNeedsCard).modelSizeMm = { width: 548, height: 1040, depth: 609 };
+  delete chair(stillNeedsCard).dimensions;
+  assert.throws(
+    () => validateDialogData(stillNeedsCard),
+    (err) =>
+      err instanceof Error &&
+      /catalog: product "CHAIR-460" is missing required field "dimensions"/.test(err.message)
+  );
+
+  const zero = validPair();
+  chair(zero).modelSizeMm = { width: 0, height: 10, depth: 10 };
+  assert.throws(
+    () => validateDialogData(zero),
+    (err) =>
+      err instanceof Error &&
+      /catalog: product "CHAIR-460" modelSizeMm\.width must be a positive number/.test(err.message)
+  );
+
+  const partial = validPair();
+  chair(partial).modelSizeMm = { width: 10 };
+  assert.throws(
+    () => validateDialogData(partial),
+    (err) =>
+      err instanceof Error &&
+      /modelSizeMm\.height must be a positive number/.test(err.message) &&
+      /modelSizeMm\.depth must be a positive number/.test(err.message)
+  );
+
+  const text = validPair();
+  chair(text).modelSizeMm = "90x47x147";
+  assert.throws(
+    () => validateDialogData(text),
+    (err) =>
+      err instanceof Error &&
+      /modelSizeMm\.width must be a positive number/.test(err.message)
+  );
+});

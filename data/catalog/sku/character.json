@@ -11,5 +11,10 @@
   "words": [],
   "media": {
     "model3d": "character.glb"
+  },
+  "modelSizeMm": {
+    "width": 814,
+    "height": 1420,
+    "depth": 778
   }
 }

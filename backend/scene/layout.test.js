@@ -273,3 +273,41 @@ test("speakers that do not fit on the top are left unplaced", () => {
   );
   assert.equal(result.issues.some((item) => item.sku === "MON-613-366"), false);
 });
+
+test("layout uses modelSizeMm and falls back to the card", () => {
+  const shortLegs = product("DESK-LEGS-1400", "desk_legs", { width: 1400, depth: 700, height: 1000 }, {
+    modelSizeMm: { width: 1400, height: 800, depth: 700 }
+  });
+  const modelMouse = product("MOUSE-65", "mouse", { width: 146, depth: 82, height: 38 }, {
+    modelSizeMm: { width: 90, height: 47, depth: 147 }
+  });
+  const cardMouse = product("MOUSE-65", "mouse", { width: 146, depth: 82, height: 38 });
+  const brokenMouse = product("MOUSE-65", "mouse", { width: 146, depth: 82, height: 38 }, {
+    modelSizeMm: { width: 0, height: 47, depth: 147 }
+  });
+  const skus = ["DESK-LEGS-1400", "DESK-TOP-1800", "KB-440", "MOUSE-65"];
+
+  const fromModel = layout({
+    catalog: catalogOf(shortLegs, top1800, keyboard, modelMouse),
+    skus,
+    hand: "right"
+  });
+  assert.equal(ofSku(fromModel, "DESK-TOP-1800")[0].y, 800);
+  assert.equal(ofSku(fromModel, "MOUSE-65")[0].y, 830);
+  assert.equal(ofSku(fromModel, "MOUSE-65")[0].x, 365);
+
+  const fromCard = layout({
+    catalog: catalogOf(legs, top1800, keyboard, cardMouse),
+    skus,
+    hand: "right"
+  });
+  assert.equal(ofSku(fromCard, "DESK-TOP-1800")[0].y, 1000);
+  assert.equal(ofSku(fromCard, "MOUSE-65")[0].x, 393);
+
+  const fromBroken = layout({
+    catalog: catalogOf(legs, top1800, keyboard, brokenMouse),
+    skus,
+    hand: "right"
+  });
+  assert.equal(ofSku(fromBroken, "MOUSE-65")[0].x, 393);
+});

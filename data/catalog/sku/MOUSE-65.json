@@ -15,5 +15,10 @@
   ],
   "media": {
     "model3d": "MOUSE-65.glb"
+  },
+  "modelSizeMm": {
+    "width": 65,
+    "height": 38,
+    "depth": 110
   }
 }

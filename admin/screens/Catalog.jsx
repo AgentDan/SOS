@@ -1047,6 +1047,9 @@ function ProductsPane(props) {
 function ModelPane({ blocked, person, working, file, fileNote, uploadError, uploadResult, onFile, onUpload }) {
   const compared = uploadResult ? compareSizes(uploadResult.sizeMm, uploadResult.catalogMm) : [];
   const mismatch = compared.some((row) => !row.ok);
+  const beyondTolerance = compared.some(
+    (row) => typeof row.diff === "number" && Number.isFinite(row.diff) && Math.abs(row.diff) > 2
+  );
   return (
     <div className="flex flex-col gap-3">
       <p className="m-0 text-sm text-muted">
@@ -1084,7 +1087,7 @@ function ModelPane({ blocked, person, working, file, fileNote, uploadError, uplo
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-muted">
-                  {["Ось", "В модели", "В каталоге", "Разница"].map((title) => (
+                  {["Ось", "Размер для расчётов (из модели)", "Размер в карточке (для показа)", "Разница"].map((title) => (
                     <th key={title} scope="col" className="px-2 py-2 font-medium">
                       {title}
                     </th>
@@ -1102,7 +1105,7 @@ function ModelPane({ blocked, person, working, file, fileNote, uploadError, uplo
                     <td className="px-2 py-2">
                       <span className="inline-flex flex-wrap items-center gap-2">
                         {formatMeasure(row.diff)}
-                        {row.ok ? <Pill tone="ok">✓</Pill> : <Pill tone="bad">не совпадает</Pill>}
+                        {row.ok ? <Pill tone="ok">✓</Pill> : <Pill tone="neutral">отличается</Pill>}
                       </span>
                     </td>
                   </tr>
@@ -1110,7 +1113,14 @@ function ModelPane({ blocked, person, working, file, fileNote, uploadError, uplo
               </tbody>
             </table>
           </div>
-          {mismatch ? <p className="m-0">Размеры модели и каталога не совпали. Поправьте размеры товара или модель.</p> : null}
+          {mismatch ? (
+            <p className="m-0">
+              Для расстановки и эргономики используется размер модели. Размер в карточке виден только клиенту и админу.
+            </p>
+          ) : null}
+          {beyondTolerance ? (
+            <p className="m-0">Если размер в карточке задан неверно, поправьте его на вкладке «Основное».</p>
+          ) : null}
           {person ? (
             <p className="m-0">Для манекена колайдеры не строятся.</p>
           ) : (

@@ -33,8 +33,18 @@ function heightOf(optionId) {
 }
 
 function size(product, key) {
+  const fromModel = product?.modelSizeMm?.[key];
+  if (typeof fromModel === "number" && Number.isFinite(fromModel) && fromModel > 0) return fromModel;
   const value = product?.dimensions?.[key];
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function sizeBox(product) {
+  const width = size(product, "width");
+  const depth = size(product, "depth");
+  const height = size(product, "height");
+  if (width === null || depth === null || height === null) return null;
+  return { width, depth, height };
 }
 
 function productMap(products) {
@@ -154,8 +164,8 @@ function checkPositions(errors, tag, scene, products) {
   }
   for (let i = 0; i < onDesk.length; i += 1) {
     for (let j = i + 1; j < onDesk.length; j += 1) {
-      const aSize = products.get(onDesk[i].sku)?.dimensions;
-      const bSize = products.get(onDesk[j].sku)?.dimensions;
+      const aSize = sizeBox(products.get(onDesk[i].sku));
+      const bSize = sizeBox(products.get(onDesk[j].sku));
       if (!aSize || !bSize) {
         errors.push(`${tag}: нет габаритов ${onDesk[i].sku} или ${onDesk[j].sku}`);
         continue;
@@ -172,7 +182,7 @@ function checkPositions(errors, tag, scene, products) {
     let outer = 0;
     for (const place of onDesk) {
       if (!ROW.has(products.get(place.sku)?.type)) continue;
-      const dimensions = products.get(place.sku)?.dimensions;
+      const dimensions = sizeBox(products.get(place.sku));
       if (!dimensions) continue;
       outer = Math.max(outer, Math.abs(place.x) + footprint(place, dimensions).across / 2);
     }

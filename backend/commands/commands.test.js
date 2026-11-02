@@ -372,6 +372,40 @@ test("distance between a monitor and its desk is a touch", () => {
   assert.deepEqual(board.skus, skus);
 });
 
+test("distance uses model size and falls back to the card", () => {
+  const card = { width: 100, height: 100, depth: 100 };
+  const placements = [pose("A", -100, 0, 0), pose("B", 100, 0, 0)];
+  const withModel = {
+    products: [
+      {
+        sku: "A",
+        type: "monitor",
+        label: "монитор",
+        dimensions: card,
+        modelSizeMm: { width: 40, height: 100, depth: 100 }
+      },
+      {
+        sku: "B",
+        type: "monitor",
+        label: "экран",
+        dimensions: card,
+        modelSizeMm: { width: 40, height: 100, depth: 100 }
+      }
+    ]
+  };
+  const modeled = run(distanceIntent(["A", "B"]), ["A", "B"], { catalog: withModel, placements });
+  assert.equal(modeled.result.say.params.distance, "16 см");
+
+  const cards = {
+    products: [
+      { sku: "A", type: "monitor", label: "монитор", dimensions: card },
+      { sku: "B", type: "monitor", label: "экран", dimensions: card }
+    ]
+  };
+  const plain = run(distanceIntent(["A", "B"]), ["A", "B"], { catalog: cards, placements });
+  assert.equal(plain.result.say.params.distance, "10 см");
+});
+
 test("distance between two monitors on an 1800 desk is 10 cm", () => {
   const skus = ["DESK-TOP-1800", "MON-613-366", "MON-613-366"];
   const placements = [

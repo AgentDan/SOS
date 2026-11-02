@@ -22,6 +22,8 @@ function productsOf(catalog) {
 }
 
 function size(product, key) {
+  const fromModel = product?.modelSizeMm?.[key];
+  if (positive(fromModel)) return fromModel;
   const value = product?.dimensions?.[key];
   return positive(value) ? value : null;
 }

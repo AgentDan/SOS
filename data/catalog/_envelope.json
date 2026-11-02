@@ -1,6 +1,6 @@
 {
   "section": "catalog",
-  "draftVersion": 31,
+  "draftVersion": 32,
   "publishedVersion": 27,
   "history": [
     {
@@ -6859,6 +6859,11 @@
         ],
         "media": {
           "model3d": "DESK-LEGS-1400.glb"
+        },
+        "modelSizeMm": {
+          "width": 1330,
+          "height": 714,
+          "depth": 620
         }
       },
       {
@@ -6881,6 +6886,11 @@
         ],
         "media": {
           "model3d": "DESK-TOP-1400.glb"
+        },
+        "modelSizeMm": {
+          "width": 1400,
+          "height": 40,
+          "depth": 800
         }
       },
       {
@@ -6903,6 +6913,11 @@
         ],
         "media": {
           "model3d": "DESK-TOP-1800.glb"
+        },
+        "modelSizeMm": {
+          "width": 1800,
+          "height": 40,
+          "depth": 800
         }
       },
       {
@@ -6926,6 +6941,11 @@
         ],
         "media": {
           "model3d": "DESK-TOP-2000.glb"
+        },
+        "modelSizeMm": {
+          "width": 2000,
+          "height": 40,
+          "depth": 800
         }
       },
       {
@@ -6947,6 +6967,11 @@
         ],
         "media": {
           "model3d": "MON-613-366.glb"
+        },
+        "modelSizeMm": {
+          "width": 613,
+          "height": 451,
+          "depth": 212
         }
       },
       {
@@ -6968,6 +6993,11 @@
         ],
         "media": {
           "model3d": "MON-715-427.glb"
+        },
+        "modelSizeMm": {
+          "width": 715,
+          "height": 427,
+          "depth": 212
         }
       },
       {
@@ -6994,6 +7024,11 @@
             "x": 0,
             "z": 760
           }
+        },
+        "modelSizeMm": {
+          "width": 548,
+          "height": 1040,
+          "depth": 609
         }
       },
       {
@@ -7009,6 +7044,11 @@
         "words": [],
         "media": {
           "model3d": "character.glb"
+        },
+        "modelSizeMm": {
+          "width": 814,
+          "height": 1420,
+          "depth": 778
         }
       },
       {
@@ -7028,6 +7068,11 @@
         ],
         "media": {
           "model3d": "KB-440.glb"
+        },
+        "modelSizeMm": {
+          "width": 440,
+          "height": 25,
+          "depth": 140
         }
       },
       {
@@ -7047,6 +7092,11 @@
         ],
         "media": {
           "model3d": "MOUSE-65.glb"
+        },
+        "modelSizeMm": {
+          "width": 65,
+          "height": 38,
+          "depth": 110
         }
       },
       {
@@ -7069,7 +7119,12 @@
         "media": {
           "model3d": "MOUSE-Two-146-82-38.glb"
         },
-        "label": "мышь"
+        "label": "мышь",
+        "modelSizeMm": {
+          "width": 90,
+          "height": 47,
+          "depth": 147
+        }
       },
       {
         "sku": "SPK-100",
@@ -7089,6 +7144,11 @@
         ],
         "media": {
           "model3d": "SPK-100.glb"
+        },
+        "modelSizeMm": {
+          "width": 100,
+          "height": 200,
+          "depth": 110
         }
       }
     ]

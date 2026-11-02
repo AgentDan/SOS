@@ -2,16 +2,32 @@ function finite(value) {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function positiveFinite(value) {
+  return finite(value) && value > 0;
+}
+
+function axisOf(model, card, key) {
+  const fromModel = model?.[key];
+  if (positiveFinite(fromModel)) return fromModel;
+  return card?.[key];
+}
+
 function readBox(item) {
   if (item === null || typeof item !== "object") {
     throw new Error("Неизвестные размеры предмета");
   }
   const placement = item.placement && typeof item.placement === "object" ? item.placement : item;
-  const dimensions =
-    item.dimensions && typeof item.dimensions === "object" ? item.dimensions : placement.dimensions;
-  const width = dimensions?.width;
-  const height = dimensions?.height;
-  const depth = dimensions?.depth;
+  const hasOwnCard = item.dimensions && typeof item.dimensions === "object";
+  const card = hasOwnCard ? item.dimensions : placement.dimensions;
+  const model =
+    item.modelSizeMm && typeof item.modelSizeMm === "object"
+      ? item.modelSizeMm
+      : hasOwnCard
+        ? null
+        : placement.modelSizeMm;
+  const width = axisOf(model, card, "width");
+  const height = axisOf(model, card, "height");
+  const depth = axisOf(model, card, "depth");
   if (!finite(width) || !finite(height) || !finite(depth) || width <= 0 || height <= 0 || depth <= 0) {
     throw new Error("Неизвестные размеры предмета");
   }

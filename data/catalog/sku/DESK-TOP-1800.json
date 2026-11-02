@@ -18,5 +18,10 @@
   ],
   "media": {
     "model3d": "DESK-TOP-1800.glb"
+  },
+  "modelSizeMm": {
+    "width": 1800,
+    "height": 40,
+    "depth": 800
   }
 }

@@ -118,3 +118,51 @@ test("resolveNeed picks the narrowest product that still meets minWidth", () => 
   };
   assert.equal(resolveNeed(catalog, "desk_top_wide"), "DESK-TOP-1600");
 });
+
+test("resolveNeed uses model width and falls back to the card", () => {
+  const wideCard = {
+    sku: "CARD-WIDE",
+    type: "desk_top",
+    dimensions: { width: 1800, depth: 800, height: 30 },
+    modelSizeMm: { width: 1400, height: 30, depth: 800 }
+  };
+  const modelFit = {
+    sku: "MODEL-FIT",
+    type: "desk_top",
+    dimensions: { width: 2000, depth: 800, height: 30 },
+    modelSizeMm: { width: 1700, height: 30, depth: 800 }
+  };
+  const cardOnly = {
+    sku: "CARD-ONLY",
+    type: "desk_top",
+    dimensions: { width: 1650, depth: 800, height: 30 }
+  };
+  const catalog = {
+    draft: {
+      needs: [DESK_TOP_WIDE],
+      products: [wideCard, modelFit, cardOnly]
+    }
+  };
+  assert.equal(resolveNeed(catalog, "desk_top_wide"), "CARD-ONLY");
+
+  const overridden = {
+    draft: {
+      needs: [DESK_TOP_WIDE],
+      products: [
+        {
+          sku: "FAT-CARD",
+          type: "desk_top",
+          dimensions: { width: 2000, depth: 800, height: 30 },
+          modelSizeMm: { width: 1610, height: 30, depth: 800 }
+        },
+        {
+          sku: "WIDER-MODEL",
+          type: "desk_top",
+          dimensions: { width: 1500, depth: 800, height: 30 },
+          modelSizeMm: { width: 1900, height: 30, depth: 800 }
+        }
+      ]
+    }
+  };
+  assert.equal(resolveNeed(overridden, "desk_top_wide"), "FAT-CARD");
+});

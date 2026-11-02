@@ -95,11 +95,12 @@ test("a mouse without a keyboard is allowed", () => {
 test("a top that is too shallow for the front row refuses the keyboard", () => {
   const shallow = {
     ...catalog,
-    products: catalog.products.map((product) =>
-      product.sku === "DESK-TOP-1400"
-        ? { ...product, dimensions: { ...product.dimensions, depth: 200 } }
-        : product
-    )
+    products: catalog.products.map((product) => {
+      if (product.sku !== "DESK-TOP-1400") return product;
+      const next = { ...product, dimensions: { ...product.dimensions, depth: 200 } };
+      delete next.modelSizeMm;
+      return next;
+    })
   };
   const result = canPlace({
     catalog: shallow,
@@ -153,4 +154,53 @@ test("replacing the desk rechecks the speakers beside the monitors", () => {
   });
   assert.equal(swapped.ok, false);
   assert.equal(swapped.reasonCode, "host_full");
+});
+
+test("canPlace uses model size and falls back to the card", () => {
+  const top = {
+    sku: "TOP",
+    type: "desk_top",
+    dimensions: { width: 1400, depth: 800, height: 40 },
+    modelSizeMm: { width: 1800, height: 40, depth: 800 }
+  };
+  const monitor = {
+    sku: "MON",
+    type: "monitor",
+    dimensions: { width: 2000, depth: 200, height: 400 },
+    modelSizeMm: { width: 500, height: 400, depth: 200 }
+  };
+  const keyboard = {
+    sku: "KB",
+    type: "keyboard",
+    dimensions: { width: 440, depth: 100, height: 25 },
+    modelSizeMm: { width: 440, height: 25, depth: 700 }
+  };
+  const local = { types: catalog.types, products: [top, monitor, keyboard] };
+  assert.equal(canPlace({ catalog: local, sceneSkus: ["TOP"], sku: "MON" }).ok, true);
+  assert.equal(canPlace({ catalog: local, sceneSkus: ["TOP"], sku: "KB" }).ok, false);
+
+  const cards = {
+    types: catalog.types,
+    products: [
+      { sku: "TOP", type: "desk_top", dimensions: { width: 1400, depth: 800, height: 40 } },
+      { sku: "MON", type: "monitor", dimensions: { width: 2000, depth: 200, height: 400 } },
+      { sku: "KB", type: "keyboard", dimensions: { width: 440, depth: 100, height: 25 } }
+    ]
+  };
+  assert.equal(canPlace({ catalog: cards, sceneSkus: ["TOP"], sku: "MON" }).ok, false);
+  assert.equal(canPlace({ catalog: cards, sceneSkus: ["TOP"], sku: "KB" }).ok, true);
+
+  const broken = {
+    types: catalog.types,
+    products: [
+      { sku: "TOP", type: "desk_top", dimensions: { width: 1400, depth: 800, height: 40 } },
+      {
+        sku: "MON",
+        type: "monitor",
+        dimensions: { width: 2000, depth: 200, height: 400 },
+        modelSizeMm: { width: -1, height: 400, depth: 200 }
+      }
+    ]
+  };
+  assert.equal(canPlace({ catalog: broken, sceneSkus: ["TOP"], sku: "MON" }).ok, false);
 });

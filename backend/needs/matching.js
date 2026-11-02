@@ -1,3 +1,11 @@
+function widthOf(product) {
+  const fromModel = product?.modelSizeMm?.width;
+  if (typeof fromModel === "number" && Number.isFinite(fromModel) && fromModel > 0) return fromModel;
+  const fromCard = product?.dimensions?.width;
+  if (typeof fromCard === "number" && Number.isFinite(fromCard) && fromCard > 0) return fromCard;
+  return null;
+}
+
 function criteriaFor(catalog, needId) {
   const needs = catalog?.needs ?? catalog?.draft?.needs ?? [];
   const need = needs.find((item) => item && item.id === needId);
@@ -12,15 +20,15 @@ function resolveNeed(catalog, needId) {
   let matches = products.filter((product) => product.type === criteria.type && product.type !== "person");
 
   if (criteria.minWidth != null) {
-    matches = matches.filter((product) => (product.dimensions?.width ?? 0) >= criteria.minWidth);
+    matches = matches.filter((product) => (widthOf(product) ?? 0) >= criteria.minWidth);
   }
 
   if (matches.length === 0) return null;
 
   let best = matches[0];
   for (const product of matches) {
-    const width = product.dimensions?.width ?? Infinity;
-    const bestWidth = best.dimensions?.width ?? Infinity;
+    const width = widthOf(product) ?? Infinity;
+    const bestWidth = widthOf(best) ?? Infinity;
     if (width < bestWidth) best = product;
   }
 
