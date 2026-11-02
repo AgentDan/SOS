@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { addCollidersToGlb, ColliderError, parseGlb, summarizeGlb } from "./index.js";
 import { encodeGlb } from "./glb.js";
+
+const legsModelPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "models", "DESK-LEGS-1400.glb");
 
 function pad4(bytes, fill) {
   const extra = (4 - (bytes.length % 4)) % 4;
@@ -11,14 +16,34 @@ function pad4(bytes, fill) {
   return out;
 }
 
-function corners(hx, hy, hz) {
+function boxTriangles(min, max) {
+  const [x0, y0, z0] = min;
+  const [x1, y1, z1] = max;
+  const p = [
+    [x0, y0, z0],
+    [x1, y0, z0],
+    [x1, y1, z0],
+    [x0, y1, z0],
+    [x0, y0, z1],
+    [x1, y0, z1],
+    [x1, y1, z1],
+    [x0, y1, z1]
+  ];
+  const quads = [
+    [0, 1, 2, 3],
+    [4, 7, 6, 5],
+    [0, 4, 5, 1],
+    [1, 5, 6, 2],
+    [2, 6, 7, 3],
+    [3, 7, 4, 0]
+  ];
   const points = [];
-  for (const x of [-hx, hx]) {
-    for (const y of [-hy, hy]) {
-      for (const z of [-hz, hz]) points.push([x, y, z]);
-    }
-  }
+  for (const [a, b, c, d] of quads) points.push(p[a], p[b], p[c], p[a], p[c], p[d]);
   return points;
+}
+
+function corners(hx, hy, hz) {
+  return boxTriangles([-hx, -hy, -hz], [hx, hy, hz]);
 }
 
 function meshGlb(specs) {
@@ -274,12 +299,6 @@ test("broken files and missing parts throw ColliderError", () => {
   assert.match(chairError.message, /Wheel_0/);
   assert.match(chairError.message, /Screen/);
 
-  const legs = meshGlb([{ name: "Top", corners: corners(0.5, 0.02, 0.3) }]);
-  const legsError = thrown(() => addCollidersToGlb(legs.glb, { type: "desk_legs" }));
-  assert.ok(legsError instanceof ColliderError);
-  assert.match(legsError.message, /стойк/);
-  assert.match(legsError.message, /Top/);
-
   const names = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu", "Nu"];
   const many = meshGlb(names.map((name, index) => ({ name, translation: [index, 0, 0], corners: corners(0.1, 0.1, 0.1) })));
   const manyError = thrown(() => addCollidersToGlb(many.glb, { type: "monitor" }));
@@ -308,4 +327,186 @@ test("summarizeGlb reports size and collider names", () => {
   const summary = summarizeGlb(glb);
   assert.deepEqual(summary.colliderNames, []);
   assert.deepEqual(summary.sizeMm, { width: 1000, height: 1000, depth: 1000 });
+});
+
+function extentOf(bounds) {
+  return bounds.max.map((value, index) => value - bounds.min[index]);
+}
+
+function partsVolume(parts) {
+  return parts.reduce((sum, part) => sum + part.size[0] * part.size[1] * part.size[2], 0);
+}
+
+function unionSpan(parts, axis) {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const part of parts) {
+    const low = part.center[axis] - part.size[axis] / 2;
+    const high = part.center[axis] + part.size[axis] / 2;
+    if (low < min) min = low;
+    if (high > max) max = high;
+  }
+  return max - min;
+}
+
+function frameSpecs(singleName) {
+  const pieces = [
+    boxTriangles([0, 0, 0], [0.08, 0.7, 0.08]),
+    boxTriangles([1, 0, 0], [1.08, 0.7, 0.08]),
+    boxTriangles([0, 0.5, 0], [1.08, 0.58, 0.08])
+  ];
+  if (singleName) {
+    return [{ name: singleName, corners: pieces.flat() }];
+  }
+  return [
+    { name: "Cube", corners: pieces[0] },
+    { name: "Cube.001", corners: pieces[1] },
+    { name: "Cube.002", corners: pieces[2] }
+  ];
+}
+
+function indexedSolidGlb(componentType) {
+  const verts = [
+    [-0.25, -0.25, -0.25],
+    [0.25, -0.25, -0.25],
+    [0.25, 0.25, -0.25],
+    [-0.25, 0.25, -0.25],
+    [-0.25, -0.25, 0.25],
+    [0.25, -0.25, 0.25],
+    [0.25, 0.25, 0.25],
+    [-0.25, 0.25, 0.25]
+  ];
+  const positions = verts.flat();
+  const quads = [
+    [0, 1, 2, 3],
+    [4, 7, 6, 5],
+    [0, 4, 5, 1],
+    [1, 5, 6, 2],
+    [2, 6, 7, 3],
+    [3, 7, 4, 0]
+  ];
+  const indexList = quads.flatMap(([a, b, c, d]) => [a, b, c, a, c, d]);
+  const posBytes = Buffer.from(new Float32Array(positions).buffer);
+  const indexBytes = Buffer.alloc(indexList.length * (componentType === 5121 ? 1 : componentType === 5123 ? 2 : 4));
+  for (let index = 0; index < indexList.length; index += 1) {
+    if (componentType === 5121) indexBytes.writeUInt8(indexList[index], index);
+    else if (componentType === 5123) indexBytes.writeUInt16LE(indexList[index], index * 2);
+    else indexBytes.writeUInt32LE(indexList[index], index * 4);
+  }
+  const bin = pad4(Buffer.concat([posBytes, indexBytes]), 0);
+  const json = {
+    asset: { version: "2.0" },
+    scene: 0,
+    scenes: [{ nodes: [0] }],
+    nodes: [{ name: "Block", mesh: 0 }],
+    meshes: [{ primitives: [{ attributes: { POSITION: 0 }, indices: 1 }] }],
+    accessors: [
+      { bufferView: 0, componentType: 5126, count: verts.length, type: "VEC3" },
+      { bufferView: 1, componentType, count: indexList.length, type: "SCALAR" }
+    ],
+    bufferViews: [
+      { buffer: 0, byteOffset: 0, byteLength: posBytes.length },
+      { buffer: 0, byteOffset: posBytes.length, byteLength: indexBytes.length }
+    ],
+    buffers: [{ byteLength: bin.length }]
+  };
+  return encodeGlb(json, bin);
+}
+
+test("named desk legs stay on Leg_, Foot_, Frame_, Post_ and Plate_", () => {
+  const { glb } = meshGlb([
+    { name: "Leg_L", translation: [-0.5, 0.3, 0], corners: corners(0.04, 0.3, 0.04) },
+    { name: "Foot_L", translation: [-0.5, 0.02, 0], corners: corners(0.05, 0.02, 0.05) },
+    { name: "Frame_A", translation: [0, 0.55, 0], corners: corners(0.5, 0.03, 0.03) },
+    { name: "Post_R", translation: [0.5, 0.3, 0], corners: corners(0.04, 0.3, 0.04) },
+    { name: "Plate_B", translation: [0, 0.7, 0], corners: corners(0.2, 0.01, 0.08) },
+    { name: "Cube", translation: [2, 0, 0], corners: corners(0.2, 0.2, 0.2) },
+    { name: "Leg_Screw", corners: corners(0.002, 0.002, 0.002) }
+  ]);
+  const built = addCollidersToGlb(glb, { type: "desk_legs" });
+  assert.deepEqual(
+    built.parts.map((part) => part.name),
+    ["Foot_L", "Frame_A", "Leg_L", "Plate_B", "Post_R"]
+  );
+  near(partNamed(built.parts, "Leg_L").center, [-0.5, 0.3, 0]);
+  near(partNamed(built.parts, "Leg_L").size, [0.08, 0.6, 0.08]);
+});
+
+test("desk legs with foreign node names are split by shape", () => {
+  const { glb } = meshGlb(frameSpecs());
+  const built = addCollidersToGlb(glb, { type: "desk_legs" });
+  const extent = extentOf(built.bounds);
+  assert.ok(built.parts.length >= 2 && built.parts.length <= 12);
+  assert.equal(new Set(built.parts.map((part) => part.name)).size, built.parts.length);
+  assert.ok(built.parts.every((part) => /^Auto_\d+$/.test(part.name)));
+  assert.ok(unionSpan(built.parts, 1) > extent[1] - 0.04);
+  assert.ok(partsVolume(built.parts) <= extent[0] * extent[1] * extent[2] + 1e-6);
+});
+
+test("one desk-leg mesh becomes several boxes", () => {
+  const { glb } = meshGlb(frameSpecs("Foot_All"));
+  const built = addCollidersToGlb(glb, { type: "desk_legs" });
+  const extent = extentOf(built.bounds);
+  const aabbVol = extent[0] * extent[1] * extent[2];
+  const biggest = Math.max(...built.parts.map((part) => part.size[0] * part.size[1] * part.size[2]));
+  assert.ok(built.parts.length >= 2 && built.parts.length <= 12);
+  assert.ok(biggest < aabbVol * 0.85);
+  assert.ok(unionSpan(built.parts, 1) > extent[1] - 0.04);
+});
+
+test("a solid cube stays one box", () => {
+  const { glb } = meshGlb([{ name: "Block", corners: boxTriangles([0, 0, 0], [0.5, 0.5, 0.5]) }]);
+  const built = addCollidersToGlb(glb, { type: "speaker" });
+  assert.equal(built.parts.length, 1);
+  assert.equal(built.parts[0].name, "Block");
+  near(built.parts[0].center, [0.25, 0.25, 0.25]);
+  near(built.parts[0].size, [0.5, 0.5, 0.5]);
+});
+
+test("indexed triangles use unsigned byte, short and int", () => {
+  for (const componentType of [5121, 5123, 5125]) {
+    const built = addCollidersToGlb(indexedSolidGlb(componentType), { type: "monitor" });
+    assert.equal(built.parts.length, 1);
+    assert.equal(built.parts[0].name, "Block");
+    near(built.parts[0].size, [0.5, 0.5, 0.5]);
+  }
+});
+
+test("shape colliders are deterministic and ignore rebuilt COL nodes", () => {
+  const { glb } = meshGlb(frameSpecs());
+  const once = addCollidersToGlb(glb, { type: "desk_legs" });
+  const twice = addCollidersToGlb(glb, { type: "desk_legs" });
+  const again = addCollidersToGlb(once.glb, { type: "desk_legs" });
+  assert.deepEqual(twice.parts, once.parts);
+  assert.deepEqual(again.parts, once.parts);
+});
+
+test("shape stops at 12 uniquely named boxes", () => {
+  const points = [];
+  const size = 0.2;
+  const pitch = 0.4;
+  for (let z = 0; z < 3; z += 1) {
+    for (let y = 0; y < 3; y += 1) {
+      for (let x = 0; x < 3; x += 1) {
+        const origin = [x * pitch, y * pitch, z * pitch];
+        points.push(...boxTriangles(origin, origin.map((value) => value + size)));
+      }
+    }
+  }
+  const { glb } = meshGlb([{ name: "Cluster", corners: points }]);
+  const built = addCollidersToGlb(glb, { type: "monitor" });
+  assert.equal(built.parts.length, 12);
+  assert.equal(new Set(built.parts.map((part) => part.name)).size, 12);
+  assert.ok(built.parts.every((part) => /^Auto_\d+$/.test(part.name)));
+});
+
+test("DESK-LEGS-1400 colliders follow the frame", () => {
+  const built = addCollidersToGlb(readFileSync(legsModelPath), { type: "desk_legs" });
+  const extent = extentOf(built.bounds);
+  const aabbVol = extent[0] * extent[1] * extent[2];
+  const vol = partsVolume(built.parts);
+  assert.ok(built.parts.length >= 2 && built.parts.length <= 12);
+  assert.equal(new Set(built.parts.map((part) => part.name)).size, built.parts.length);
+  assert.ok(vol < aabbVol * 0.5);
+  assert.ok(unionSpan(built.parts, 1) > extent[1] - 0.05);
 });

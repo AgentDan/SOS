@@ -291,6 +291,45 @@ function readVec3(json, bin, accessorIndex) {
   return points;
 }
 
+function readIndices(json, bin, accessorIndex) {
+  const accessor = json.accessors && json.accessors[accessorIndex];
+  if (!accessor) throw new ColliderError(`indices accessor ${accessorIndex} отсутствует`);
+  if (accessor.sparse) throw new ColliderError(`indices accessor ${accessorIndex}: разреженные accessor не поддерживаются`);
+  if (accessor.type !== "SCALAR") {
+    throw new ColliderError(`indices accessor ${accessorIndex}: неподдерживаемый тип ${accessor.type}, ожидался SCALAR`);
+  }
+  if (accessor.bufferView == null) throw new ColliderError(`indices accessor ${accessorIndex} без bufferView`);
+  if (accessor.componentType !== 5121 && accessor.componentType !== 5123 && accessor.componentType !== 5125) {
+    throw new ColliderError(
+      `indices accessor ${accessorIndex}: неподдерживаемый тип компонента ${accessor.componentType}`
+    );
+  }
+
+  const views = json.bufferViews || [];
+  const view = views[accessor.bufferView];
+  if (!view) throw new ColliderError(`bufferView ${accessor.bufferView} отсутствует`);
+  if ((view.buffer ?? 0) !== 0) {
+    throw new ColliderError(`indices accessor ${accessorIndex} лежит не в BIN-чанке GLB`);
+  }
+
+  const component = COMPONENT[accessor.componentType];
+  const count = accessor.count || 0;
+  const stride = view.byteStride || component.bytes;
+  const start = (view.byteOffset || 0) + (accessor.byteOffset || 0);
+  if (count > 0) {
+    const needed = start + (count - 1) * stride + component.bytes;
+    if (needed > bin.length) {
+      throw new ColliderError(`indices accessor ${accessorIndex} выходит за пределы BIN-чанка`);
+    }
+  }
+
+  const indices = [];
+  for (let i = 0; i < count; i += 1) {
+    indices.push(component.read(bin, start + i * stride));
+  }
+  return indices;
+}
+
 export {
   ColliderError,
   parseGlb,
@@ -300,5 +339,6 @@ export {
   addColliderNodes,
   listSceneColliderNames,
   modelNodeNames,
-  readVec3
+  readVec3,
+  readIndices
 };
