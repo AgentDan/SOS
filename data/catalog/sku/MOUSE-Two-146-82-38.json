@@ -1,0 +1,22 @@
+{
+  "sku": "MOUSE-Two-146-82-38",
+  "type": "mouse",
+  "name": "MOUSE-Two-146",
+  "dimensions": {
+    "width": 146,
+    "depth": 82,
+    "height": 38
+  },
+  "priceEur": 24,
+  "words": [
+    "mouse two",
+    "мышь два"
+  ],
+  "placement": {
+    "hostSku": "DESK-TOP-1400"
+  },
+  "media": {
+    "model3d": "MOUSE-Two-146-82-38.glb"
+  },
+  "label": "мышь"
+}

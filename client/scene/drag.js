@@ -3,6 +3,27 @@ import { all } from "./physics/registry.js";
 import { getWorld } from "./physics/world.js";
 
 const MAX_DRAG_SPEED_M_S = 4;
+const ROTATE_STEP_DEG = 15;
+const MAX_TURN_SPEED_RAD_S = 4;
+const WHEEL_NOTCH = 100; // deltaY одного щелчка колеса
+// Q = −шаг, E = +шаг. Смените знак, чтобы поменять стороны.
+const KEY_ROTATE_SIGN = 1;
+
+function yawOf(body) {
+  if (!body || typeof body.rotation !== "function") return 0;
+  const q = body.rotation();
+  const x = q.x;
+  const y = q.y;
+  const z = q.z;
+  const w = q.w;
+  return Math.atan2(2 * (w * y + x * z), 1 - 2 * (y * y + z * z));
+}
+
+function clamp(value, min, max) {
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
 
 function productEntry(object) {
   let current = object;
@@ -30,7 +51,9 @@ function createDrag({ canvas, camera, controls }) {
     y: 0,
     target: { x: 0, y: 0, z: 0 },
     pointerId: null,
-    notified: false
+    notified: false,
+    yaw: 0,
+    wheelAcc: 0
   };
 
   function subscribe(listener) {
@@ -40,6 +63,14 @@ function createDrag({ canvas, camera, controls }) {
 
   function notify() {
     for (const listener of [...listeners]) listener();
+  }
+
+  function rotate(steps) {
+    state.yaw += steps * ROTATE_STEP_DEG * Math.PI / 180;
+    if (!state.entry || state.notified) return;
+    state.notified = true;
+    state.entry.moved = true;
+    notify();
   }
 
   function setPointer(event) {
@@ -98,6 +129,8 @@ function createDrag({ canvas, camera, controls }) {
   function endDrag() {
     const entry = state.entry;
     state.entry = null;
+    state.yaw = 0;
+    state.wheelAcc = 0;
     releaseCapture();
     if (controls) controls.enabled = true;
     canvas.style.cursor = "";
@@ -127,9 +160,11 @@ function createDrag({ canvas, camera, controls }) {
     state.target.z = pos.z;
     state.pointerId = event.pointerId;
     state.notified = false;
+    state.yaw = yawOf(body);
+    state.wheelAcc = 0;
     plane.constant = -hit.point.y;
     body.setGravityScale(0, true);
-    body.setEnabledRotations(false, false, false, true);
+    body.setEnabledRotations(false, true, false, true);
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
     if (controls) controls.enabled = false;
@@ -167,14 +202,40 @@ function createDrag({ canvas, camera, controls }) {
     endDrag();
   }
 
+  function onWheel(event) {
+    if (state.entry === null) return;
+    event.preventDefault();
+    event.stopPropagation();
+    state.wheelAcc += event.deltaY;
+    while (Math.abs(state.wheelAcc) >= WHEEL_NOTCH) {
+      const sign = Math.sign(state.wheelAcc);
+      rotate(sign < 0 ? 1 : -1);
+      state.wheelAcc -= sign * WHEEL_NOTCH;
+    }
+  }
+
+  function typingTarget(target) {
+    if (!target) return false;
+    const tag = typeof target.tagName === "string" ? target.tagName.toUpperCase() : "";
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+    return Boolean(target.isContentEditable);
+  }
+
+  function onKeyDown(event) {
+    if (state.entry === null) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (typingTarget(event.target)) return;
+    const key = event.key;
+    const code = event.code;
+    if (key === "q" || key === "Q" || code === "KeyQ") rotate(-KEY_ROTATE_SIGN);
+    else if (key === "e" || key === "E" || code === "KeyE") rotate(KEY_ROTATE_SIGN);
+  }
+
   function apply() {
     if (!state.entry) return;
     const body = state.entry.rigidBody;
     if (!body || !body.isValid()) {
-      state.entry = null;
-      releaseCapture();
-      if (controls) controls.enabled = true;
-      canvas.style.cursor = "";
+      endDrag();
       return;
     }
     const pos = body.translation();
@@ -193,6 +254,11 @@ function createDrag({ canvas, camera, controls }) {
       vz *= scale;
     }
     body.setLinvel({ x: vx, y: vy, z: vz }, true);
+    const current = yawOf(body);
+    let diff = state.yaw - current;
+    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+    const turn = clamp(diff / dt, -MAX_TURN_SPEED_RAD_S, MAX_TURN_SPEED_RAD_S);
+    body.setAngvel({ x: 0, y: turn, z: 0 }, true);
   }
 
   function dispose() {
@@ -201,14 +267,18 @@ function createDrag({ canvas, camera, controls }) {
     canvas.removeEventListener("pointermove", onPointerMove);
     canvas.removeEventListener("pointerup", onPointerUp);
     canvas.removeEventListener("pointercancel", onPointerUp);
+    canvas.removeEventListener("wheel", onWheel);
+    if (typeof window !== "undefined") window.removeEventListener("keydown", onKeyDown);
   }
 
   canvas.addEventListener("pointerdown", onPointerDown, true);
   canvas.addEventListener("pointermove", onPointerMove);
   canvas.addEventListener("pointerup", onPointerUp);
   canvas.addEventListener("pointercancel", onPointerUp);
+  canvas.addEventListener("wheel", onWheel, { passive: false });
+  if (typeof window !== "undefined") window.addEventListener("keydown", onKeyDown);
 
-  return { apply, dispose, subscribe };
+  return { apply, dispose, subscribe, rotate, state };
 }
 
 export { createDrag };
